@@ -55,6 +55,13 @@ public record BackendConfig
     public int RequestTimeoutSeconds { get; init; } = 10;
     public int MaxRetriesPerProvider { get; init; } = 2;
     public int InstanceCacheTtlHours { get; init; } = 24;
+
+    public string? YtDlpCustomPath { get; init; }
+    public bool YtDlpAutoUpdateOnStartup { get; init; } = true;
+    public int YtDlpTimeoutSeconds { get; init; } = 45;
+    public string? YtDlpDownloadDirectory { get; init; }
+    public string? YtDlpBrowserCookies { get; init; }
+    public int YtDlpMaxSearchResults { get; init; } = 20;
 }
 
 public record AccessibilityConfig

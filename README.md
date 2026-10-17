@@ -14,7 +14,7 @@ It is designed from the ground up for assistive technologies (screen readers lik
 - **Triple-Tier Resilient Backend Architecture**:
   - **Primary**: Piped API public instance discovery with automatic failover.
   - **Secondary**: Invidious API public instance directory with health and latency scoring.
-  - **Local Fallback**: Standalone `yt-dlp` extraction when public instances are degraded or blocked.
+  - **Local Fallback**: Standalone application-managed `yt-dlp` binary with verified SHA256 integrity, automatic startup updates, safe process tree termination, and download progress reporting.
   - **Instance Directory Caching**: Caches last known good instances locally to prevent outages if directory endpoints are temporarily down.
 - **Embedded Video Playback Engine**:
   - High-performance `mpv` engine embedded inside the WPF window using Win32 `HwndHost` (`--wid=<HWND>`).
@@ -29,6 +29,15 @@ It is designed from the ground up for assistive technologies (screen readers lik
 
 ---
 
+## Documentation
+
+- [Accessible YouTube Player Architecture](file:///C:/Users/eblin/.gemini/antigravity/brain/ebd48c66-0893-4019-910f-96c1097ee4c6/accessible_youtube_player_architecture.md)
+- [Accessibility Checklist](ACCESSIBILITY_CHECKLIST.md)
+- [Public Instance Directories](docs/INSTANCE_DIRECTORIES.md)
+- [Third-Party Notices & Licenses](docs/THIRD_PARTY_NOTICES.md)
+
+---
+
 ## Project Structure
 
 ```
@@ -36,13 +45,20 @@ It is designed from the ground up for assistive technologies (screen readers lik
 ├── Directory.Packages.props         # Central Package Management (CPM)
 ├── TimePlayer.sln                   # Visual Studio / .NET Solution
 ├── ACCESSIBILITY_CHECKLIST.md       # Screen reader & keyboard accessibility checklist
+├── docs/
+│   ├── INSTANCE_DIRECTORIES.md      # Piped & Invidious directory specifications
+│   └── THIRD_PARTY_NOTICES.md       # yt-dlp, mpv, and library licenses
 ├── src/
 │   ├── TimePlayer.Core/             # Target: net10.0 (Class Library)
 │   │   ├── Accessibility/           # IAccessibilityService, KeyChord, AccessibleTextFormatter
-│   │   ├── Backends/                # IYouTubeService, IYouTubeBackendProvider, IInstanceCache
+│   │   ├── Backends/                # Piped, Invidious, and YtDlp backend providers
+│   │   │   ├── Piped/               # Piped API catalog & stream provider
+│   │   │   ├── Invidious/           # Invidious API catalog & stream provider
+│   │   │   └── YtDlp/               # Local managed yt-dlp binary, download, and resolver
+│   │   ├── Common/                  # Result<T>, AppError, IProcessRunner, DefaultProcessRunner
 │   │   ├── Configuration/           # AppConfig, IConfigurationService, settings validation
-│   │   ├── Models/                  # SearchResult, VideoMetadata, StreamInfo, InstanceInfo, Enums
-│   │   ├── Playback/                # IPlayerEngine, PlaybackEvents, PlayerOptions
+│   │   ├── Contracts/               # IVideoCatalogProvider, IStreamResolver, IPublicInstanceDirectory
+│   │   ├── Models/                  # VideoDetails, SearchResult, StreamCandidate, Enums
 │   │   └── Services/                # Core DI service registration extensions
 │   │
 │   └── TimePlayer.Wpf/              # Target: net10.0-windows (WPF Application)
@@ -51,14 +67,14 @@ It is designed from the ground up for assistive technologies (screen readers lik
 │       ├── ViewModels/              # MainViewModel (CommunityToolkit.Mvvm)
 │       ├── Views/                   # MainWindow.xaml & MainWindow.xaml.cs
 │       ├── App.xaml                 # Application styling and resources
-│       └── App.xaml.cs              # DI container, centralized logging & exception handling
+│       └── App.xaml.cs              # DI container, startup yt-dlp update, logging & error handling
 │
 └── tests/
     └── TimePlayer.Tests/            # Target: net10.0 (xUnit Test Suite)
         ├── Accessibility/           # KeyChordTests, AccessibleTextFormatterTests
-        ├── Configuration/           # ConfigurationTests
-        ├── Logging/                 # LoggingAndErrorTests
-        └── Models/                  # SearchResultTests, InstanceInfoTests
+        ├── Backends/                # Piped, Invidious, YtDlp, ErrorClassifier, DownloadProgress tests
+        ├── Common/                  # ProcessRunnerTests, ResultTests, InstanceUrlValidatorTests
+        └── Models/                  # Model conversion and validation tests
 ```
 
 ---

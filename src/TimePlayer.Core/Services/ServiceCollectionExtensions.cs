@@ -30,6 +30,11 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Backends.Piped.PipedBackendProvider>();
         services.TryAddSingleton<Backends.Invidious.InvidiousBackendProvider>();
 
+        // Process Runner & Local yt-dlp Fallback Backend
+        services.TryAddSingleton<Common.Process.IProcessRunner, Common.Process.DefaultProcessRunner>();
+        services.TryAddSingleton<Backends.YtDlp.IYtDlpManager, Backends.YtDlp.YtDlpManager>();
+        services.TryAddSingleton<Backends.YtDlp.YtDlpBackendProvider>();
+
         return services;
     }
 }

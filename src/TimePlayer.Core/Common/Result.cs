@@ -37,8 +37,8 @@ public readonly struct Result<T>
 
     public static Result<T> Success(T value) => new(value);
     public static Result<T> Failure(AppError error) => new(error);
-    public static Result<T> Failure(string code, string message, string? details = null) =>
-        new(new AppError { Code = code, Message = message, TechnicalDetails = details });
+    public static Result<T> Failure(string code, string message, string? details = null, Exception? exception = null) =>
+        new(new AppError { Code = code, Message = message, TechnicalDetails = details, Exception = exception });
 
     public static implicit operator Result<T>(T value) => Success(value);
     public static implicit operator Result<T>(AppError error) => Failure(error);
@@ -61,8 +61,8 @@ public readonly struct Result
 
     public static Result Success() => new(true, null);
     public static Result Failure(AppError error) => new(false, error ?? throw new ArgumentNullException(nameof(error)));
-    public static Result Failure(string code, string message, string? details = null) =>
-        new(false, new AppError { Code = code, Message = message, TechnicalDetails = details });
+    public static Result Failure(string code, string message, string? details = null, Exception? exception = null) =>
+        new(false, new AppError { Code = code, Message = message, TechnicalDetails = details, Exception = exception });
 
     public static implicit operator Result(AppError error) => Failure(error);
 }

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Accessibility;
+using TimePlayer.Core.Backends.YtDlp;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Services;
 using TimePlayer.Wpf.Accessibility;
@@ -41,6 +42,24 @@ public partial class App : Application
         _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
 
         _logger.LogInformation("TimePlayer application starting up.");
+
+        // Check for and update yt-dlp asynchronously at startup in background
+        var ytDlpManager = _serviceProvider.GetService<IYtDlpManager>();
+        if (ytDlpManager != null)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    _logger.LogInformation("Initiating startup check and update for yt-dlp...");
+                    await ytDlpManager.EnsureInstalledOrUpdatedAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Background yt-dlp check and update encountered an error.");
+                }
+            });
+        }
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
