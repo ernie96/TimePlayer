@@ -1,9 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/AccessibleYoutubePlayer.Core/AccessibleYoutubePlayer.Core.csproj" />
-    <Project Path="src/AccessibleYoutubePlayer.Wpf/AccessibleYoutubePlayer.Wpf.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/AccessibleYoutubePlayer.Core.Tests/AccessibleYoutubePlayer.Core.Tests.csproj" />
-  </Folder>
-</Solution>
