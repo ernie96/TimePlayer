@@ -146,6 +146,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
     private int _isInitializing;
     private bool _isDisposed;
+    private CancellationTokenSource? _searchCts;
+    private CancellationTokenSource? _playbackCts;
 
     public MainViewModel(
         IPlaybackCoordinator playbackCoordinator,
@@ -179,6 +181,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         // Coordinator events
         _playbackCoordinator.CurrentVideoChanged += OnCoordinatorCurrentVideoChanged;
         _playbackCoordinator.ErrorOccurred += OnCoordinatorErrorOccurred;
+        _playbackCoordinator.StatusChanged += OnCoordinatorStatusChanged;
         if (_playbackCoordinator is PlaybackCoordinator concreteCoord)
         {
             concreteCoord.QueueChanged += OnCoordinatorQueueChanged;
@@ -244,19 +247,29 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
+        // Cancel previous in-flight search if any
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _searchCts = new CancellationTokenSource();
+        var cancellationToken = _searchCts.Token;
+
         IsSearching = true;
         ErrorMessage = null;
         _accessibility.Announce($"Searching YouTube for {query}...", AnnouncementPriority.Medium);
 
         try
         {
-            var searchResult = await _playbackCoordinator.SearchAsync(query);
+            var searchResult = await _playbackCoordinator.SearchAsync(query, cancellationToken);
             if (searchResult.IsSuccess)
             {
                 SearchResults.Clear();
+                var seenIds = new HashSet<string>();
                 foreach (var item in searchResult.Value.Items)
                 {
-                    SearchResults.Add(item);
+                    if (seenIds.Add(item.Id))
+                    {
+                        SearchResults.Add(item);
+                    }
                 }
 
                 UpdateActiveBackendName();
@@ -276,6 +289,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
                 _accessibility.Announce(ErrorMessage, AnnouncementPriority.High);
             }
         }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Search cancelled by user.");
+            _accessibility.Announce("Search cancelled.", AnnouncementPriority.Low);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing search for query '{Query}'", query);
@@ -289,8 +307,20 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     [RelayCommand]
+    public void CancelSearch()
+    {
+        if (IsSearching)
+        {
+            _searchCts?.Cancel();
+            IsSearching = false;
+            _accessibility.Announce("Search cancelled.", AnnouncementPriority.Medium);
+        }
+    }
+
+    [RelayCommand]
     public void ClearSearch()
     {
+        _searchCts?.Cancel();
         SearchQuery = string.Empty;
         SearchResults.Clear();
         SelectedSearchResult = null;
@@ -340,6 +370,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         item ??= SelectedSearchResult;
         if (item == null) return;
 
+        // Cancel previous in-flight playback loading if any
+        _playbackCts?.Cancel();
+        _playbackCts?.Dispose();
+        _playbackCts = new CancellationTokenSource();
+        var token = _playbackCts.Token;
+
         CurrentVideoTitle = item.Title;
         CurrentChannelTitle = item.ChannelTitle;
         IsPlayerDialogOpen = true;
@@ -352,16 +388,23 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             await _playbackCoordinator.EnqueueAsync(item);
         }
 
-        var result = await _playbackCoordinator.PlayUrlOrIdAsync(item.Id);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.Error?.Message;
-            _accessibility.Announce($"Could not play video: {ErrorMessage}", AnnouncementPriority.High);
+            var result = await _playbackCoordinator.PlayUrlOrIdAsync(item.Id, token);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.Error?.Message;
+                _accessibility.Announce($"Could not play video: {ErrorMessage}", AnnouncementPriority.High);
+            }
+            else
+            {
+                UpdateActiveBackendName();
+                PopulateSubtitleTracks();
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
-            UpdateActiveBackendName();
-            PopulateSubtitleTracks();
+            _logger.LogInformation("Playback load cancelled by user.");
         }
     }
 
@@ -370,22 +413,35 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         if (string.IsNullOrWhiteSpace(url)) return;
 
+        // Cancel previous in-flight playback loading if any
+        _playbackCts?.Cancel();
+        _playbackCts?.Dispose();
+        _playbackCts = new CancellationTokenSource();
+        var token = _playbackCts.Token;
+
         CurrentVideoTitle = "Loading YouTube video...";
         CurrentChannelTitle = string.Empty;
         IsPlayerDialogOpen = true;
         _accessibility.Announce("Opening video player dialog. Press Escape at any time to exit.", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
-        var result = await _playbackCoordinator.PlayUrlOrIdAsync(url);
-        if (!result.IsSuccess)
+        try
         {
-            ErrorMessage = result.Error?.Message;
-            _accessibility.Announce($"Could not load video: {ErrorMessage}", AnnouncementPriority.High);
+            var result = await _playbackCoordinator.PlayUrlOrIdAsync(url, token);
+            if (!result.IsSuccess)
+            {
+                ErrorMessage = result.Error?.Message;
+                _accessibility.Announce($"Could not load video: {ErrorMessage}", AnnouncementPriority.High);
+            }
+            else
+            {
+                UpdateActiveBackendName();
+                PopulateSubtitleTracks();
+            }
         }
-        else
+        catch (OperationCanceledException)
         {
-            UpdateActiveBackendName();
-            PopulateSubtitleTracks();
+            _logger.LogInformation("Direct playback load cancelled by user.");
         }
     }
 
@@ -920,6 +976,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _accessibility.Announce(error.UserMessage, AnnouncementPriority.High);
     }
 
+    private void OnCoordinatorStatusChanged(object? sender, string status)
+    {
+        PlaybackStatusText = status;
+        StatusAnnouncement = status;
+        _accessibility.Announce(status, AnnouncementPriority.Low);
+    }
+
     private void OnCoordinatorQueueChanged(object? sender, IReadOnlyList<PlaybackQueueItem> queue)
     {
         PlaybackQueue.Clear();
@@ -948,6 +1011,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_isDisposed) return ValueTask.CompletedTask;
         _isDisposed = true;
 
+        _searchCts?.Cancel();
+        _searchCts?.Dispose();
+        _playbackCts?.Cancel();
+        _playbackCts?.Dispose();
+
         _playerEngine.StateChanged -= OnEngineStateChanged;
         _playerEngine.PositionChanged -= OnEnginePositionChanged;
         _playerEngine.ErrorOccurred -= OnEngineErrorOccurred;
@@ -955,6 +1023,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         _playbackCoordinator.CurrentVideoChanged -= OnCoordinatorCurrentVideoChanged;
         _playbackCoordinator.ErrorOccurred -= OnCoordinatorErrorOccurred;
+        _playbackCoordinator.StatusChanged -= OnCoordinatorStatusChanged;
         if (_playbackCoordinator is PlaybackCoordinator concreteCoord)
         {
             concreteCoord.QueueChanged -= OnCoordinatorQueueChanged;

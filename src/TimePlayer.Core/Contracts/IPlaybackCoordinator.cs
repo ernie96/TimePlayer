@@ -17,6 +17,7 @@ public interface IPlaybackCoordinator
     event EventHandler<PlaybackState>? StateChanged;
     event EventHandler<VideoDetails?>? CurrentVideoChanged;
     event EventHandler<PlaybackError>? ErrorOccurred;
+    event EventHandler<string>? StatusChanged;
 
     Task<Result<PagedResult<SearchResult>>> SearchAsync(string query, CancellationToken cancellationToken = default);
     Task<Result<bool>> PlayUrlOrIdAsync(string urlOrId, CancellationToken cancellationToken = default);

@@ -13,7 +13,7 @@ namespace TimePlayer.Core.Backends.Invidious;
 /// Production-quality Invidious backend provider implementing video search, metadata retrieval,
 /// and stream resolution as an independent fallback with multi-instance retry and rate-limit handling.
 /// </summary>
-public sealed class InvidiousBackendProvider : IVideoCatalogProvider, IStreamResolver
+public sealed class InvidiousBackendProvider : IBackendProvider, IVideoCatalogProvider, IStreamResolver
 {
     private readonly HttpClient _httpClient;
     private readonly IInstanceHealthService _healthService;
@@ -222,16 +222,26 @@ public sealed class InvidiousBackendProvider : IVideoCatalogProvider, IStreamRes
             _ => null // Auto = highest
         };
 
-        var videoCandidates = details.Streams.Where(s => !s.IsAudioOnly).ToList();
-        if (videoCandidates.Count == 0)
-        {
-            videoCandidates = details.Streams.ToList();
-        }
-
+        // Best audio candidate for DASH combining
         var bestAudio = details.Streams
             .Where(s => s.IsAudioOnly)
             .OrderByDescending(s => s.Bitrate ?? 0)
             .FirstOrDefault();
+
+        // Prefer progressive streams or DASH video with companion audio; do not blindly choose mute video-only
+        var videoCandidates = details.Streams
+            .Where(s => !s.IsAudioOnly && (s.IsProgressive || bestAudio != null))
+            .ToList();
+
+        if (videoCandidates.Count == 0)
+        {
+            // Fallback to any non-audio stream if none matched
+            videoCandidates = details.Streams.Where(s => !s.IsAudioOnly).ToList();
+            if (videoCandidates.Count == 0)
+            {
+                videoCandidates = details.Streams.ToList();
+            }
+        }
 
         StreamCandidate? selectedVideo = null;
 

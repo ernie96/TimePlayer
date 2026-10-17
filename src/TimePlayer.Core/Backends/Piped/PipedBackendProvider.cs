@@ -13,7 +13,7 @@ namespace TimePlayer.Core.Backends.Piped;
 /// Production-quality Piped backend provider implementing video search, metadata retrieval,
 /// and stream resolution with multi-instance retry, failover, and rate-limit handling.
 /// </summary>
-public sealed class PipedBackendProvider : IVideoCatalogProvider, IStreamResolver
+public sealed class PipedBackendProvider : IBackendProvider, IVideoCatalogProvider, IStreamResolver
 {
     private readonly HttpClient _httpClient;
     private readonly IInstanceHealthService _healthService;
@@ -216,18 +216,26 @@ public sealed class PipedBackendProvider : IVideoCatalogProvider, IStreamResolve
             _ => null // Auto = highest quality
         };
 
-        var videoCandidates = details.Streams.Where(s => !s.IsAudioOnly).ToList();
-        if (videoCandidates.Count == 0)
-        {
-            // Fallback to progressive/any stream if no explicit video streams
-            videoCandidates = details.Streams.ToList();
-        }
-
         // Best audio candidate for DASH combining
         var bestAudio = details.Streams
             .Where(s => s.IsAudioOnly)
             .OrderByDescending(s => s.Bitrate ?? 0)
             .FirstOrDefault();
+
+        // Prefer progressive streams or DASH video with companion audio; do not blindly choose mute video-only
+        var videoCandidates = details.Streams
+            .Where(s => !s.IsAudioOnly && (s.IsProgressive || bestAudio != null))
+            .ToList();
+
+        if (videoCandidates.Count == 0)
+        {
+            // Fallback to any non-audio stream if none matched
+            videoCandidates = details.Streams.Where(s => !s.IsAudioOnly).ToList();
+            if (videoCandidates.Count == 0)
+            {
+                videoCandidates = details.Streams.ToList();
+            }
+        }
 
         StreamCandidate? selectedVideo = null;
 

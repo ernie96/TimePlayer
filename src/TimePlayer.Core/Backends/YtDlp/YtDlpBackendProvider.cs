@@ -14,7 +14,7 @@ namespace TimePlayer.Core.Backends.YtDlp;
 /// Production-grade yt-dlp backend provider implementing video search, metadata retrieval,
 /// format extraction, and media downloading as an application-managed local fallback.
 /// </summary>
-public sealed class YtDlpBackendProvider : IVideoCatalogProvider, IStreamResolver
+public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvider, IStreamResolver
 {
     private static readonly Regex DownloadProgressRegex = new(
         @"\[download\]\s+(?<pct>\d+(\.\d+)?)%\s+of\s+(?<size>[^\s]+)\s+(?:at\s+(?<speed>[^\s]+))?\s*(?:ETA\s+(?<eta>[^\s]+))?",

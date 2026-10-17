@@ -16,6 +16,11 @@ It is designed from the ground up for assistive technologies (screen readers lik
   - **Secondary**: Invidious API public instance directory with health and latency scoring.
   - **Local Fallback**: Standalone application-managed `yt-dlp` binary with verified SHA256 integrity, automatic startup updates, safe process tree termination, and download progress reporting.
   - **Instance Directory Caching**: Caches last known good instances locally to prevent outages if directory endpoints are temporarily down.
+- **Resilient Search-to-Playback Workflow Orchestration**:
+  - **Search Workflow**: Bounded search queries try healthiest Piped instance first, fail over to alternative Piped servers, fall back to Invidious, and seamlessly degrade to local `yt-dlp` search without freezing the UI or reporting premature failure.
+  - **Verified Playback Startup**: Confirms that mpv actually transitions to `Playing` or `Buffering` before declaring playback success. If a resolved stream returns HTTP 403 or decoding fails, it automatically falls back to Invidious, yt-dlp extracted streams, and ultimately direct yt-dlp hook playback.
+  - **Safe Stream Selection**: Protects against silent video playback by strictly requiring companion audio streams whenever DASH video-only formats are chosen, falling back to progressive formats if audio tracks are unavailable.
+  - **Cancellation Support**: Full `CancellationTokenSource` integration allows users to cancel searches and media loading at any time, restoring focus smoothly.
 - **Accessible User Interface & Modal Dialog Player**:
   - **Catalog Mode**: Search box with paste & play, search results list with accessible summaries, and queue preview.
   - **Dialog Player Mode**: When a video opens, a focused dialog-type player opens. Pressing `Escape` at any time exits the player and returns focus predictably to the search results.

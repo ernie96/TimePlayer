@@ -15,6 +15,8 @@ public class FakePlayerEngine : IPlayerEngine
     public string? CurrentSubtitleTrack { get; set; }
     public string? CurrentSubtitleText { get; set; }
     public bool IsEngineAlive { get; set; } = true;
+    public bool AutoTransitionToPlaying { get; set; } = true;
+    public Func<string, string?, Task<bool>>? LoadHandler { get; set; }
 
     public List<string> LoadedUrls { get; } = new();
     public List<string?> LoadedAudioUrls { get; } = new();
@@ -31,13 +33,36 @@ public class FakePlayerEngine : IPlayerEngine
         return Task.CompletedTask;
     }
 
-    public Task LoadAsync(string mediaUrl, string? audioTrackUrl = null, CancellationToken cancellationToken = default)
+    public async Task LoadAsync(string mediaUrl, string? audioTrackUrl = null, CancellationToken cancellationToken = default)
     {
         LoadedUrls.Add(mediaUrl);
         LoadedAudioUrls.Add(audioTrackUrl);
-        State = PlaybackState.Playing;
-        StateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(PlaybackState.Opening, PlaybackState.Playing));
-        return Task.CompletedTask;
+
+        if (LoadHandler != null)
+        {
+            var success = await LoadHandler(mediaUrl, audioTrackUrl);
+            if (success)
+            {
+                var old = State;
+                State = PlaybackState.Playing;
+                StateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(old, PlaybackState.Playing));
+            }
+            else
+            {
+                var old = State;
+                State = PlaybackState.Error;
+                StateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(old, PlaybackState.Error));
+                ErrorOccurred?.Invoke(this, new PlaybackErrorEventArgs("Failed to load stream in player engine."));
+            }
+            return;
+        }
+
+        if (AutoTransitionToPlaying)
+        {
+            var old = State;
+            State = PlaybackState.Playing;
+            StateChanged?.Invoke(this, new PlaybackStateChangedEventArgs(old, PlaybackState.Playing));
+        }
     }
 
     public Task PlayAsync(CancellationToken cancellationToken = default)

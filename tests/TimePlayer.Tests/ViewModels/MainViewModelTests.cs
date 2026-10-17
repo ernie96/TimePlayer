@@ -252,4 +252,39 @@ public class MainViewModelTests
         vm.CloseSettings();
         Assert.False(vm.IsSettingsDialogOpen);
     }
+
+    [Fact]
+    public async Task CancelSearch_CancelsOngoingSearchAndAnnounces()
+    {
+        await using var vm = CreateViewModel();
+
+        vm.SearchQuery = "ambient sleep music";
+        vm.IsSearching = true;
+
+        vm.CancelSearch();
+
+        Assert.False(vm.IsSearching);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Search cancelled."));
+    }
+
+    [Fact]
+    public async Task ClearSearch_CancelsSearchAndClearsResults()
+    {
+        await using var vm = CreateViewModel();
+
+        vm.SearchQuery = "some query";
+        vm.SearchResults.Add(new SearchResult
+        {
+            Id = "dQw4w9WgXcQ",
+            Title = "Rick",
+            ChannelTitle = "VEVO",
+            Duration = TimeSpan.FromMinutes(3)
+        });
+
+        vm.ClearSearch();
+
+        Assert.Empty(vm.SearchQuery);
+        Assert.Empty(vm.SearchResults);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Search cleared"));
+    }
 }

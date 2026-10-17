@@ -11,13 +11,13 @@ namespace TimePlayer.Core.Playback;
 
 /// <summary>
 /// Production coordinator managing queue progression, multi-tier backend stream resolution
-/// with failover (Piped -> Invidious -> yt-dlp), closed caption synchronization, and player state.
+/// with failover (Piped -> Invidious -> yt-dlp), playback startup confirmation, and closed caption synchronization.
 /// </summary>
 public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 {
-    private readonly PipedBackendProvider _piped;
-    private readonly InvidiousBackendProvider _invidious;
-    private readonly YtDlpBackendProvider _ytdlp;
+    private readonly IBackendProvider _piped;
+    private readonly IBackendProvider _invidious;
+    private readonly IBackendProvider _ytdlp;
     private readonly IPlayerEngine _playerEngine;
     private readonly IConfigurationService _configService;
     private readonly ILogger<PlaybackCoordinator> _logger;
@@ -38,12 +38,13 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     public event EventHandler<PlaybackState>? StateChanged;
     public event EventHandler<VideoDetails?>? CurrentVideoChanged;
     public event EventHandler<PlaybackError>? ErrorOccurred;
+    public event EventHandler<string>? StatusChanged;
     public event EventHandler<IReadOnlyList<PlaybackQueueItem>>? QueueChanged;
 
     public PlaybackCoordinator(
-        PipedBackendProvider piped,
-        InvidiousBackendProvider invidious,
-        YtDlpBackendProvider ytdlp,
+        IBackendProvider piped,
+        IBackendProvider invidious,
+        IBackendProvider ytdlp,
         IPlayerEngine playerEngine,
         IConfigurationService configService,
         ILogger<PlaybackCoordinator> logger)
@@ -59,24 +60,49 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         _playerEngine.ErrorOccurred += OnEngineErrorOccurred;
     }
 
+    public PlaybackCoordinator(
+        PipedBackendProvider piped,
+        InvidiousBackendProvider invidious,
+        YtDlpBackendProvider ytdlp,
+        IPlayerEngine playerEngine,
+        IConfigurationService configService,
+        ILogger<PlaybackCoordinator> logger)
+        : this((IBackendProvider)piped, (IBackendProvider)invidious, (IBackendProvider)ytdlp, playerEngine, configService, logger)
+    {
+    }
+
     /// <summary>
-    /// Searches YouTube across multi-tier providers with automatic fallback (Piped -> Invidious -> yt-dlp).
+    /// Searches YouTube across multi-tier providers with automatic fallback (Piped -> Invidious -> yt-dlp)
+    /// within a bounded total search deadline.
     /// </summary>
     public async Task<Result<PagedResult<SearchResult>>> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(query);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // Bounded overall search deadline (20 seconds total)
+        using var overallDeadlineCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, overallDeadlineCts.Token);
+        var searchToken = linkedCts.Token;
 
         // Tier 1: Piped
         try
         {
             _logger.LogInformation("Attempting YouTube search via Piped for '{Query}'...", query);
-            var pipedRes = await _piped.SearchAsync(query, cancellationToken: cancellationToken);
+            StatusChanged?.Invoke(this, "Searching YouTube (Piped)...");
+            var pipedRes = await _piped.SearchAsync(query, cancellationToken: searchToken);
             if (pipedRes.IsSuccess && pipedRes.Value.Items.Count > 0)
             {
                 ActiveProvider = BackendProviderType.Piped;
+                StatusChanged?.Invoke(this, $"Found {pipedRes.Value.Items.Count} videos via Piped.");
                 return pipedRes;
             }
             _logger.LogWarning("Piped search returned 0 items or failed: {Error}", pipedRes.Error?.Message);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Search cancelled by user.");
+            throw;
         }
         catch (Exception ex)
         {
@@ -87,13 +113,20 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         try
         {
             _logger.LogInformation("Falling back to Invidious search for '{Query}'...", query);
-            var invidiousRes = await _invidious.SearchAsync(query, cancellationToken: cancellationToken);
+            StatusChanged?.Invoke(this, "Piped failed. Searching Invidious...");
+            var invidiousRes = await _invidious.SearchAsync(query, cancellationToken: searchToken);
             if (invidiousRes.IsSuccess && invidiousRes.Value.Items.Count > 0)
             {
                 ActiveProvider = BackendProviderType.Invidious;
+                StatusChanged?.Invoke(this, $"Found {invidiousRes.Value.Items.Count} videos via Invidious.");
                 return invidiousRes;
             }
             _logger.LogWarning("Invidious search returned 0 items or failed: {Error}", invidiousRes.Error?.Message);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("Search cancelled by user.");
+            throw;
         }
         catch (Exception ex)
         {
@@ -102,26 +135,33 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 
         // Tier 3: Local yt-dlp
         _logger.LogInformation("Falling back to local yt-dlp search for '{Query}'...", query);
-        var ytdlpRes = await _ytdlp.SearchAsync(query, cancellationToken: cancellationToken);
+        StatusChanged?.Invoke(this, "Public APIs failed. Falling back to local yt-dlp search...");
+        var ytdlpRes = await _ytdlp.SearchAsync(query, cancellationToken: searchToken);
         if (ytdlpRes.IsSuccess)
         {
             ActiveProvider = BackendProviderType.YtDlpLocal;
+            StatusChanged?.Invoke(this, $"Found {ytdlpRes.Value.Items.Count} videos via yt-dlp.");
         }
 
         return ytdlpRes;
     }
 
     /// <summary>
-    /// Plays a video by YouTube URL or video ID with automatic backend failover.
+    /// Plays a video by YouTube URL or video ID with automatic multi-tier fallback
+    /// and verified playback startup.
     /// </summary>
     public async Task<Result<bool>> PlayUrlOrIdAsync(string urlOrId, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(urlOrId);
+        cancellationToken.ThrowIfCancellationRequested();
 
         YouTubeVideoId videoId;
+        TimeSpan? startTime = null;
+
         if (YouTubeUrl.TryParse(urlOrId, out var ytUrl))
         {
             videoId = ytUrl.VideoId;
+            startTime = ytUrl.StartTime;
         }
         else if (YouTubeVideoId.TryParse(urlOrId, out var parsedId))
         {
@@ -132,107 +172,240 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             return Result<bool>.Failure(AppError.InvalidUrl("Invalid YouTube URL or video ID format."));
         }
 
-        return await PlayVideoIdInternalAsync(videoId, cancellationToken);
+        return await PlayVideoIdInternalAsync(videoId, startTime, cancellationToken);
     }
 
-    private async Task<Result<bool>> PlayVideoIdInternalAsync(YouTubeVideoId videoId, CancellationToken cancellationToken)
+    private async Task<Result<bool>> PlayVideoIdInternalAsync(
+        YouTubeVideoId videoId,
+        TimeSpan? startTime,
+        CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Resolving streams for video ID {Id}...", videoId.Value);
-
+        _logger.LogInformation("Starting resilient playback workflow for video ID {Id}...", videoId.Value);
         var qualityPref = _configService.CurrentConfig.Playback.PreferredQuality;
 
-        StreamResolutionResult? streamResult = null;
-
-        // Tier 1: Piped
+        // Tier 1: Piped Stream Resolution & Playback Confirmation
         try
         {
+            StatusChanged?.Invoke(this, "Resolving stream via Piped...");
+            _logger.LogInformation("Resolving stream via Piped for {Id}...", videoId.Value);
             var pipedStream = await _piped.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
             if (pipedStream.IsSuccess && !string.IsNullOrWhiteSpace(pipedStream.Value.DirectPlaybackUrl))
             {
-                streamResult = pipedStream.Value;
-                ActiveProvider = BackendProviderType.Piped;
+                StatusChanged?.Invoke(this, "Connecting to Piped stream...");
+                var started = await AttemptPlaybackAsync(
+                    pipedStream.Value.DirectPlaybackUrl,
+                    pipedStream.Value.AudioTrackUrl,
+                    pipedStream.Value.Captions,
+                    videoId,
+                    startTime,
+                    BackendProviderType.Piped,
+                    TimeSpan.FromSeconds(7),
+                    cancellationToken);
+
+                if (started)
+                {
+                    return Result<bool>.Success(true);
+                }
+                _logger.LogWarning("Piped stream did not start playing. Falling back to Invidious...");
             }
-            else
-            {
-                _logger.LogWarning("Piped stream resolution failed: {Error}", pipedStream.Error?.Message);
-            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Exception resolving stream with Piped.");
+            _logger.LogWarning(ex, "Exception attempting Piped playback for {Id}.", videoId.Value);
         }
 
-        // Tier 2: Invidious
-        if (streamResult == null)
+        // Tier 2: Invidious Stream Resolution & Playback Confirmation
+        try
         {
-            try
+            StatusChanged?.Invoke(this, "Falling back to Invidious stream...");
+            _logger.LogInformation("Resolving stream via Invidious for {Id}...", videoId.Value);
+            var invidiousStream = await _invidious.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
+            if (invidiousStream.IsSuccess && !string.IsNullOrWhiteSpace(invidiousStream.Value.DirectPlaybackUrl))
             {
-                _logger.LogInformation("Falling back to Invidious stream resolution for {Id}...", videoId.Value);
-                var invidiousStream = await _invidious.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
-                if (invidiousStream.IsSuccess && !string.IsNullOrWhiteSpace(invidiousStream.Value.DirectPlaybackUrl))
+                StatusChanged?.Invoke(this, "Connecting to Invidious stream...");
+                var started = await AttemptPlaybackAsync(
+                    invidiousStream.Value.DirectPlaybackUrl,
+                    invidiousStream.Value.AudioTrackUrl,
+                    invidiousStream.Value.Captions,
+                    videoId,
+                    startTime,
+                    BackendProviderType.Invidious,
+                    TimeSpan.FromSeconds(7),
+                    cancellationToken);
+
+                if (started)
                 {
-                    streamResult = invidiousStream.Value;
-                    ActiveProvider = BackendProviderType.Invidious;
+                    return Result<bool>.Success(true);
                 }
-                else
+                _logger.LogWarning("Invidious stream did not start playing. Falling back to yt-dlp...");
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Exception attempting Invidious playback for {Id}.", videoId.Value);
+        }
+
+        // Tier 3: Local yt-dlp Stream Resolution
+        try
+        {
+            StatusChanged?.Invoke(this, "Resolving stream via local yt-dlp...");
+            _logger.LogInformation("Resolving stream via yt-dlp for {Id}...", videoId.Value);
+            var ytdlpStream = await _ytdlp.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
+            if (ytdlpStream.IsSuccess && !string.IsNullOrWhiteSpace(ytdlpStream.Value.DirectPlaybackUrl))
+            {
+                StatusChanged?.Invoke(this, "Connecting to yt-dlp extracted stream...");
+                var started = await AttemptPlaybackAsync(
+                    ytdlpStream.Value.DirectPlaybackUrl,
+                    ytdlpStream.Value.AudioTrackUrl,
+                    ytdlpStream.Value.Captions,
+                    videoId,
+                    startTime,
+                    BackendProviderType.YtDlpLocal,
+                    TimeSpan.FromSeconds(8),
+                    cancellationToken);
+
+                if (started)
                 {
-                    _logger.LogWarning("Invidious stream resolution failed: {Error}", invidiousStream.Error?.Message);
+                    return Result<bool>.Success(true);
                 }
             }
-            catch (Exception ex)
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Exception attempting yt-dlp resolved playback for {Id}.", videoId.Value);
+        }
+
+        // Tier 4: Direct mpv yt-dlp hook playback (mpv loads original YouTube URL directly)
+        try
+        {
+            StatusChanged?.Invoke(this, "Attempting direct player playback via yt-dlp hook...");
+            _logger.LogInformation("Attempting direct mpv yt-dlp hook playback for {Id}...", videoId.Value);
+            var directWatchUrl = $"https://www.youtube.com/watch?v={videoId.Value}";
+
+            var started = await AttemptPlaybackAsync(
+                directWatchUrl,
+                audioUrl: null,
+                captions: Array.Empty<CaptionTrack>(),
+                videoId,
+                startTime,
+                BackendProviderType.YtDlpLocal,
+                TimeSpan.FromSeconds(15),
+                cancellationToken);
+
+            if (started)
             {
-                _logger.LogWarning(ex, "Exception resolving stream with Invidious.");
+                return Result<bool>.Success(true);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during direct mpv yt-dlp fallback playback for {Id}.", videoId.Value);
+        }
+
+        // All tiers failed
+        _logger.LogError("All playback tiers failed for video ID {Id}.", videoId.Value);
+        var failureErr = new PlaybackError
+        {
+            ErrorType = PlaybackErrorType.StreamUnreachable,
+            UserMessage = "Unable to play video after trying Piped, Invidious, and local yt-dlp fallbacks. The video may be private, age-restricted, or blocked."
+        };
+        ErrorOccurred?.Invoke(this, failureErr);
+        StatusChanged?.Invoke(this, "Playback failed across all providers.");
+        return Result<bool>.Failure(AppError.PlaybackFailed(failureErr.UserMessage));
+    }
+
+    private async Task<bool> AttemptPlaybackAsync(
+        string mediaUrl,
+        string? audioUrl,
+        IReadOnlyList<CaptionTrack> captions,
+        YouTubeVideoId videoId,
+        TimeSpan? startTime,
+        BackendProviderType provider,
+        TimeSpan startupTimeout,
+        CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void StateHandler(object? sender, PlaybackStateChangedEventArgs e)
+        {
+            if (e.NewState is PlaybackState.Playing or PlaybackState.Buffering)
+            {
+                tcs.TrySetResult(true);
+            }
+            else if (e.NewState == PlaybackState.Error)
+            {
+                tcs.TrySetResult(false);
             }
         }
 
-        // Tier 3: Local yt-dlp
-        if (streamResult == null)
+        void ErrorHandler(object? sender, PlaybackErrorEventArgs e)
         {
-            try
-            {
-                _logger.LogInformation("Falling back to yt-dlp stream resolution for {Id}...", videoId.Value);
-                var ytdlpStream = await _ytdlp.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
-                if (ytdlpStream.IsSuccess && !string.IsNullOrWhiteSpace(ytdlpStream.Value.DirectPlaybackUrl))
-                {
-                    streamResult = ytdlpStream.Value;
-                    ActiveProvider = BackendProviderType.YtDlpLocal;
-                }
-                else
-                {
-                    _logger.LogWarning("yt-dlp stream resolution failed: {Error}", ytdlpStream.Error?.Message);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Exception resolving stream with yt-dlp.");
-            }
+            tcs.TrySetResult(false);
         }
 
-        // Tier 4: Direct mpv yt-dlp hook playback
-        string playbackUrl;
-        string? audioUrl = null;
-        IReadOnlyList<CaptionTrack> captions = Array.Empty<CaptionTrack>();
-
-        if (streamResult != null)
-        {
-            playbackUrl = streamResult.DirectPlaybackUrl;
-            audioUrl = streamResult.AudioTrackUrl;
-            captions = streamResult.Captions;
-        }
-        else
-        {
-            _logger.LogInformation("Attempting direct mpv yt-dlp fallback playback URL for {Id}...", videoId.Value);
-            playbackUrl = $"https://www.youtube.com/watch?v={videoId.Value}";
-            ActiveProvider = BackendProviderType.YtDlpLocal;
-        }
+        _playerEngine.StateChanged += StateHandler;
+        _playerEngine.ErrorOccurred += ErrorHandler;
 
         try
         {
-            await _playerEngine.LoadAsync(playbackUrl, audioUrl, cancellationToken);
+            await _playerEngine.LoadAsync(mediaUrl, audioUrl, cancellationToken);
+
+            if (_playerEngine.State is PlaybackState.Playing or PlaybackState.Buffering)
+            {
+                tcs.TrySetResult(true);
+            }
+            else if (_playerEngine.State == PlaybackState.Error)
+            {
+                tcs.TrySetResult(false);
+            }
+
+            using var timeoutCts = new CancellationTokenSource(startupTimeout);
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+            using var reg = linkedCts.Token.Register(() => tcs.TrySetResult(false));
+
+            var playbackStarted = await tcs.Task;
+            if (!playbackStarted)
+            {
+                _logger.LogWarning("Playback did not start within {Timeout} for {Provider}.", startupTimeout, provider);
+                return false;
+            }
+
+            ActiveProvider = provider;
             CurrentCaptions = captions;
             SelectedCaptionTrack = null;
 
-            // Load default subtitle track if available
+            // Seek to start timestamp if present in URL
+            if (startTime.HasValue && startTime.Value > TimeSpan.Zero)
+            {
+                try
+                {
+                    await _playerEngine.SeekAsync(startTime.Value, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to apply starting timestamp {Time}.", startTime.Value);
+                }
+            }
+
+            // Load default captions if available
             if (captions.Count > 0)
             {
                 var defaultCaption = captions.FirstOrDefault(c => c.IsDefault)
@@ -253,7 +426,10 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
                 }
             }
 
-            // Asynchronously retrieve video details to populate CurrentVideo
+            StatusChanged?.Invoke(this, $"Playing via {provider}.");
+            _logger.LogInformation("Playback successfully confirmed via {Provider}.", provider);
+
+            // Asynchronously fetch full video details
             _ = Task.Run(async () =>
             {
                 try
@@ -280,19 +456,21 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
                 }
             }, CancellationToken.None);
 
-            return Result<bool>.Success(true);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to load media in player engine for {Id}.", videoId.Value);
-            var err = new PlaybackError
-            {
-                ErrorType = PlaybackErrorType.Unknown,
-                UserMessage = $"Failed to play video: {ex.Message}",
-                TechnicalDetails = ex.ToString()
-            };
-            ErrorOccurred?.Invoke(this, err);
-            return Result<bool>.Failure(AppError.PlaybackFailed(err.UserMessage, ex));
+            _logger.LogWarning(ex, "Engine load failed for {Provider}: {Message}", provider, ex.Message);
+            return false;
+        }
+        finally
+        {
+            _playerEngine.StateChanged -= StateHandler;
+            _playerEngine.ErrorOccurred -= ErrorHandler;
         }
     }
 
@@ -311,11 +489,10 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         _currentIndex = index;
         var item = _queue[index];
 
-        // Mark previous items
         _queue[index] = item with { IsPlayed = true };
         QueueChanged?.Invoke(this, Queue);
 
-        return await PlayVideoIdInternalAsync(item.VideoId, cancellationToken);
+        return await PlayVideoIdInternalAsync(item.VideoId, startTime: null, cancellationToken);
     }
 
     public Task EnqueueAsync(SearchResult item)
@@ -360,7 +537,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             var nextItem = _queue[_currentIndex];
             _queue[_currentIndex] = nextItem with { IsPlayed = true };
             QueueChanged?.Invoke(this, Queue);
-            await PlayVideoIdInternalAsync(nextItem.VideoId, cancellationToken);
+            await PlayVideoIdInternalAsync(nextItem.VideoId, startTime: null, cancellationToken);
         }
         else
         {
@@ -375,7 +552,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             _currentIndex--;
             var prevItem = _queue[_currentIndex];
             QueueChanged?.Invoke(this, Queue);
-            await PlayVideoIdInternalAsync(prevItem.VideoId, cancellationToken);
+            await PlayVideoIdInternalAsync(prevItem.VideoId, startTime: null, cancellationToken);
         }
     }
 
