@@ -28,6 +28,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IPublicInstanceDirectory, PublicInstanceDirectory>();
         services.TryAddSingleton<IInstanceHealthService, InstanceHealthService>();
         services.TryAddSingleton<Backends.Piped.PipedBackendProvider>();
+        services.TryAddSingleton<Backends.Invidious.InvidiousBackendProvider>();
 
         return services;
     }
