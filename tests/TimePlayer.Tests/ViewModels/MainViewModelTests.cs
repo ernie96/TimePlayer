@@ -287,4 +287,67 @@ public class MainViewModelTests
         Assert.Empty(vm.SearchResults);
         Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Search cleared"));
     }
+
+    [Fact]
+    public async Task ErrorBanner_ClearError_ClearsMessageAndCanRetry()
+    {
+        await using var vm = CreateViewModel();
+
+        vm.ErrorMessage = "Network connection lost. Please check internet.";
+        vm.CanRetry = true;
+
+        vm.ClearError();
+
+        Assert.Null(vm.ErrorMessage);
+        Assert.False(vm.CanRetry);
+    }
+
+    [Fact]
+    public async Task BrailleTouchCursor_SeeksEngineToCalculatedPosition()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)12345);
+
+        vm.Duration = TimeSpan.FromSeconds(390);
+        vm.SelectedBrailleCellCount = 40;
+
+        // Touch cell 10 of 40 (0-indexed 10): 10 / 39 * 390 = 100 seconds
+        await vm.BrailleTouchCursorAsync(10);
+
+        Assert.Equal(TimeSpan.FromSeconds(100), vm.CurrentTime);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Braille seek to cell 11 of 40"));
+    }
+
+    [Fact]
+    public async Task CheckForUpdates_VerifiesYtDlpAndAnnouncesStatus()
+    {
+        await using var vm = CreateViewModel();
+
+        await vm.CheckForUpdatesAsync();
+
+        Assert.False(vm.IsCheckingUpdates);
+        Assert.Contains("yt-dlp is verified", vm.DependencyStatusMessage);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("yt-dlp is verified"));
+    }
+
+    [Fact]
+    public async Task SaveSettings_PersistsChangesToConfigurationService()
+    {
+        await using var vm = CreateViewModel();
+
+        vm.OpenSettings();
+        vm.SelectedQuality = QualityPreference.P720;
+        vm.EnableHardwareDecoding = false;
+        vm.SelectedBrailleCellCount = 18;
+        vm.EnableBrailleProgress = true;
+
+        await vm.SaveSettingsAsync();
+
+        var config = _configService.CurrentConfig;
+        Assert.Equal(QualityPreference.P720, config.Playback.PreferredQuality);
+        Assert.False(config.Playback.HardwareDecoding);
+        Assert.Equal(18, config.Accessibility.BrailleDisplayCellCount);
+        Assert.True(config.Accessibility.EnableBrailleProgress);
+        Assert.False(vm.IsSettingsDialogOpen);
+    }
 }

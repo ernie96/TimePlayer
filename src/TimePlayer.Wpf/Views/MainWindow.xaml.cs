@@ -86,7 +86,7 @@ public partial class MainWindow : Window
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         var focused = Keyboard.FocusedElement;
-        bool isTextBox = focused is TextBox;
+        bool isEditableTextBox = focused is TextBox { IsReadOnly: false };
         bool isSlider = focused is Slider;
         bool isList = focused is ListBox or ListBoxItem;
 
@@ -133,7 +133,7 @@ public partial class MainWindow : Window
         }
 
         // 4. Space / K: Toggle Play/Pause when not editing text
-        if (!isTextBox && (e.Key == Key.Space || e.Key == Key.K))
+        if (!isEditableTextBox && (e.Key == Key.Space || e.Key == Key.K))
         {
             _ = _viewModel.TogglePlayPauseAsync();
             e.Handled = true;
@@ -141,7 +141,7 @@ public partial class MainWindow : Window
         }
 
         // 5. M: Toggle Mute when not editing text
-        if (!isTextBox && e.Key == Key.M)
+        if (!isEditableTextBox && e.Key == Key.M)
         {
             _ = _viewModel.ToggleMuteAsync();
             e.Handled = true;
@@ -149,7 +149,7 @@ public partial class MainWindow : Window
         }
 
         // 6. Left / Right: Seek backward / forward 5s when not in a text box or slider
-        if (!isTextBox && !isSlider)
+        if (!isEditableTextBox && !isSlider)
         {
             if (e.Key == Key.Left)
             {
@@ -166,7 +166,7 @@ public partial class MainWindow : Window
         }
 
         // 7. Up / Down: Volume up / down when not editing text or navigating lists / sliders
-        if (!isTextBox && !isSlider && !isList)
+        if (!isEditableTextBox && !isSlider && !isList)
         {
             if (e.Key == Key.Up)
             {
@@ -179,6 +179,32 @@ public partial class MainWindow : Window
                 _ = _viewModel.VolumeDownAsync();
                 e.Handled = true;
                 return;
+            }
+        }
+    }
+
+    private void BrailleProgressTextBox_SelectionChanged(object sender, RoutedEventArgs e)
+    {
+        if (sender is TextBox tb && tb.IsKeyboardFocused && _viewModel != null)
+        {
+            int cellIndex = tb.CaretIndex;
+            if (cellIndex >= 0)
+            {
+                _ = _viewModel.BrailleTouchCursorAsync(cellIndex);
+            }
+        }
+    }
+
+    private void BrailleProgressTextBox_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TextBox tb && _viewModel != null)
+        {
+            var point = e.GetPosition(tb);
+            int charIndex = tb.GetCharacterIndexFromPoint(point, true);
+            if (charIndex >= 0)
+            {
+                _ = _viewModel.BrailleTouchCursorAsync(charIndex);
+                e.Handled = true;
             }
         }
     }

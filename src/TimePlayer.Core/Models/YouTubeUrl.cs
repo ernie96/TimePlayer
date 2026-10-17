@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
+using TimePlayer.Core.Common;
 
 namespace TimePlayer.Core.Models;
 
@@ -105,6 +106,58 @@ public sealed record YouTubeUrl
         videoId = default;
         startTime = null;
         return false;
+    }
+
+    public static Result<YouTubeUrl> Validate(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return Result<YouTubeUrl>.Failure(AppError.InvalidUrl("Input cannot be empty. Please enter a video search term or paste a YouTube URL."));
+        }
+
+        var trimmed = input.Trim();
+
+        // Check for playlists
+        if (trimmed.Contains("playlist?list=", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("&list=", StringComparison.OrdinalIgnoreCase))
+        {
+            // If it also has a v= parameter, it's a video within a playlist (which is playable as a video)
+            if (WatchPattern.IsMatch(trimmed) && TryParse(trimmed, out var validVideoUrl))
+            {
+                return Result<YouTubeUrl>.Success(validVideoUrl);
+            }
+            return Result<YouTubeUrl>.Failure(AppError.UnsupportedUrl(
+                "Playlists are not supported for single-video playback. Please provide an individual video link or use Search to find videos.",
+                trimmed));
+        }
+
+        // Check for channels or user profiles
+        if (trimmed.Contains("youtube.com/@", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("youtube.com/channel/", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("youtube.com/c/", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.Contains("youtube.com/user/", StringComparison.OrdinalIgnoreCase))
+        {
+            return Result<YouTubeUrl>.Failure(AppError.UnsupportedUrl(
+                "Channel pages cannot be played directly. Use the Search box to search for videos from this channel.",
+                trimmed));
+        }
+
+        // Attempt normal parsing
+        if (TryParse(trimmed, out var parsed))
+        {
+            return Result<YouTubeUrl>.Success(parsed);
+        }
+
+        // General malformed or non-YouTube URL
+        if (trimmed.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        {
+            return Result<YouTubeUrl>.Failure(AppError.UnsupportedUrl(
+                "The link provided does not appear to be a supported YouTube video URL.",
+                trimmed));
+        }
+
+        return Result<YouTubeUrl>.Failure(AppError.InvalidUrl($"'{trimmed}' is not a valid 11-character YouTube video ID or supported URL."));
     }
 
     public static string Normalize(string input)

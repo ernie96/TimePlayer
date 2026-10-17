@@ -101,4 +101,60 @@ public record AppError
         Exception = ex,
         IsRecoverable = true
     };
+
+    public static AppError Offline(string? details = null) => new()
+    {
+        Code = "OFFLINE",
+        Message = "No internet connection detected. Please check your network connection and try again.",
+        TechnicalDetails = details,
+        IsRecoverable = true
+    };
+
+    public static AppError DirectoryUnavailable(string providerName, string? details = null) => new()
+    {
+        Code = "DIRECTORY_UNAVAILABLE",
+        Message = $"The public instance directory for {providerName} is currently unavailable. Using cached instances.",
+        TechnicalDetails = details,
+        IsRecoverable = true
+    };
+
+    public static AppError NoSuitableInstances(string providerName) => new()
+    {
+        Code = "NO_SUITABLE_INSTANCES",
+        Message = $"No healthy public {providerName} instances are responding right now. Falling back automatically.",
+        TechnicalDetails = $"Provider: {providerName}",
+        IsRecoverable = true
+    };
+
+    public static AppError ProcessCrashed(string processName, int? exitCode = null) => new()
+    {
+        Code = "PROCESS_CRASHED",
+        Message = $"The {processName} media process exited unexpectedly (code {exitCode?.ToString() ?? "unknown"}). Attempting to recover...",
+        TechnicalDetails = $"Process: {processName}, ExitCode: {exitCode}",
+        IsRecoverable = true
+    };
+
+    public static AppError CaptionsUnavailable(string videoId) => new()
+    {
+        Code = "CAPTIONS_UNAVAILABLE",
+        Message = "Subtitles and captions are not available for this video from the selected provider.",
+        TechnicalDetails = $"Video ID: {videoId}",
+        IsRecoverable = true
+    };
+
+    public static AppError UserCancelled() => new()
+    {
+        Code = "USER_CANCELLED",
+        Message = "Operation was cancelled.",
+        TechnicalDetails = null,
+        IsRecoverable = true
+    };
+
+    public static AppError UnsupportedUrl(string message, string? details = null) => new()
+    {
+        Code = "UNSUPPORTED_URL",
+        Message = message,
+        TechnicalDetails = details,
+        IsRecoverable = true
+    };
 }

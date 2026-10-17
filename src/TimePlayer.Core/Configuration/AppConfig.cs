@@ -72,4 +72,6 @@ public record AccessibilityConfig
     public bool AnnounceSeekChanges { get; init; } = true;
     public bool AnnounceSpeedChanges { get; init; } = true;
     public bool HighContrastFocusVisuals { get; init; } = true;
+    public int BrailleDisplayCellCount { get; init; } = 40;
+    public bool EnableBrailleProgress { get; init; } = true;
 }

@@ -19,6 +19,7 @@
         <!-- Converters -->
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         <converters:BooleanToVisibilityInvertedConverter x:Key="BooleanToVisibilityInvertedConverter"/>
+        <converters:NullOrEmptyToVisibilityConverter x:Key="NullOrEmptyToVisibilityConverter"/>
 
         <!-- High-Contrast Focus Visual Style for all focusable controls -->
         <Style x:Key="AccessibleFocusVisualStyle">
@@ -135,9 +136,11 @@
         <Grid.RowDefinitions>
             <!-- Row 0: Top Search & Navigation Bar -->
             <RowDefinition Height="Auto"/>
-            <!-- Row 1: Main Workspace (Catalog View & Dialog Player View) -->
+            <!-- Row 1: Alert & Error Notification Banner -->
+            <RowDefinition Height="Auto"/>
+            <!-- Row 2: Main Workspace (Catalog View & Dialog Player View) -->
             <RowDefinition Height="*"/>
-            <!-- Row 2: Status & Accessibility Announcements Bar -->
+            <!-- Row 3: Status & Accessibility Announcements Bar -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
@@ -226,8 +229,51 @@
             </Grid>
         </Border>
 
-        <!-- Row 1: Workspace Area -->
-        <Grid Grid.Row="1">
+        <!-- Row 1: Alert & Error Banner -->
+        <Border Grid.Row="1"
+                Background="#7F1D1D"
+                BorderBrush="#EF4444"
+                BorderThickness="0,0,0,1"
+                Padding="16,8"
+                AutomationProperties.Name="Application alert banner"
+                Visibility="{Binding ErrorMessage, Converter={StaticResource NullOrEmptyToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0"
+                           Text="{Binding ErrorMessage}"
+                           Foreground="#FEE2E2"
+                           FontSize="13"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextWrapping="Wrap"/>
+
+                <Button Grid.Column="1"
+                        Content="Retry"
+                        Command="{Binding RetryLastActionCommand}"
+                        Visibility="{Binding CanRetry, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Style="{StaticResource AccentButtonStyle}"
+                        AutomationProperties.Name="Retry last operation"
+                        Padding="12,4"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"/>
+
+                <Button Grid.Column="2"
+                        Content="Dismiss"
+                        Command="{Binding ClearErrorCommand}"
+                        AutomationProperties.Name="Dismiss error message"
+                        Padding="10,4"
+                        Margin="8,0,0,0"
+                        VerticalAlignment="Center"/>
+            </Grid>
+        </Border>
+
+        <!-- Row 2: Workspace Area -->
+        <Grid Grid.Row="2">
             <!-- VIEW 1: Search & Catalog View (Active when player dialog is closed) -->
             <Grid Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}">
                 <Grid.ColumnDefinitions>
@@ -384,7 +430,15 @@
                                  BorderBrush="#27272A"
                                  FocusVisualStyle="{StaticResource AccessibleFocusVisualStyle}"
                                  AutomationProperties.Name="Playback queue list"
-                                 AutomationProperties.HelpText="Upcoming videos in the queue. Use Up and Down arrow keys to review, Enter to play selection.">
+                                 AutomationProperties.HelpText="Upcoming videos in the queue. Use Up and Down arrow keys to review, Enter to play selection, Delete to remove from queue.">
+                            <ListBox.InputBindings>
+                                <KeyBinding Key="Enter"
+                                            Command="{Binding PlayQueueItemCommand}"
+                                            CommandParameter="{Binding SelectedQueueItem}"/>
+                                <KeyBinding Key="Delete"
+                                            Command="{Binding RemoveQueueItemCommand}"
+                                            CommandParameter="{Binding SelectedQueueItem}"/>
+                            </ListBox.InputBindings>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Border Padding="8,6"
@@ -605,12 +659,14 @@
                             <Grid.RowDefinitions>
                                 <!-- Seek Slider Row -->
                                 <RowDefinition Height="Auto"/>
+                                <!-- Braille Progress Track Row -->
+                                <RowDefinition Height="Auto"/>
                                 <!-- Primary Buttons & Audio Row -->
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
 
                             <!-- Seek Progress Bar -->
-                            <Grid Grid.Row="0" Margin="0,0,0,8">
+                            <Grid Grid.Row="0" Margin="0,0,0,6">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
@@ -643,8 +699,41 @@
                                            AutomationProperties.Name="{Binding Duration, StringFormat='Total duration: {0:mm\\:ss}'}"/>
                             </Grid>
 
+                            <!-- Braille Progress Track & Touch Cursor Routing -->
+                            <Grid Grid.Row="1" Margin="0,0,0,8"
+                                  Visibility="{Binding EnableBrailleProgress, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Text="Braille Progress:"
+                                           Foreground="#71717A"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,8,0"/>
+
+                                <TextBox Grid.Column="1"
+                                         x:Name="BrailleProgressTextBox"
+                                         Text="{Binding BrailleDisplayLine, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         FontFamily="Consolas, Lucida Console, Segoe UI Symbol, Courier New"
+                                         FontSize="16"
+                                         Background="#141416"
+                                         Foreground="#38BDF8"
+                                         BorderBrush="#27272A"
+                                         Padding="6,3"
+                                         VerticalAlignment="Center"
+                                         SelectionChanged="BrailleProgressTextBox_SelectionChanged"
+                                         PreviewMouseDown="BrailleProgressTextBox_PreviewMouseDown"
+                                         AutomationProperties.Name="Braille progress track indicator"
+                                         AutomationProperties.HelpText="Displays track position in Braille dots 2-3-5-6 (lower g). Touch cursor routing buttons or mouse clicks seek directly to the cell position."/>
+                            </Grid>
+
                             <!-- Transport Buttons & Audio/Speed/Subtitles -->
-                            <Grid Grid.Row="1">
+                            <Grid Grid.Row="2">
                                 <Grid.ColumnDefinitions>
                                     <!-- Left: Transport Controls -->
                                     <ColumnDefinition Width="Auto"/>
@@ -827,63 +916,168 @@
                                     Padding="10,4"/>
                         </Grid>
 
-                        <!-- Diagnostics Body -->
-                        <StackPanel Grid.Row="1">
-                            <TextBlock Text="TimePlayer automatically discovers and selects healthy public Piped and Invidious instances, and falls back to local yt-dlp without requiring manual public server configuration."
-                                       FontSize="13"
-                                       Foreground="#A1A1AA"
-                                       TextWrapping="Wrap"
-                                       Margin="0,0,0,12"/>
-
-                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                                <Button Content="Run Diagnostics Now"
-                                        Command="{Binding RunDiagnosticsCommand}"
-                                        Style="{StaticResource AccentButtonStyle}"
-                                        AutomationProperties.Name="Run diagnostics check on instances and dependencies"
-                                        Padding="14,6"
-                                        Margin="0,0,12,0"/>
-                                <TextBlock Text="Tests Piped, Invidious, yt-dlp, and mpv."
+                        <!-- Settings & Diagnostics Body -->
+                        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="480" Padding="0,0,10,0">
+                            <StackPanel>
+                                <TextBlock Text="TimePlayer automatically discovers and selects healthy public Piped and Invidious instances, and falls back to local yt-dlp without requiring manual public server configuration."
                                            FontSize="13"
-                                           Foreground="#71717A"
-                                           VerticalAlignment="Center"/>
+                                           Foreground="#A1A1AA"
+                                           TextWrapping="Wrap"
+                                           Margin="0,0,0,14"/>
+
+                                <!-- Group 1: Playback Preferences -->
+                                <TextBlock Text="Playback Preferences"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="#38BDF8"
+                                           Margin="0,0,0,8"
+                                           AutomationProperties.HeadingLevel="Level2"/>
+
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Preferred Quality:"
+                                               Foreground="#E4E4E7"
+                                               FontSize="13"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,12,0"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding AvailableQualities}"
+                                              SelectedItem="{Binding SelectedQuality}"
+                                              AutomationProperties.Name="Preferred video quality"
+                                              HorizontalAlignment="Left"
+                                              MinWidth="160"/>
+                                </Grid>
+
+                                <CheckBox Content="Enable Hardware-Accelerated Video Decoding"
+                                          IsChecked="{Binding EnableHardwareDecoding}"
+                                          Foreground="#E4E4E7"
+                                          FontSize="13"
+                                          Margin="0,0,0,16"
+                                          AutomationProperties.Name="Enable hardware accelerated video decoding"/>
+
+                                <!-- Group 2: Accessibility & Braille Display -->
+                                <TextBlock Text="Accessibility &amp; Braille Display"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="#38BDF8"
+                                           Margin="0,0,0,8"
+                                           AutomationProperties.HeadingLevel="Level2"/>
+
+                                <CheckBox Content="Enable Connected Braille Display Progress Indicator (dots 2-3-5-6)"
+                                          IsChecked="{Binding EnableBrailleProgress}"
+                                          Foreground="#E4E4E7"
+                                          FontSize="13"
+                                          Margin="0,0,0,8"
+                                          AutomationProperties.Name="Enable connected Braille display progress indicator"/>
+
+                                <Grid Margin="0,0,0,16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                               Text="Braille Display Cell Count:"
+                                               Foreground="#E4E4E7"
+                                               FontSize="13"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,12,0"/>
+                                    <ComboBox Grid.Column="1"
+                                              ItemsSource="{Binding AvailableBrailleCellCounts}"
+                                              SelectedItem="{Binding SelectedBrailleCellCount}"
+                                              AutomationProperties.Name="Braille display cell count"
+                                              HorizontalAlignment="Left"
+                                              MinWidth="120"/>
+                                </Grid>
+
+                                <!-- Group 3: Media Dependency Verification & Updates -->
+                                <TextBlock Text="Dependencies &amp; Updates"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="#38BDF8"
+                                           Margin="0,0,0,8"
+                                           AutomationProperties.HeadingLevel="Level2"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="Check for Updates"
+                                            Command="{Binding CheckForUpdatesCommand}"
+                                            AutomationProperties.Name="Check for updates to yt-dlp and mpv"
+                                            Padding="12,5"
+                                            Margin="0,0,12,0"/>
+                                    <TextBlock Text="{Binding DependencyStatusMessage}"
+                                               FontSize="12"
+                                               Foreground="#A1A1AA"
+                                               VerticalAlignment="Center"
+                                               TextWrapping="Wrap"/>
+                                </StackPanel>
+
+                                <Separator Background="#27272A" Margin="0,10,0,14"/>
+
+                                <!-- Group 4: Backend Health & Diagnostics -->
+                                <TextBlock Text="Diagnostics"
+                                           FontSize="15"
+                                           FontWeight="Bold"
+                                           Foreground="#38BDF8"
+                                           Margin="0,0,0,8"
+                                           AutomationProperties.HeadingLevel="Level2"/>
+
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <Button Content="Run Diagnostics Now"
+                                            Command="{Binding RunDiagnosticsCommand}"
+                                            Style="{StaticResource AccentButtonStyle}"
+                                            AutomationProperties.Name="Run diagnostics check on instances and dependencies"
+                                            Padding="14,6"
+                                            Margin="0,0,12,0"/>
+                                    <TextBlock Text="Tests Piped, Invidious, yt-dlp, and mpv."
+                                               FontSize="13"
+                                               Foreground="#71717A"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+
+                                <TextBlock Text="Diagnostics Report:"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="#E4E4E7"
+                                           Margin="0,0,0,4"/>
+
+                                <TextBox Text="{Binding DiagnosticsReport, Mode=OneWay}"
+                                         IsReadOnly="True"
+                                         TextWrapping="Wrap"
+                                         VerticalScrollBarVisibility="Auto"
+                                         Height="150"
+                                         FontFamily="Consolas, Courier New"
+                                         FontSize="12"
+                                         Background="#141416"
+                                         Foreground="#E4E4E7"
+                                         BorderBrush="#27272A"
+                                         AutomationProperties.Name="Diagnostics test results report"
+                                         AutomationProperties.HelpText="Displays the results of the backend instance checks and dependency verification."/>
                             </StackPanel>
-
-                            <TextBlock Text="Diagnostics Report:"
-                                       FontSize="14"
-                                       FontWeight="SemiBold"
-                                       Foreground="#E4E4E7"
-                                       Margin="0,0,0,6"/>
-
-                            <TextBox Text="{Binding DiagnosticsReport, Mode=OneWay}"
-                                     IsReadOnly="True"
-                                     TextWrapping="Wrap"
-                                     VerticalScrollBarVisibility="Auto"
-                                     Height="220"
-                                     FontFamily="Consolas, Courier New"
-                                     FontSize="12"
-                                     Background="#141416"
-                                     Foreground="#E4E4E7"
-                                     BorderBrush="#27272A"
-                                     AutomationProperties.Name="Diagnostics test results report"
-                                     AutomationProperties.HelpText="Displays the results of the backend instance checks and dependency verification."/>
-                        </StackPanel>
+                        </ScrollViewer>
 
                         <!-- Footer -->
-                        <Button Grid.Row="2"
-                                Content="Done"
-                                Command="{Binding CloseSettingsCommand}"
-                                Style="{StaticResource AccentButtonStyle}"
-                                HorizontalAlignment="Right"
-                                MinWidth="90"
-                                Margin="0,16,0,0"
-                                AutomationProperties.Name="Done and close settings"/>
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                            <Button Content="Save Settings"
+                                    Command="{Binding SaveSettingsCommand}"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    AutomationProperties.Name="Save settings and close"
+                                    MinWidth="110"
+                                    Margin="0,0,8,0"/>
+                            <Button Content="Close (Esc)"
+                                    Command="{Binding CloseSettingsCommand}"
+                                    AutomationProperties.Name="Close settings without saving"
+                                    MinWidth="90"/>
+                        </StackPanel>
                     </Grid>
                 </Border>
             </Grid>
         </Grid>
 
-        <!-- Row 2: Status & Screen Reader Live Region Bar -->
-        <Border Grid.Row="2" Background="#141416" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="14,6">
+        <!-- Row 3: Status & Screen Reader Live Region Bar -->
+        <Border Grid.Row="3" Background="#141416" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="14,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

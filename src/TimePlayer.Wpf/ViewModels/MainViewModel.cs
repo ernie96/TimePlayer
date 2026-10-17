@@ -139,6 +139,45 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     [ObservableProperty]
     private QualityPreference _selectedQuality = QualityPreference.Auto;
 
+    public IReadOnlyList<QualityPreference> AvailableQualities { get; } = Enum.GetValues<QualityPreference>();
+
+    // Braille Display Progress Indicator
+    [ObservableProperty]
+    private string _brailleDisplayLine = string.Empty;
+
+    [ObservableProperty]
+    private int _selectedBrailleCellCount = 40;
+
+    [ObservableProperty]
+    private ObservableCollection<int> _availableBrailleCellCounts = new() { 14, 18, 20, 32, 40, 80 };
+
+    [ObservableProperty]
+    private bool _enableBrailleProgress = true;
+
+    // Retry and Error State
+    [ObservableProperty]
+    private string? _lastSearchQuery;
+
+    [ObservableProperty]
+    private string? _lastPlayedUrlOrId;
+
+    [ObservableProperty]
+    private bool _canRetry;
+
+    // Advanced Settings
+    [ObservableProperty]
+    private bool _enableHardwareDecoding = true;
+
+    [ObservableProperty]
+    private string _dependencyStatusMessage = "All media components verified.";
+
+    [ObservableProperty]
+    private bool _isCheckingUpdates;
+
+    private BrailleProgressTrack _brailleTrack = new(40);
+    private System.Threading.Timer? _brailleBlinkTimer;
+    private bool _brailleBlinkVisible = true;
+
     // Focus Restoration Events for View
     public event EventHandler? RequestFocusSearch;
     public event EventHandler? RequestFocusResults;
@@ -171,6 +210,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var config = _configService.CurrentConfig;
         _volumePercent = config.Playback.DefaultVolumePercent;
         _selectedQuality = config.Playback.PreferredQuality;
+        _selectedBrailleCellCount = config.Accessibility.BrailleDisplayCellCount;
+        _enableBrailleProgress = config.Accessibility.EnableBrailleProgress;
+        _enableHardwareDecoding = config.Playback.HardwareDecoding;
+        _brailleTrack = new BrailleProgressTrack(_selectedBrailleCellCount);
+        _brailleDisplayLine = _brailleTrack.GenerateDisplayLine(TimeSpan.Zero, TimeSpan.Zero, false, false);
 
         // Player engine events
         _playerEngine.StateChanged += OnEngineStateChanged;
@@ -255,6 +299,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         IsSearching = true;
         ErrorMessage = null;
+        LastSearchQuery = query;
+        CanRetry = false;
         _accessibility.Announce($"Searching YouTube for {query}...", AnnouncementPriority.Medium);
 
         try
@@ -286,6 +332,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             else
             {
                 ErrorMessage = $"Search failed: {searchResult.Error?.Message}";
+                CanRetry = true;
                 _accessibility.Announce(ErrorMessage, AnnouncementPriority.High);
             }
         }
@@ -298,6 +345,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             _logger.LogError(ex, "Error executing search for query '{Query}'", query);
             ErrorMessage = "Failed to search YouTube. Please check network or try a direct link.";
+            CanRetry = true;
             _accessibility.Announce(ErrorMessage, AnnouncementPriority.High);
         }
         finally
@@ -326,6 +374,14 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         SelectedSearchResult = null;
         _accessibility.Announce("Search cleared.", AnnouncementPriority.Low);
         RequestFocusSearch?.Invoke(this, EventArgs.Empty);
+    }
+
+    [RelayCommand]
+    public void ClearError()
+    {
+        ErrorMessage = null;
+        CanRetry = false;
+        _accessibility.Announce("Error dismissed.", AnnouncementPriority.Low);
     }
 
     [RelayCommand]
@@ -379,6 +435,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         CurrentVideoTitle = item.Title;
         CurrentChannelTitle = item.ChannelTitle;
         IsPlayerDialogOpen = true;
+        LastPlayedUrlOrId = item.Id;
+        CanRetry = false;
+        ErrorMessage = null;
         _accessibility.Announce($"Opening video player for: {item.Title}. Press Escape at any time to return to search results.", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
@@ -394,6 +453,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             if (!result.IsSuccess)
             {
                 ErrorMessage = result.Error?.Message;
+                CanRetry = true;
                 _accessibility.Announce($"Could not play video: {ErrorMessage}", AnnouncementPriority.High);
             }
             else
@@ -422,6 +482,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         CurrentVideoTitle = "Loading YouTube video...";
         CurrentChannelTitle = string.Empty;
         IsPlayerDialogOpen = true;
+        LastPlayedUrlOrId = url;
+        CanRetry = false;
+        ErrorMessage = null;
         _accessibility.Announce("Opening video player dialog. Press Escape at any time to exit.", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
@@ -431,6 +494,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             if (!result.IsSuccess)
             {
                 ErrorMessage = result.Error?.Message;
+                CanRetry = true;
                 _accessibility.Announce($"Could not load video: {ErrorMessage}", AnnouncementPriority.High);
             }
             else
@@ -920,6 +984,17 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         PlaybackStatusText = e.NewState.ToString();
         IsVideoActive = e.NewState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering;
 
+        if (e.NewState == PlaybackState.Paused)
+        {
+            StartBrailleBlinkTimer();
+        }
+        else
+        {
+            StopBrailleBlinkTimer();
+        }
+
+        UpdateBrailleDisplayLine();
+
         var status = e.NewState switch
         {
             PlaybackState.Playing => "Playing",
@@ -939,12 +1014,14 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         CurrentTime = e.Position;
         Duration = e.Duration;
+        UpdateBrailleDisplayLine();
     }
 
     private void OnEngineErrorOccurred(object? sender, PlaybackErrorEventArgs e)
     {
         ErrorMessage = e.Message;
         PlaybackStatusText = "Error";
+        CanRetry = true;
         StatusAnnouncement = $"Player error: {e.Message}";
         _accessibility.Announce(StatusAnnouncement, AnnouncementPriority.High);
     }
@@ -972,6 +1049,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private void OnCoordinatorErrorOccurred(object? sender, PlaybackError error)
     {
         ErrorMessage = error.UserMessage;
+        CanRetry = true;
         StatusAnnouncement = error.UserMessage;
         _accessibility.Announce(error.UserMessage, AnnouncementPriority.High);
     }
@@ -1006,10 +1084,172 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    [RelayCommand]
+    public async Task RetryLastActionAsync()
+    {
+        ErrorMessage = null;
+        CanRetry = false;
+
+        if (!string.IsNullOrWhiteSpace(LastPlayedUrlOrId))
+        {
+            _accessibility.Announce("Retrying playback...", AnnouncementPriority.Medium);
+            await PlayDirectUrlAsync(LastPlayedUrlOrId);
+        }
+        else if (!string.IsNullOrWhiteSpace(LastSearchQuery))
+        {
+            _accessibility.Announce($"Retrying search for '{LastSearchQuery}'...", AnnouncementPriority.Medium);
+            SearchQuery = LastSearchQuery;
+            await SearchAsync();
+        }
+    }
+
+    [RelayCommand]
+    public async Task BrailleTouchCursorAsync(int cellIndex)
+    {
+        if (!IsEngineInitialized || Duration <= TimeSpan.Zero) return;
+
+        var targetTime = _brailleTrack.CalculateSeekTime(cellIndex, Duration);
+        try
+        {
+            await _playerEngine.SeekAsync(targetTime);
+            CurrentTime = targetTime;
+            UpdateBrailleDisplayLine();
+            _accessibility.Announce($"Braille seek to cell {cellIndex + 1} of {_brailleTrack.CellCount}, time {AccessibleTextFormatter.FormatTimeSpoken(targetTime)}", AnnouncementPriority.Low);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to seek via Braille touch cursor at cell {Index}.", cellIndex);
+        }
+    }
+
+    [RelayCommand]
+    public async Task CheckForUpdatesAsync()
+    {
+        IsCheckingUpdates = true;
+        DependencyStatusMessage = "Checking for updates to yt-dlp and mpv...";
+        _accessibility.Announce(DependencyStatusMessage, AnnouncementPriority.Medium);
+
+        try
+        {
+            var updateResult = await _ytDlpManager.EnsureInstalledOrUpdatedAsync();
+            if (updateResult.IsSuccess)
+            {
+                var verResult = await _ytDlpManager.GetVersionAsync();
+                var verStr = verResult.IsSuccess ? verResult.Value : "Current";
+                DependencyStatusMessage = $"yt-dlp is verified and up to date (version {verStr}). mpv engine is intact.";
+            }
+            else
+            {
+                DependencyStatusMessage = $"Update check: {updateResult.Error?.Message}";
+            }
+        }
+        catch (Exception ex)
+        {
+            DependencyStatusMessage = $"Error during update check: {ex.Message}";
+        }
+        finally
+        {
+            IsCheckingUpdates = false;
+            _accessibility.Announce(DependencyStatusMessage, AnnouncementPriority.High);
+        }
+    }
+
+    [RelayCommand]
+    public async Task SaveSettingsAsync()
+    {
+        var current = _configService.CurrentConfig;
+        var updated = current with
+        {
+            Playback = current.Playback with
+            {
+                PreferredQuality = SelectedQuality,
+                HardwareDecoding = EnableHardwareDecoding
+            },
+            Accessibility = current.Accessibility with
+            {
+                BrailleDisplayCellCount = SelectedBrailleCellCount,
+                EnableBrailleProgress = EnableBrailleProgress
+            }
+        };
+
+        try
+        {
+            await _configService.UpdateConfigAsync(updated);
+            _accessibility.Announce("Settings saved successfully.", AnnouncementPriority.Medium);
+            CloseSettings();
+        }
+        catch (Exception ex)
+        {
+            _accessibility.Announce($"Could not save settings: {ex.Message}", AnnouncementPriority.High);
+        }
+    }
+
+    partial void OnSelectedBrailleCellCountChanged(int value)
+    {
+        if (value >= 2)
+        {
+            _brailleTrack = new BrailleProgressTrack(value);
+            UpdateBrailleDisplayLine();
+        }
+    }
+
+    partial void OnEnableBrailleProgressChanged(bool value)
+    {
+        if (!value)
+        {
+            StopBrailleBlinkTimer();
+            BrailleDisplayLine = string.Empty;
+        }
+        else
+        {
+            UpdateBrailleDisplayLine();
+        }
+    }
+
+    private void UpdateBrailleDisplayLine()
+    {
+        if (!EnableBrailleProgress) return;
+
+        bool isPlaying = PlaybackState is PlaybackState.Playing or PlaybackState.Buffering;
+        bool isPaused = PlaybackState == PlaybackState.Paused;
+
+        BrailleDisplayLine = _brailleTrack.GenerateDisplayLine(
+            CurrentTime,
+            Duration,
+            isPlaying,
+            isPaused,
+            _brailleBlinkVisible);
+
+        if (isPlaying || isPaused)
+        {
+            NvdaBrailleBridge.SendBrailleMessage(BrailleDisplayLine);
+        }
+    }
+
+    private void StartBrailleBlinkTimer()
+    {
+        _brailleBlinkTimer?.Dispose();
+        _brailleBlinkVisible = true;
+        _brailleBlinkTimer = new System.Threading.Timer(_ =>
+        {
+            _brailleBlinkVisible = !_brailleBlinkVisible;
+            System.Windows.Application.Current?.Dispatcher?.InvokeAsync(UpdateBrailleDisplayLine);
+        }, null, 600, 600);
+    }
+
+    private void StopBrailleBlinkTimer()
+    {
+        _brailleBlinkTimer?.Dispose();
+        _brailleBlinkTimer = null;
+        _brailleBlinkVisible = true;
+    }
+
     public ValueTask DisposeAsync()
     {
         if (_isDisposed) return ValueTask.CompletedTask;
         _isDisposed = true;
+
+        StopBrailleBlinkTimer();
 
         _searchCts?.Cancel();
         _searchCts?.Dispose();

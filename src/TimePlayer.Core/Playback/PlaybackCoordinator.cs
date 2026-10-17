@@ -155,22 +155,14 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         ArgumentException.ThrowIfNullOrWhiteSpace(urlOrId);
         cancellationToken.ThrowIfCancellationRequested();
 
-        YouTubeVideoId videoId;
-        TimeSpan? startTime = null;
+        var validation = YouTubeUrl.Validate(urlOrId);
+        if (!validation.IsSuccess)
+        {
+            return Result<bool>.Failure(validation.Error!);
+        }
 
-        if (YouTubeUrl.TryParse(urlOrId, out var ytUrl))
-        {
-            videoId = ytUrl.VideoId;
-            startTime = ytUrl.StartTime;
-        }
-        else if (YouTubeVideoId.TryParse(urlOrId, out var parsedId))
-        {
-            videoId = parsedId;
-        }
-        else
-        {
-            return Result<bool>.Failure(AppError.InvalidUrl("Invalid YouTube URL or video ID format."));
-        }
+        var videoId = validation.Value.VideoId;
+        var startTime = validation.Value.StartTime;
 
         return await PlayVideoIdInternalAsync(videoId, startTime, cancellationToken);
     }
