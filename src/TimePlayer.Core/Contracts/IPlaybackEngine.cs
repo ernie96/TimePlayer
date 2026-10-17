@@ -14,13 +14,15 @@ public interface IPlaybackEngine : IAsyncDisposable
     double Volume { get; }
     double Speed { get; }
     bool IsMuted { get; }
+    string? CurrentSubtitleTrack { get; }
+    bool IsEngineAlive { get; }
 
     event EventHandler<PlaybackStateChangedEventArgs>? StateChanged;
     event EventHandler<PlaybackPositionChangedEventArgs>? PositionChanged;
     event EventHandler<PlaybackErrorEventArgs>? ErrorOccurred;
 
     Task InitializeAsync(nint windowHandle, PlayerOptions? options = null, CancellationToken cancellationToken = default);
-    Task LoadAsync(string mediaUrl, CancellationToken cancellationToken = default);
+    Task LoadAsync(string mediaUrl, string? audioTrackUrl = null, CancellationToken cancellationToken = default);
     Task PlayAsync(CancellationToken cancellationToken = default);
     Task PauseAsync(CancellationToken cancellationToken = default);
     Task StopAsync(CancellationToken cancellationToken = default);
@@ -29,4 +31,7 @@ public interface IPlaybackEngine : IAsyncDisposable
     Task SetVolumeAsync(double volumePercent, CancellationToken cancellationToken = default);
     Task SetSpeedAsync(double speed, CancellationToken cancellationToken = default);
     Task SetMuteAsync(bool isMuted, CancellationToken cancellationToken = default);
+    Task LoadSubtitleTrackAsync(string subtitleUrl, bool selectImmediately = true, CancellationToken cancellationToken = default);
+    Task SetSubtitleTrackAsync(string subtitleTrackId, CancellationToken cancellationToken = default);
+    Task RestartAsync(CancellationToken cancellationToken = default);
 }

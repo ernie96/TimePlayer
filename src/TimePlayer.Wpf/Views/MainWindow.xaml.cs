@@ -27,10 +27,24 @@ public partial class MainWindow : Window
         }
 
         Loaded += MainWindow_Loaded;
+        MpvHost.HandleCreated += MpvHost_HandleCreated;
+    }
+
+    private void MpvHost_HandleCreated(object? sender, EventArgs e)
+    {
+        if (MpvHost.WindowHandle != IntPtr.Zero)
+        {
+            _ = _viewModel.InitializePlayerEngineAsync(MpvHost.WindowHandle);
+        }
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
+        if (MpvHost.WindowHandle != IntPtr.Zero && !_viewModel.IsEngineInitialized)
+        {
+            _ = _viewModel.InitializePlayerEngineAsync(MpvHost.WindowHandle);
+        }
+
         // Focus the search box on startup for smooth keyboard/screen reader workflow
         SearchBox.Focus();
         _accessibility.Announce("Welcome to TimePlayer. Focus is in the search box. Type keywords or paste a link and press Enter.", AnnouncementPriority.Medium);

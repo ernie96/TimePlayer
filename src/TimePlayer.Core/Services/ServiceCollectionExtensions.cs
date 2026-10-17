@@ -16,10 +16,11 @@ public static class ServiceCollectionExtensions
     {
         services.TryAddSingleton<IConfigurationService, ConfigurationService>();
 
-        // Privacy-focused HttpClient: No cookies, no auto-redirects, no credentials
+        // Privacy-focused HttpClient: No cookies, safe auto-redirects for GitHub releases & CDN assets
         services.TryAddSingleton(sp => new HttpClient(new SocketsHttpHandler
         {
-            AllowAutoRedirect = false,
+            AllowAutoRedirect = true,
+            MaxAutomaticRedirections = 10,
             AutomaticDecompression = DecompressionMethods.All,
             UseCookies = false
         }));
@@ -34,6 +35,13 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Common.Process.IProcessRunner, Common.Process.DefaultProcessRunner>();
         services.TryAddSingleton<Backends.YtDlp.IYtDlpManager, Backends.YtDlp.YtDlpManager>();
         services.TryAddSingleton<Backends.YtDlp.YtDlpBackendProvider>();
+
+        // mpv Playback Engine & Local Named Pipe IPC
+        services.TryAddSingleton<Playback.Mpv.IMpvManager, Playback.Mpv.MpvManager>();
+        services.TryAddTransient<Playback.Mpv.IMpvIpcClient, Playback.Mpv.MpvIpcClient>();
+        services.TryAddSingleton<Playback.Mpv.MpvPlaybackEngine>();
+        services.TryAddSingleton<Playback.IPlayerEngine>(sp => sp.GetRequiredService<Playback.Mpv.MpvPlaybackEngine>());
+        services.TryAddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<Playback.Mpv.MpvPlaybackEngine>());
 
         return services;
     }

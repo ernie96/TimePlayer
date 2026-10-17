@@ -24,6 +24,7 @@ public record PlaybackConfig
     public double SpeedStep { get; init; } = 0.25;
     public QualityPreference PreferredQuality { get; init; } = QualityPreference.Auto;
     public bool HardwareDecoding { get; init; } = true;
+    public string? MpvCustomPath { get; init; }
 }
 
 public record BackendConfig

@@ -10,4 +10,5 @@ public record PlayerOptions
     public bool HardwareDecoding { get; init; } = true;
     public double InitialVolume { get; init; } = 80.0;
     public double InitialSpeed { get; init; } = 1.0;
+    public string? YtDlpExecutablePath { get; init; }
 }

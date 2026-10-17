@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:TimePlayer.Wpf.ViewModels"
+        xmlns:controls="clr-namespace:TimePlayer.Wpf.Controls"
         mc:Ignorable="d"
         Title="TimePlayer - Accessible YouTube Player"
         Height="720" Width="1080"
@@ -145,7 +146,7 @@
                 <ColumnDefinition Width="4*" MinWidth="250"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Video Host Surface Placeholder (will host mpv HwndHost in playback step) -->
+            <!-- Embedded Native mpv Video Surface Host -->
             <Border Grid.Column="0"
                     x:Name="VideoHostContainer"
                     Background="#09090B"
@@ -157,12 +158,30 @@
                     AutomationProperties.Name="Video player display area"
                     AutomationProperties.HelpText="Displays the video stream when media is loaded. Press Space or K to toggle play/pause, Left/Right arrow to seek.">
                 <Grid>
+                    <!-- Embedded Win32 child HWND for mpv renderer -->
+                    <controls:MpvVideoHost x:Name="MpvHost"
+                                           HorizontalAlignment="Stretch"
+                                           VerticalAlignment="Stretch"/>
+
+                    <!-- Informational Overlay when player is idle -->
                     <TextBlock HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                FontSize="16"
                                Foreground="#71717A"
                                TextAlignment="Center"
-                               Text="{Binding PlaybackStatusText, StringFormat='TimePlayer Engine ({0})&#x0a;Enter a search or paste a URL to begin.'}"/>
+                               IsHitTestVisible="False"
+                               Text="{Binding PlaybackStatusText, StringFormat='TimePlayer Engine ({0})&#x0a;Enter a search, paste a YouTube link, or activate Test Video.'}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsVideoActive}" Value="True">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
                 </Grid>
             </Border>
 
@@ -255,8 +274,8 @@
                     <Slider Grid.Column="1"
                             x:Name="SeekSlider"
                             Minimum="0"
-                            Maximum="100"
-                            Value="0"
+                            Maximum="{Binding Duration.TotalSeconds, FallbackValue=100}"
+                            Value="{Binding CurrentTime.TotalSeconds, Mode=OneWay}"
                             VerticalAlignment="Center"
                             AutomationProperties.Name="Seek slider"
                             AutomationProperties.HelpText="Use Left and Right arrow keys to seek by small steps, Page Up and Page Down for large steps."/>
@@ -297,6 +316,12 @@
                                 Command="{Binding SeekSmallForwardCommand}"
                                 AutomationProperties.Name="Seek forward 5 seconds"
                                 AutomationProperties.HelpText="Fast forwards playback by 5 seconds."
+                                Margin="0,0,8,0"/>
+
+                        <Button Content="Test Video"
+                                Command="{Binding LoadTestVideoCommand}"
+                                AutomationProperties.Name="Load test video pattern"
+                                AutomationProperties.HelpText="Loads a built-in video test pattern with timer and color bars directly into the embedded player."
                                 Margin="0,0,8,0"/>
                     </StackPanel>
 

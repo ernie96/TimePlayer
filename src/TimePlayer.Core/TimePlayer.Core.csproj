@@ -10,4 +10,8 @@
     <PackageReference Include="Microsoft.Extensions.Options" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
   </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TimePlayer.Tests" />
+  </ItemGroup>
 </Project>
