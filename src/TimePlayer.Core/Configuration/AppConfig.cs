@@ -34,26 +34,26 @@ public record BackendConfig
     public BackendProviderType FallbackProvider { get; init; } = BackendProviderType.YtDlpLocal;
 
     public string PipedInstancesDirectoryUrl { get; init; } =
-        "https://raw.githubusercontent.com/wiki/TeamPiped/Piped-Backend/Instances.md";
+        "https://raw.githubusercontent.com/TeamPiped/documentation/main/content/docs/public-instances/index.md";
 
     public string InvidiousInstancesDirectoryUrl { get; init; } =
         "https://api.invidious.io/instances.json?sort_by=health";
 
     public IReadOnlyList<string> PipedSeedInstances { get; init; } = new[]
     {
-        "https://pipedapi.kavin.rocks",
-        "https://api.piped.privacy.com.de",
-        "https://piped-api.lunar.icu"
+        "https://api.piped.private.coffee",
+        "https://pipedapi.ducks.party",
+        "https://pipedapi.leptons.xyz"
     };
 
     public IReadOnlyList<string> InvidiousSeedInstances { get; init; } = new[]
     {
-        "https://inv.tux.pizza",
-        "https://invidious.nerdvpn.de",
-        "https://invidious.protokolla.fi"
+        "https://invidious.f5.si",
+        "https://inv.nadeko.net",
+        "https://invidious.nerdvpn.de"
     };
 
-    public int RequestTimeoutSeconds { get; init; } = 10;
+    public int RequestTimeoutSeconds { get; init; } = 15;
     public int MaxRetriesPerProvider { get; init; } = 2;
     public int InstanceCacheTtlHours { get; init; } = 24;
 

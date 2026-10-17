@@ -9,6 +9,13 @@ namespace TimePlayer.Tests.Services;
 
 public class LiveDirectoryIntegrationTests
 {
+    private readonly Xunit.Abstractions.ITestOutputHelper _output;
+
+    public LiveDirectoryIntegrationTests(Xunit.Abstractions.ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
     [Fact]
     [Trait("Category", "LiveNetwork")]
     public async Task LiveNetwork_FetchAndParseInvidiousDirectory_DiscoversWorkingInstances()

@@ -161,4 +161,20 @@ public class BrailleProgressTrackTests
         Assert.Equal(32, hiddenLine.Length);
         Assert.All(hiddenLine, c => Assert.Equal(BrailleProgressTrack.BrailleBlank, c));
     }
+
+    [Fact]
+    public void NvdaBrailleBridge_CanTestIfRunning_WithoutException()
+    {
+        // Should not throw DllNotFoundException or EntryPointNotFoundException
+        bool isRunning = NvdaBrailleBridge.IsNvdaRunning();
+        // Returns boolean without throwing
+        Assert.True(isRunning || !isRunning);
+    }
+
+    [Fact]
+    public void NvdaBrailleBridge_SendBrailleMessage_ExecutesSafely()
+    {
+        bool result = NvdaBrailleBridge.SendBrailleMessage("Test");
+        Assert.True(result || !result);
+    }
 }

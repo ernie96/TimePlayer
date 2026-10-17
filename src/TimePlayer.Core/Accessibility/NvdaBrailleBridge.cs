@@ -10,10 +10,42 @@ public static class NvdaBrailleBridge
 {
     private static bool? _isAvailable;
 
-    [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_testIfRunning", CallingConvention = CallingConvention.Cdecl)]
+    static NvdaBrailleBridge()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            NativeLibrary.SetDllImportResolver(typeof(NvdaBrailleBridge).Assembly, ResolveDll);
+        }
+    }
+
+    private static IntPtr ResolveDll(string libraryName, System.Reflection.Assembly assembly, DllImportSearchPath? searchPath)
+    {
+        if (libraryName is "nvdaControllerClient64.dll" or "nvdaControllerClient.dll" or "nvdaControllerClient")
+        {
+            var baseDir = AppContext.BaseDirectory;
+            var candidates = new[]
+            {
+                Path.Combine(baseDir, "nvdaControllerClient64.dll"),
+                Path.Combine(baseDir, "nvdaControllerClient.dll"),
+                Path.Combine(baseDir, "lib", "x64", "nvdaControllerClient64.dll"),
+                Path.Combine(baseDir, "lib", "x64", "nvdaControllerClient.dll")
+            };
+
+            foreach (var candidate in candidates)
+            {
+                if (File.Exists(candidate) && NativeLibrary.TryLoad(candidate, out var handle))
+                {
+                    return handle;
+                }
+            }
+        }
+        return IntPtr.Zero;
+    }
+
+    [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_testIfRunning", CallingConvention = CallingConvention.StdCall)]
     private static extern int NvdaTestIfRunning();
 
-    [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_brailleMessage", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.Cdecl)]
+    [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_brailleMessage", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
     private static extern int NvdaBrailleMessage(string message);
 
     /// <summary>
