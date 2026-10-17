@@ -16,16 +16,13 @@ It is designed from the ground up for assistive technologies (screen readers lik
   - **Secondary**: Invidious API public instance directory with health and latency scoring.
   - **Local Fallback**: Standalone application-managed `yt-dlp` binary with verified SHA256 integrity, automatic startup updates, safe process tree termination, and download progress reporting.
   - **Instance Directory Caching**: Caches last known good instances locally to prevent outages if directory endpoints are temporarily down.
-- **Embedded Video Playback Engine**:
-  - High-performance `mpv` engine embedded inside the WPF window using Win32 `HwndHost` (`--wid=<HWND>`).
-  - Controlled strictly via local Windows Named Pipe JSON IPC (`\\.\pipe\timeplayer-mpv-*`).
-- **First-Class Accessibility**:
-  - Native WPF controls and UI Automation integration throughout.
-  - **Live Region Announcements**: Status updates, search counts, relative seek operations, volume, and playback state changes are announced directly to screen readers using UI Automation live regions (inspired by the trypsynth `live-region` pattern).
-  - **Canonical Key Chord Engine**: Standardized keyboard chord parsing and screen reader spoken text (inspired by the trypsynth `key-chord` pattern).
-  - **Visible Focus**: High-contrast, custom dashed focus visuals for low-vision and keyboard navigation.
-  - **Natural Spoken Text**: Converts durations and metrics into human speech (e.g., "3 minutes, 12 seconds", "1.5 million views") rather than robotic shorthand.
-  - **Actionable, Friendly Errors**: Prevents app crashes with centralized dispatcher error handling and reports friendly guidance instead of raw stack traces.
+- **Accessible User Interface & Modal Dialog Player**:
+  - **Catalog Mode**: Search box with paste & play, search results list with accessible summaries, and queue preview.
+  - **Dialog Player Mode**: When a video opens, a focused dialog-type player opens. Pressing `Escape` at any time exits the player and returns focus predictably to the search results.
+  - **Screen Reader Live Subtitles**: Displays captions and raises UI Automation live region announcements (`AutomationProperties.LiveSetting="Polite"`) so screen reader users hear captions in real time as subtitles move.
+  - **Transport & Audio Controls**: Play/Pause, Previous/Next track, Stop, Seek (-5s, +5s), Time/Duration labels, Volume slider & mute toggle, playback speed selection (0.5x–2.0x), and subtitle track selector.
+  - **Playback Queue**: Enqueue results, play next/previous, remove items, and clear queue. Videos in queue auto-advance when a track ends.
+  - **Settings & Diagnostics**: Accessible dialog (`F2`) with live health status for Piped and Invidious instances, yt-dlp version, mpv engine status, and a one-click "Run Diagnostics" test suite.
 
 ---
 
@@ -106,14 +103,17 @@ dotnet run --project src/TimePlayer.Wpf
 ---
 
 ## Keyboard Navigation
-
+ 
 | Key / Shortcut | Action |
 |---|---|
-| `Tab` / `Shift+Tab` | Navigate between controls (Search, Results, Transport, Sliders) |
-| `Enter` (in search) | Execute search or load direct URL |
-| `Up` / `Down` | Move through search results |
-| `Space` | Toggle Play / Pause |
+| `Ctrl+E` or `Ctrl+F` | Focus search field and select all text |
+| `Enter` (in search) | Execute search or load direct YouTube URL |
+| `Enter` (in results) | Open selected video in the player dialog |
+| `Escape` | Close Settings if open, or close Video Player Dialog and return to search results |
+| `Space` or `K` | Toggle Play / Pause |
 | `Left` / `Right` | Seek backward / forward by 5 seconds |
-| `+` / `-` | Increase / decrease volume by 5% |
-| `>` / `<` | Increase / decrease playback speed by 0.25x |
-| `F1` | Show keyboard shortcuts help |
+| `Up` / `Down` | Increase / decrease volume by 5% |
+| `M` | Toggle audio mute |
+| `F2` | Open / close Settings and Diagnostics dialog |
+| `Tab` / `Shift+Tab` | Navigate logically through interactive controls |
+

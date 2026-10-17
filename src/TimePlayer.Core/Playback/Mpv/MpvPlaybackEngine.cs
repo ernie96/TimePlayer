@@ -23,6 +23,7 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
     private const int PropIdCoreIdle = 7;
     private const int PropIdEofReached = 8;
     private const int PropIdSub = 9;
+    private const int PropIdSubText = 10;
 
     private readonly IMpvManager _mpvManager;
     private readonly IMpvIpcClient _ipcClient;
@@ -44,12 +45,14 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
     public double Speed { get; private set; } = 1.0;
     public bool IsMuted { get; private set; }
     public string? CurrentSubtitleTrack { get; private set; }
+    public string? CurrentSubtitleText { get; private set; }
 
     public bool IsEngineAlive => _process != null && !_process.HasExited && _ipcClient.IsConnected;
 
     public event EventHandler<PlaybackStateChangedEventArgs>? StateChanged;
     public event EventHandler<PlaybackPositionChangedEventArgs>? PositionChanged;
     public event EventHandler<PlaybackErrorEventArgs>? ErrorOccurred;
+    public event EventHandler<string>? SubtitleTextChanged;
 
     public MpvPlaybackEngine(
         IMpvManager mpvManager,
@@ -156,6 +159,7 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         await _ipcClient.ObservePropertyAsync(PropIdCoreIdle, "core-idle", cancellationToken);
         await _ipcClient.ObservePropertyAsync(PropIdEofReached, "eof-reached", cancellationToken);
         await _ipcClient.ObservePropertyAsync(PropIdSub, "sub", cancellationToken);
+        await _ipcClient.ObservePropertyAsync(PropIdSubText, "sub-text", cancellationToken);
 
         SetState(PlaybackState.Stopped);
         _logger.LogInformation("mpv engine initialized and property observers registered.");
@@ -361,6 +365,17 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
                 if (e.Value.HasValue)
                 {
                     CurrentSubtitleTrack = e.Value.Value.ToString();
+                }
+                break;
+
+            case PropIdSubText:
+                if (e.Value.HasValue)
+                {
+                    var text = e.Value.Value.ValueKind == JsonValueKind.String
+                        ? e.Value.Value.GetString()
+                        : e.Value.Value.ToString();
+                    CurrentSubtitleText = text ?? string.Empty;
+                    SubtitleTextChanged?.Invoke(this, CurrentSubtitleText);
                 }
                 break;
         }

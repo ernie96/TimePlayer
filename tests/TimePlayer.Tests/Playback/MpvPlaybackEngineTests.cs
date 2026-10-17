@@ -240,4 +240,20 @@ public class MpvPlaybackEngineTests
         Assert.Equal(PlaybackState.Stopped, engine.State);
         Assert.True(engine.IsEngineAlive);
     }
+
+    [Fact]
+    public async Task PropertyChange_SubText_FiresSubtitleTextChanged()
+    {
+        var engine = CreateEngine();
+        await engine.InitializeAsync((nint)12345);
+
+        string? receivedSubtitle = null;
+        engine.SubtitleTextChanged += (s, text) => receivedSubtitle = text;
+
+        using var jsonSub = JsonDocument.Parse("\"Welcome to the video caption test\"");
+        _ipcClient.RaisePropertyChange(10, "sub-text", jsonSub.RootElement);
+
+        Assert.Equal("Welcome to the video caption test", engine.CurrentSubtitleText);
+        Assert.Equal("Welcome to the video caption test", receivedSubtitle);
+    }
 }

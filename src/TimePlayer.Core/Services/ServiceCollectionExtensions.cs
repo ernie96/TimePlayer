@@ -43,6 +43,10 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Playback.IPlayerEngine>(sp => sp.GetRequiredService<Playback.Mpv.MpvPlaybackEngine>());
         services.TryAddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<Playback.Mpv.MpvPlaybackEngine>());
 
+        // High-level Playback Coordinator
+        services.TryAddSingleton<Playback.PlaybackCoordinator>();
+        services.TryAddSingleton<IPlaybackCoordinator>(sp => sp.GetRequiredService<Playback.PlaybackCoordinator>());
+
         return services;
     }
 }

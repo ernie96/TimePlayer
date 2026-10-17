@@ -15,11 +15,13 @@ public interface IPlaybackEngine : IAsyncDisposable
     double Speed { get; }
     bool IsMuted { get; }
     string? CurrentSubtitleTrack { get; }
+    string? CurrentSubtitleText { get; }
     bool IsEngineAlive { get; }
 
     event EventHandler<PlaybackStateChangedEventArgs>? StateChanged;
     event EventHandler<PlaybackPositionChangedEventArgs>? PositionChanged;
     event EventHandler<PlaybackErrorEventArgs>? ErrorOccurred;
+    event EventHandler<string>? SubtitleTextChanged;
 
     Task InitializeAsync(nint windowHandle, PlayerOptions? options = null, CancellationToken cancellationToken = default);
     Task LoadAsync(string mediaUrl, string? audioTrackUrl = null, CancellationToken cancellationToken = default);

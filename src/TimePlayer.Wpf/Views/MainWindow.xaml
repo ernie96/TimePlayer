@@ -5,16 +5,21 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:viewmodels="clr-namespace:TimePlayer.Wpf.ViewModels"
         xmlns:controls="clr-namespace:TimePlayer.Wpf.Controls"
+        xmlns:converters="clr-namespace:TimePlayer.Wpf.Converters"
         mc:Ignorable="d"
         Title="TimePlayer - Accessible YouTube Player"
-        Height="720" Width="1080"
-        MinHeight="500" MinWidth="750"
+        Height="780" Width="1180"
+        MinHeight="560" MinWidth="850"
         WindowStartupLocation="CenterScreen"
         Background="#18181B"
         Foreground="#F4F4F5"
         FocusVisualStyle="{x:Null}">
 
     <Window.Resources>
+        <!-- Converters -->
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:BooleanToVisibilityInvertedConverter x:Key="BooleanToVisibilityInvertedConverter"/>
+
         <!-- High-Contrast Focus Visual Style for all focusable controls -->
         <Style x:Key="AccessibleFocusVisualStyle">
             <Setter Property="Control.Template">
@@ -59,7 +64,38 @@
                                 <Setter Property="Background" Value="#52525B"/>
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
-                                <Setter Property="Opacity" Value="0.5"/>
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Accent Primary Button Style -->
+        <Style x:Key="AccentButtonStyle" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#0284C7"/>
+            <Setter Property="BorderBrush" Value="#38BDF8"/>
+            <Setter Property="Foreground" Value="#FFFFFF"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#0369A1"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter Property="Background" Value="#075985"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -79,39 +115,72 @@
             <Setter Property="CaretBrush" Value="#38BDF8"/>
         </Style>
 
-        <!-- Base Slider Style with focus rectangle -->
+        <!-- Base Slider Style -->
         <Style TargetType="Slider">
             <Setter Property="FocusVisualStyle" Value="{StaticResource AccessibleFocusVisualStyle}"/>
+        </Style>
+
+        <!-- Base ComboBox Style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="FocusVisualStyle" Value="{StaticResource AccessibleFocusVisualStyle}"/>
+            <Setter Property="Background" Value="#27272A"/>
+            <Setter Property="Foreground" Value="#F4F4F5"/>
+            <Setter Property="BorderBrush" Value="#3F3F46"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="6,4"/>
         </Style>
     </Window.Resources>
 
     <Grid KeyboardNavigation.TabNavigation="Cycle">
         <Grid.RowDefinitions>
-            <!-- Row 0: Top Search Bar -->
+            <!-- Row 0: Top Search & Navigation Bar -->
             <RowDefinition Height="Auto"/>
-            <!-- Row 1: Main Content (Video Area & Results / Queue) -->
+            <!-- Row 1: Main Workspace (Catalog View & Dialog Player View) -->
             <RowDefinition Height="*"/>
-            <!-- Row 2: Media Transport Controls -->
-            <RowDefinition Height="Auto"/>
-            <!-- Row 3: Status & Screen Reader Announcement Bar -->
+            <!-- Row 2: Status & Accessibility Announcements Bar -->
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Row 0: Search and URL Input Bar -->
-        <Border Grid.Row="0" Background="#202023" BorderBrush="#2E2E33" BorderThickness="0,0,0,1" Padding="16,12">
+        <!-- Row 0: Top Search and Command Bar -->
+        <Border Grid.Row="0" Background="#202023" BorderBrush="#2E2E33" BorderThickness="0,0,0,1" Padding="16,10">
             <Grid>
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
+                <!-- App Branding & Backend Indicator -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="TimePlayer"
+                               FontSize="18"
+                               FontWeight="Bold"
+                               Foreground="#38BDF8"
+                               VerticalAlignment="Center"
+                               Margin="0,0,8,0"/>
+                    <Border Background="#27272A"
+                            BorderBrush="#3F3F46"
+                            BorderThickness="1"
+                            CornerRadius="3"
+                            Padding="6,2"
+                            VerticalAlignment="Center"
+                            AutomationProperties.Name="Active backend provider">
+                        <TextBlock Text="{Binding ActiveBackendName}"
+                                   FontSize="11"
+                                   Foreground="#A1A1AA"/>
+                    </Border>
+                </StackPanel>
+
+                <!-- Search Input Field -->
                 <TextBox x:Name="SearchBox"
-                         Grid.Column="0"
+                         Grid.Column="1"
                          Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                         AutomationProperties.Name="Search YouTube or paste URL"
+                         AutomationProperties.Name="Search YouTube or paste video link"
                          AutomationProperties.HelpText="Enter search keywords or paste a full YouTube video link, then press Enter or activate the Search button."
-                         FontSize="15"
+                         FontSize="14"
                          VerticalContentAlignment="Center"
                          Margin="0,0,8,0">
                     <TextBox.InputBindings>
@@ -119,270 +188,702 @@
                     </TextBox.InputBindings>
                 </TextBox>
 
-                <Button Grid.Column="1"
+                <!-- Search Button -->
+                <Button Grid.Column="2"
                         Content="Search"
                         Command="{Binding SearchCommand}"
+                        Style="{StaticResource AccentButtonStyle}"
                         AutomationProperties.Name="Search"
-                        AutomationProperties.HelpText="Executes the search for the text entered in the search box."
+                        AutomationProperties.HelpText="Executes the search for the entered keywords or YouTube link."
                         Margin="0,0,8,0"
                         MinWidth="85"/>
 
-                <Button Grid.Column="2"
+                <!-- Paste & Play Button -->
+                <Button Grid.Column="3"
+                        Content="Paste &amp; Play"
+                        Command="{Binding PasteAndPlayCommand}"
+                        AutomationProperties.Name="Paste and play YouTube URL from clipboard"
+                        AutomationProperties.HelpText="Reads a YouTube link from the clipboard and opens the video player dialog immediately."
+                        Margin="0,0,8,0"
+                        MinWidth="105"/>
+
+                <!-- Clear Search Button -->
+                <Button Grid.Column="4"
                         Content="Clear"
                         Command="{Binding ClearSearchCommand}"
                         AutomationProperties.Name="Clear search"
                         AutomationProperties.HelpText="Clears the search input and results."
+                        Margin="0,0,8,0"
                         MinWidth="75"/>
+
+                <!-- Settings & Diagnostics Button -->
+                <Button Grid.Column="5"
+                        Content="Settings (F2)"
+                        Command="{Binding OpenSettingsCommand}"
+                        AutomationProperties.Name="Open Settings and Diagnostics"
+                        AutomationProperties.HelpText="Opens application settings, backend health status, and diagnostics tests."
+                        MinWidth="105"/>
             </Grid>
         </Border>
 
-        <!-- Row 1: Main Content Split (Left: Video Host, Right: Results/Queue) -->
+        <!-- Row 1: Workspace Area -->
         <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <!-- Left: Video Playback Host Area -->
-                <ColumnDefinition Width="6*" MinWidth="300"/>
-                <ColumnDefinition Width="4" />
-                <!-- Right: Search Results & Queue -->
-                <ColumnDefinition Width="4*" MinWidth="250"/>
-            </Grid.ColumnDefinitions>
+            <!-- VIEW 1: Search & Catalog View (Active when player dialog is closed) -->
+            <Grid Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}">
+                <Grid.ColumnDefinitions>
+                    <!-- Left: Search Results (65%) -->
+                    <ColumnDefinition Width="65*"/>
+                    <ColumnDefinition Width="4"/>
+                    <!-- Right: Playback Queue (35%) -->
+                    <ColumnDefinition Width="35*"/>
+                </Grid.ColumnDefinitions>
 
-            <!-- Embedded Native mpv Video Surface Host -->
-            <Border Grid.Column="0"
-                    x:Name="VideoHostContainer"
-                    Background="#09090B"
+                <!-- Search Results Section -->
+                <Border Grid.Column="0" Background="#18181B" Padding="16,12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Search Results"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="#E4E4E7"
+                                       AutomationProperties.HeadingLevel="Level2"/>
+                            <TextBlock Text="{Binding SearchResults.Count, StringFormat=' ({0} items)'}"
+                                       FontSize="14"
+                                       Foreground="#71717A"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Empty State Prompt -->
+                        <TextBlock Grid.Row="1"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="15"
+                                   Foreground="#71717A"
+                                   TextAlignment="Center"
+                                   Text="Type keywords or paste a YouTube video link above and press Enter to search.&#x0a;Or click 'Settings (F2)' to run diagnostics."
+                                   Visibility="{Binding SearchResults.Count, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
+
+                        <!-- Search Results List -->
+                        <ListBox Grid.Row="1"
+                                 x:Name="ResultsListBox"
+                                 ItemsSource="{Binding SearchResults}"
+                                 SelectedItem="{Binding SelectedSearchResult}"
+                                 Background="#141416"
+                                 BorderBrush="#27272A"
+                                 FocusVisualStyle="{StaticResource AccessibleFocusVisualStyle}"
+                                 AutomationProperties.Name="Search results list"
+                                 AutomationProperties.HelpText="Use Up and Down arrow keys to navigate results. Press Enter to open video in player dialog.">
+                            <ListBox.InputBindings>
+                                <KeyBinding Key="Enter"
+                                            Command="{Binding PlaySearchResultCommand}"
+                                            CommandParameter="{Binding SelectedSearchResult}"/>
+                            </ListBox.InputBindings>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="10,8"
+                                            BorderBrush="#27272A"
+                                            BorderThickness="0,0,0,1"
+                                            AutomationProperties.Name="{Binding AccessibleSummary}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="15"
+                                                           Foreground="#F4F4F5"
+                                                           TextWrapping="Wrap"/>
+                                                <StackPanel Orientation="Horizontal" Margin="0,3,0,0">
+                                                    <TextBlock Text="{Binding ChannelTitle}"
+                                                               FontSize="13"
+                                                               Foreground="#38BDF8"/>
+                                                    <TextBlock Text="{Binding Duration, StringFormat=' • Duration: {0:mm\\:ss}'}"
+                                                               FontSize="12"
+                                                               Foreground="#A1A1AA"
+                                                               Margin="8,0,0,0"/>
+                                                    <TextBlock Text="{Binding ViewCount, StringFormat=' • {0:N0} views'}"
+                                                               FontSize="12"
+                                                               Foreground="#71717A"
+                                                               Margin="8,0,0,0"/>
+                                                </StackPanel>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="1"
+                                                    Content="Play Video"
+                                                    Command="{Binding DataContext.PlaySearchResultCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    Style="{StaticResource AccentButtonStyle}"
+                                                    AutomationProperties.Name="{Binding Title, StringFormat='Play video: {0}'}"
+                                                    AutomationProperties.HelpText="Opens this video in the player dialog."
+                                                    Padding="10,4"
+                                                    Margin="8,0,4,0"
+                                                    VerticalAlignment="Center"/>
+
+                                            <Button Grid.Column="2"
+                                                    Content="+ Queue"
+                                                    Command="{Binding DataContext.EnqueueSearchResultCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    AutomationProperties.Name="{Binding Title, StringFormat='Add to queue: {0}'}"
+                                                    AutomationProperties.HelpText="Appends this video to the playback queue."
+                                                    Padding="8,4"
+                                                    Margin="4,0,0,0"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </Grid>
+                </Border>
+
+                <!-- GridSplitter -->
+                <GridSplitter Grid.Column="1"
+                              Width="4"
+                              HorizontalAlignment="Stretch"
+                              Background="#27272A"
+                              AutomationProperties.Name="Resize splitter between search results and playback queue"/>
+
+                <!-- Playback Queue Section -->
+                <Border Grid.Column="2" Background="#1C1C1F" BorderBrush="#27272A" BorderThickness="1,0,0,0" Padding="16,12">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                            <TextBlock Text="Playback Queue"
+                                       FontSize="16"
+                                       FontWeight="Bold"
+                                       Foreground="#E4E4E7"
+                                       AutomationProperties.HeadingLevel="Level2"/>
+                            <TextBlock Text="{Binding PlaybackQueue.Count, StringFormat=' ({0} items)'}"
+                                       FontSize="14"
+                                       Foreground="#71717A"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0,0,0"/>
+                        </StackPanel>
+
+                        <!-- Queue List -->
+                        <ListBox Grid.Row="1"
+                                 x:Name="QueueListBox"
+                                 ItemsSource="{Binding PlaybackQueue}"
+                                 SelectedItem="{Binding SelectedQueueItem}"
+                                 Background="#141416"
+                                 BorderBrush="#27272A"
+                                 FocusVisualStyle="{StaticResource AccessibleFocusVisualStyle}"
+                                 AutomationProperties.Name="Playback queue list"
+                                 AutomationProperties.HelpText="Upcoming videos in the queue. Use Up and Down arrow keys to review, Enter to play selection.">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="8,6"
+                                            BorderBrush="#27272A"
+                                            BorderThickness="0,0,0,1"
+                                            AutomationProperties.Name="{Binding AccessibleLabel}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <StackPanel Grid.Column="0">
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontWeight="SemiBold"
+                                                           FontSize="13"
+                                                           Foreground="#F4F4F5"
+                                                           TextWrapping="Wrap"/>
+                                                <TextBlock Text="{Binding ChannelTitle}"
+                                                           FontSize="11"
+                                                           Foreground="#A1A1AA"/>
+                                            </StackPanel>
+
+                                            <Button Grid.Column="1"
+                                                    Content="Play"
+                                                    Command="{Binding DataContext.PlayQueueItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    AutomationProperties.Name="{Binding Title, StringFormat='Play now: {0}'}"
+                                                    Padding="6,2"
+                                                    FontSize="12"
+                                                    Margin="4,0"
+                                                    VerticalAlignment="Center"/>
+
+                                            <Button Grid.Column="2"
+                                                    Content="X"
+                                                    Command="{Binding DataContext.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}"
+                                                    AutomationProperties.Name="{Binding Title, StringFormat='Remove from queue: {0}'}"
+                                                    Padding="6,2"
+                                                    FontSize="12"
+                                                    VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <!-- Clear Queue Button -->
+                        <Button Grid.Row="2"
+                                Content="Clear Queue"
+                                Command="{Binding ClearQueueCommand}"
+                                AutomationProperties.Name="Clear all items from queue"
+                                Margin="0,8,0,0"
+                                HorizontalAlignment="Right"/>
+                    </Grid>
+                </Border>
+            </Grid>
+
+            <!-- VIEW 2: DIALOG VIDEO PLAYER VIEW (Active when a video is opened; press Escape to exit) -->
+            <Border Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityConverter}}"
+                    Background="#101012"
                     BorderBrush="#27272A"
                     BorderThickness="1"
-                    Margin="12"
-                    Focusable="True"
-                    FocusVisualStyle="{StaticResource AccessibleFocusVisualStyle}"
-                    AutomationProperties.Name="Video player display area"
-                    AutomationProperties.HelpText="Displays the video stream when media is loaded. Press Space or K to toggle play/pause, Left/Right arrow to seek.">
-                <Grid>
-                    <!-- Embedded Win32 child HWND for mpv renderer -->
-                    <controls:MpvVideoHost x:Name="MpvHost"
-                                           HorizontalAlignment="Stretch"
-                                           VerticalAlignment="Stretch"/>
-
-                    <!-- Informational Overlay when player is idle -->
-                    <TextBlock HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               FontSize="16"
-                               Foreground="#71717A"
-                               TextAlignment="Center"
-                               IsHitTestVisible="False"
-                               Text="{Binding PlaybackStatusText, StringFormat='TimePlayer Engine ({0})&#x0a;Enter a search, paste a YouTube link, or activate Test Video.'}">
-                        <TextBlock.Style>
-                            <Style TargetType="TextBlock">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Style.Triggers>
-                                    <DataTrigger Binding="{Binding IsVideoActive}" Value="True">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                    </DataTrigger>
-                                </Style.Triggers>
-                            </Style>
-                        </TextBlock.Style>
-                    </TextBlock>
-                </Grid>
-            </Border>
-
-            <!-- GridSplitter between Video and Results -->
-            <GridSplitter Grid.Column="1"
-                          Width="4"
-                          HorizontalAlignment="Stretch"
-                          Background="#27272A"
-                          AutomationProperties.Name="Resize splitter between video player and search results"/>
-
-            <!-- Right Column: Results & Playlist -->
-            <Border Grid.Column="2" Background="#1C1C1F" BorderBrush="#27272A" BorderThickness="1,0,0,0" Padding="12">
+                    Margin="8">
                 <Grid>
                     <Grid.RowDefinitions>
+                        <!-- Dialog Top Header -->
                         <RowDefinition Height="Auto"/>
+                        <!-- Video Surface & Live Subtitle Area -->
                         <RowDefinition Height="*"/>
+                        <!-- Transport & Audio Controls Bar -->
+                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               Text="Search Results &amp; Queue"
-                               FontSize="16"
-                               FontWeight="Bold"
-                               Foreground="#E4E4E7"
-                               Margin="0,0,0,8"
-                               AutomationProperties.HeadingLevel="Level2"/>
+                    <!-- Player Dialog Header Bar -->
+                    <Border Grid.Row="0" Background="#1C1C1F" BorderBrush="#27272A" BorderThickness="0,0,0,1" Padding="14,10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
 
-                    <ListBox Grid.Row="1"
-                             x:Name="ResultsListBox"
-                             ItemsSource="{Binding SearchResults}"
-                             SelectedItem="{Binding SelectedSearchResult}"
-                             Background="#141416"
-                             BorderBrush="#27272A"
-                             FocusVisualStyle="{StaticResource AccessibleFocusVisualStyle}"
-                             AutomationProperties.Name="Search results and queue list"
-                             AutomationProperties.HelpText="Use Up and Down arrow keys to review results, Enter to play selection.">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate>
-                                <Border Padding="8,6"
-                                        BorderBrush="#27272A"
-                                        BorderThickness="0,0,0,1"
-                                        AutomationProperties.Name="{Binding AccessibleSummary}">
-                                    <StackPanel>
-                                        <TextBlock Text="{Binding Title}"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="14"
-                                                   Foreground="#F4F4F5"
-                                                   TextWrapping="Wrap"/>
-                                        <TextBlock Text="{Binding ChannelTitle}"
-                                                   FontSize="12"
-                                                   Foreground="#A1A1AA"
-                                                   Margin="0,2,0,0"/>
-                                        <TextBlock Text="{Binding AccessibleSummary}"
-                                                   FontSize="11"
-                                                   Foreground="#71717A"
-                                                   Margin="0,2,0,0"/>
-                                    </StackPanel>
+                            <!-- Back to Search Results Button (Escape) -->
+                            <Button x:Name="BackToSearchButton"
+                                    Grid.Column="0"
+                                    Content="&lt; Back to Search Results (Esc)"
+                                    Command="{Binding ClosePlayerDialogCommand}"
+                                    Style="{StaticResource AccentButtonStyle}"
+                                    AutomationProperties.Name="Back to search results"
+                                    AutomationProperties.HelpText="Exits the video player dialog and returns focus to search results. Keyboard shortcut: Escape."
+                                    Margin="0,0,16,0"/>
+
+                            <!-- Video Title & Channel Header -->
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CurrentVideoTitle}"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="#F4F4F5"
+                                           TextTrimming="CharacterEllipsis"
+                                           AutomationProperties.HeadingLevel="Level1"
+                                           AutomationProperties.Name="{Binding CurrentVideoTitle, StringFormat='Playing video: {0}'}"/>
+                                <TextBlock Text="{Binding CurrentChannelTitle}"
+                                           FontSize="13"
+                                           Foreground="#38BDF8"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+
+                            <!-- Player State & Active Backend Badge -->
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                <Border Background="#27272A"
+                                        BorderBrush="#3F3F46"
+                                        BorderThickness="1"
+                                        CornerRadius="3"
+                                        Padding="8,4"
+                                        Margin="0,0,8,0">
+                                    <TextBlock Text="{Binding PlaybackStatusText}"
+                                               FontSize="12"
+                                               Foreground="#38BDF8"
+                                               FontWeight="SemiBold"/>
                                 </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
+                                <Button Content="Test Video"
+                                        Command="{Binding LoadTestVideoCommand}"
+                                        AutomationProperties.Name="Load test video pattern"
+                                        AutomationProperties.HelpText="Loads a built-in test pattern with timer and color bars."
+                                        Padding="8,4"
+                                        FontSize="12"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <!-- Center: Video Renderer Surface & Subtitles Display -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Embedded Native mpv Video Surface Host -->
+                        <Border Grid.Row="0"
+                                x:Name="VideoHostContainer"
+                                Background="#000000"
+                                BorderBrush="#27272A"
+                                BorderThickness="1"
+                                Focusable="True"
+                                FocusVisualStyle="{StaticResource AccessibleFocusVisualStyle}"
+                                AutomationProperties.Name="Video display region"
+                                AutomationProperties.HelpText="Video stream display. Press Space or K to toggle play/pause, Left/Right arrow to seek.">
+                            <Grid>
+                                <!-- Embedded Win32 child HWND for mpv renderer -->
+                                <controls:MpvVideoHost x:Name="MpvHost"
+                                                       HorizontalAlignment="Stretch"
+                                                       VerticalAlignment="Stretch"/>
+
+                                <!-- Idle / Loading Message Overlay -->
+                                <TextBlock HorizontalAlignment="Center"
+                                           VerticalAlignment="Center"
+                                           FontSize="16"
+                                           Foreground="#71717A"
+                                           TextAlignment="Center"
+                                           IsHitTestVisible="False"
+                                           Text="{Binding PlaybackStatusText, StringFormat='TimePlayer Engine ({0})&#x0a;Loading video stream...'}">
+                                    <TextBlock.Style>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsVideoActive}" Value="True">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </TextBlock.Style>
+                                </TextBlock>
+                            </Grid>
+                        </Border>
+
+                        <!-- Live Screen Reader Subtitles Display & Polite Live Region -->
+                        <Border Grid.Row="1"
+                                Background="#18181B"
+                                BorderBrush="#27272A"
+                                BorderThickness="0,1,0,0"
+                                Padding="16,8"
+                                MinHeight="42">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Text="Subtitles:"
+                                           FontWeight="SemiBold"
+                                           FontSize="13"
+                                           Foreground="#71717A"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"/>
+
+                                <!-- Subtitle Live Region for Screen Readers -->
+                                <TextBlock x:Name="LiveSubtitleRegion"
+                                           Grid.Column="1"
+                                           Text="{Binding CurrentSubtitleText}"
+                                           Foreground="#FDE047"
+                                           FontSize="15"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           AutomationProperties.LiveSetting="Polite"
+                                           AutomationProperties.Name="Active video subtitle"
+                                           AutomationProperties.HelpText="Live captions read aloud by screen reader as subtitles move."/>
+                            </Grid>
+                        </Border>
+                    </Grid>
+
+                    <!-- Bottom: Media Transport Controls & Audio/Speed Bar -->
+                    <Border Grid.Row="2" Background="#1C1C1F" BorderBrush="#2E2E33" BorderThickness="0,1,0,0" Padding="16,10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <!-- Seek Slider Row -->
+                                <RowDefinition Height="Auto"/>
+                                <!-- Primary Buttons & Audio Row -->
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Seek Progress Bar -->
+                            <Grid Grid.Row="0" Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0"
+                                           Text="{Binding CurrentTime, StringFormat='{}{0:mm\\:ss}'}"
+                                           Foreground="#A1A1AA"
+                                           FontSize="13"
+                                           VerticalAlignment="Center"
+                                           Margin="0,0,10,0"
+                                           AutomationProperties.Name="{Binding CurrentTime, StringFormat='Current time: {0:mm\\:ss}'}"/>
+
+                                <Slider Grid.Column="1"
+                                        x:Name="SeekSlider"
+                                        Minimum="0"
+                                        Maximum="{Binding Duration.TotalSeconds, FallbackValue=100}"
+                                        Value="{Binding CurrentTime.TotalSeconds, Mode=OneWay}"
+                                        VerticalAlignment="Center"
+                                        AutomationProperties.Name="Seek slider"
+                                        AutomationProperties.HelpText="Use Left and Right arrow keys to seek by small steps, Page Up and Page Down for large steps."/>
+
+                                <TextBlock Grid.Column="2"
+                                           Text="{Binding Duration, StringFormat='{}{0:mm\\:ss}'}"
+                                           Foreground="#A1A1AA"
+                                           FontSize="13"
+                                           VerticalAlignment="Center"
+                                           Margin="10,0,0,0"
+                                           AutomationProperties.Name="{Binding Duration, StringFormat='Total duration: {0:mm\\:ss}'}"/>
+                            </Grid>
+
+                            <!-- Transport Buttons & Audio/Speed/Subtitles -->
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <!-- Left: Transport Controls -->
+                                    <ColumnDefinition Width="Auto"/>
+                                    <!-- Spacer -->
+                                    <ColumnDefinition Width="*"/>
+                                    <!-- Right: Volume, Speed, Subtitles -->
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Left: Transport Buttons -->
+                                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                                    <Button Content="Play / Pause"
+                                            Command="{Binding TogglePlayPauseCommand}"
+                                            Style="{StaticResource AccentButtonStyle}"
+                                            AutomationProperties.Name="Play or pause"
+                                            AutomationProperties.HelpText="Toggles playback between play and pause. Keyboard shortcut: Space or K."
+                                            Margin="0,0,6,0"/>
+
+                                    <Button Content="|&lt; Prev"
+                                            Command="{Binding PlayPreviousCommand}"
+                                            IsEnabled="{Binding CanPlayPrevious}"
+                                            AutomationProperties.Name="Previous video in queue"
+                                            AutomationProperties.HelpText="Plays previous video in the queue."
+                                            Margin="0,0,6,0"/>
+
+                                    <Button Content="Next &gt;|"
+                                            Command="{Binding PlayNextCommand}"
+                                            IsEnabled="{Binding CanPlayNext}"
+                                            AutomationProperties.Name="Next video in queue"
+                                            AutomationProperties.HelpText="Plays next video in the queue."
+                                            Margin="0,0,6,0"/>
+
+                                    <Button Content="Stop"
+                                            Command="{Binding StopCommand}"
+                                            AutomationProperties.Name="Stop playback"
+                                            AutomationProperties.HelpText="Stops playback."
+                                            Margin="0,0,8,0"/>
+
+                                    <Button Content="-5s"
+                                            Command="{Binding SeekSmallBackwardCommand}"
+                                            AutomationProperties.Name="Seek backward 5 seconds"
+                                            AutomationProperties.HelpText="Rewinds playback by 5 seconds. Keyboard shortcut: Left arrow."
+                                            Margin="0,0,4,0"/>
+
+                                    <Button Content="+5s"
+                                            Command="{Binding SeekSmallForwardCommand}"
+                                            AutomationProperties.Name="Seek forward 5 seconds"
+                                            AutomationProperties.HelpText="Fast forwards playback by 5 seconds. Keyboard shortcut: Right arrow."
+                                            Margin="0,0,8,0"/>
+                                </StackPanel>
+
+                                <!-- Right: Audio, Speed, and Subtitles Track Controls -->
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!-- Mute Button -->
+                                    <Button Content="{Binding IsMuted, Converter={x:Null}, FallbackValue='Mute'}"
+                                            Command="{Binding ToggleMuteCommand}"
+                                            AutomationProperties.Name="Toggle audio mute"
+                                            AutomationProperties.HelpText="Toggles audio between muted and unmuted. Keyboard shortcut: M."
+                                            Margin="0,0,6,0">
+                                        <Button.Style>
+                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                <Setter Property="Content" Value="Mute (M)"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                        <Setter Property="Content" Value="Unmute (M)"/>
+                                                        <Setter Property="Foreground" Value="#F87171"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+
+                                    <!-- Volume Buttons & Indicator -->
+                                    <Button Content="-"
+                                            Command="{Binding VolumeDownCommand}"
+                                            AutomationProperties.Name="Decrease volume by 5 percent"
+                                            Padding="8,4"
+                                            Margin="0,0,4,0"/>
+
+                                    <TextBlock Text="{Binding VolumePercent, StringFormat='{}{0:0}%'}"
+                                               Foreground="#F4F4F5"
+                                               VerticalAlignment="Center"
+                                               MinWidth="38"
+                                               TextAlignment="Center"
+                                               Margin="0,0,4,0"
+                                               AutomationProperties.Name="{Binding VolumePercent, StringFormat='Current volume: {0:0} percent'}"/>
+
+                                    <Button Content="+"
+                                            Command="{Binding VolumeUpCommand}"
+                                            AutomationProperties.Name="Increase volume by 5 percent"
+                                            Padding="8,4"
+                                            Margin="0,0,14,0"/>
+
+                                    <!-- Speed Selection -->
+                                    <TextBlock Text="Speed:"
+                                               Foreground="#A1A1AA"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,6,0"/>
+
+                                    <Button Content="&lt;"
+                                            Command="{Binding SpeedDownCommand}"
+                                            AutomationProperties.Name="Decrease playback speed by 0.25x"
+                                            Padding="7,4"
+                                            Margin="0,0,4,0"/>
+
+                                    <Button Content="{Binding PlaybackSpeed, StringFormat='{}{0:0.##}x'}"
+                                            Command="{Binding ResetSpeedCommand}"
+                                            AutomationProperties.Name="{Binding PlaybackSpeed, StringFormat='Playback speed {0:0.##}x. Activate to reset to 1x.'}"
+                                            Padding="6,4"
+                                            MinWidth="45"
+                                            Margin="0,0,4,0"/>
+
+                                    <Button Content="&gt;"
+                                            Command="{Binding SpeedUpCommand}"
+                                            AutomationProperties.Name="Increase playback speed by 0.25x"
+                                            Padding="7,4"
+                                            Margin="0,0,14,0"/>
+
+                                    <!-- Subtitle Track Selector -->
+                                    <TextBlock Text="Captions:"
+                                               Foreground="#A1A1AA"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,6,0"/>
+
+                                    <ComboBox ItemsSource="{Binding AvailableSubtitleTracks}"
+                                              SelectedItem="{Binding SelectedSubtitleTrack}"
+                                              AutomationProperties.Name="Select subtitle or closed caption track"
+                                              AutomationProperties.HelpText="Choose a subtitle track to read with screen reader as subtitles move."
+                                              MinWidth="140">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <TextBlock Text="{Binding DisplayName}" Foreground="#F4F4F5"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                </StackPanel>
+                            </Grid>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
+
+            <!-- VIEW 3: SETTINGS & DIAGNOSTICS MODAL OVERLAY -->
+            <Grid Visibility="{Binding IsSettingsDialogOpen, Converter={StaticResource BooleanToVisibilityConverter}}"
+                  Background="#99000000"
+                  HorizontalAlignment="Stretch"
+                  VerticalAlignment="Stretch">
+                <Border Background="#1C1C1F"
+                        BorderBrush="#38BDF8"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Width="680"
+                        MaxHeight="620"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Padding="24"
+                        Focusable="True"
+                        AutomationProperties.Name="Settings and Diagnostics Dialog">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <!-- Header -->
+                            <RowDefinition Height="Auto"/>
+                            <!-- Diagnostics Content -->
+                            <RowDefinition Height="*"/>
+                            <!-- Close Button -->
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Header -->
+                        <Grid Grid.Row="0" Margin="0,0,0,16">
+                            <TextBlock Text="Settings &amp; Diagnostics"
+                                       FontSize="18"
+                                       FontWeight="Bold"
+                                       Foreground="#F4F4F5"
+                                       AutomationProperties.HeadingLevel="Level1"/>
+                            <Button Content="Close (Esc)"
+                                    Command="{Binding CloseSettingsCommand}"
+                                    HorizontalAlignment="Right"
+                                    AutomationProperties.Name="Close Settings and Diagnostics"
+                                    Padding="10,4"/>
+                        </Grid>
+
+                        <!-- Diagnostics Body -->
+                        <StackPanel Grid.Row="1">
+                            <TextBlock Text="TimePlayer automatically discovers and selects healthy public Piped and Invidious instances, and falls back to local yt-dlp without requiring manual public server configuration."
+                                       FontSize="13"
+                                       Foreground="#A1A1AA"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"/>
+
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                                <Button Content="Run Diagnostics Now"
+                                        Command="{Binding RunDiagnosticsCommand}"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        AutomationProperties.Name="Run diagnostics check on instances and dependencies"
+                                        Padding="14,6"
+                                        Margin="0,0,12,0"/>
+                                <TextBlock Text="Tests Piped, Invidious, yt-dlp, and mpv."
+                                           FontSize="13"
+                                           Foreground="#71717A"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <TextBlock Text="Diagnostics Report:"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="#E4E4E7"
+                                       Margin="0,0,0,6"/>
+
+                            <TextBox Text="{Binding DiagnosticsReport, Mode=OneWay}"
+                                     IsReadOnly="True"
+                                     TextWrapping="Wrap"
+                                     VerticalScrollBarVisibility="Auto"
+                                     Height="220"
+                                     FontFamily="Consolas, Courier New"
+                                     FontSize="12"
+                                     Background="#141416"
+                                     Foreground="#E4E4E7"
+                                     BorderBrush="#27272A"
+                                     AutomationProperties.Name="Diagnostics test results report"
+                                     AutomationProperties.HelpText="Displays the results of the backend instance checks and dependency verification."/>
+                        </StackPanel>
+
+                        <!-- Footer -->
+                        <Button Grid.Row="2"
+                                Content="Done"
+                                Command="{Binding CloseSettingsCommand}"
+                                Style="{StaticResource AccentButtonStyle}"
+                                HorizontalAlignment="Right"
+                                MinWidth="90"
+                                Margin="0,16,0,0"
+                                AutomationProperties.Name="Done and close settings"/>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
 
-        <!-- Row 2: Media Transport & Playback Control Bar -->
-        <Border Grid.Row="2" Background="#202023" BorderBrush="#2E2E33" BorderThickness="0,1,0,0" Padding="16,10">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <!-- Seek Slider Row -->
-                    <RowDefinition Height="Auto"/>
-                    <!-- Button Controls Row -->
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Seek Progress Bar -->
-                <Grid Grid.Row="0" Margin="0,0,0,8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0"
-                               Text="{Binding CurrentTime, StringFormat='{}{0:mm\\:ss}'}"
-                               Foreground="#A1A1AA"
-                               VerticalAlignment="Center"
-                               Margin="0,0,8,0"
-                               AutomationProperties.Name="Current playback time"/>
-
-                    <Slider Grid.Column="1"
-                            x:Name="SeekSlider"
-                            Minimum="0"
-                            Maximum="{Binding Duration.TotalSeconds, FallbackValue=100}"
-                            Value="{Binding CurrentTime.TotalSeconds, Mode=OneWay}"
-                            VerticalAlignment="Center"
-                            AutomationProperties.Name="Seek slider"
-                            AutomationProperties.HelpText="Use Left and Right arrow keys to seek by small steps, Page Up and Page Down for large steps."/>
-
-                    <TextBlock Grid.Column="2"
-                               Text="{Binding Duration, StringFormat='{}{0:mm\\:ss}'}"
-                               Foreground="#A1A1AA"
-                               VerticalAlignment="Center"
-                               Margin="8,0,0,0"
-                               AutomationProperties.Name="Total duration"/>
-                </Grid>
-
-                <!-- Transport Buttons & Volume / Speed Controls -->
-                <Grid Grid.Row="1">
-                    <Grid.ColumnDefinitions>
-                        <!-- Left: Play/Pause/Seek Buttons -->
-                        <ColumnDefinition Width="Auto"/>
-                        <!-- Center: Spacer -->
-                        <ColumnDefinition Width="*"/>
-                        <!-- Right: Volume & Speed Controls -->
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <StackPanel Grid.Column="0" Orientation="Horizontal">
-                        <Button Content="Play / Pause"
-                                Command="{Binding TogglePlayPauseCommand}"
-                                AutomationProperties.Name="Play or pause"
-                                AutomationProperties.HelpText="Toggles playback between play and pause."
-                                Margin="0,0,8,0"/>
-
-                        <Button Content="-5s"
-                                Command="{Binding SeekSmallBackwardCommand}"
-                                AutomationProperties.Name="Seek backward 5 seconds"
-                                AutomationProperties.HelpText="Rewinds playback by 5 seconds."
-                                Margin="0,0,8,0"/>
-
-                        <Button Content="+5s"
-                                Command="{Binding SeekSmallForwardCommand}"
-                                AutomationProperties.Name="Seek forward 5 seconds"
-                                AutomationProperties.HelpText="Fast forwards playback by 5 seconds."
-                                Margin="0,0,8,0"/>
-
-                        <Button Content="Test Video"
-                                Command="{Binding LoadTestVideoCommand}"
-                                AutomationProperties.Name="Load test video pattern"
-                                AutomationProperties.HelpText="Loads a built-in video test pattern with timer and color bars directly into the embedded player."
-                                Margin="0,0,8,0"/>
-                    </StackPanel>
-
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Volume Controls -->
-                        <TextBlock Text="Volume:"
-                                   Foreground="#A1A1AA"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,6,0"/>
-
-                        <Button Content="-"
-                                Command="{Binding VolumeDownCommand}"
-                                AutomationProperties.Name="Decrease volume by 5 percent"
-                                Padding="8,4"
-                                Margin="0,0,4,0"/>
-
-                        <TextBlock Text="{Binding VolumePercent, StringFormat='{}{0:0}%'}"
-                                   Foreground="#F4F4F5"
-                                   VerticalAlignment="Center"
-                                   MinWidth="40"
-                                   TextAlignment="Center"
-                                   Margin="0,0,4,0"
-                                   AutomationProperties.Name="Current volume percentage"/>
-
-                        <Button Content="+"
-                                Command="{Binding VolumeUpCommand}"
-                                AutomationProperties.Name="Increase volume by 5 percent"
-                                Padding="8,4"
-                                Margin="0,0,16,0"/>
-
-                        <!-- Speed Controls -->
-                        <TextBlock Text="Speed:"
-                                   Foreground="#A1A1AA"
-                                   VerticalAlignment="Center"
-                                   Margin="0,0,6,0"/>
-
-                        <Button Content="&lt;"
-                                Command="{Binding SpeedDownCommand}"
-                                AutomationProperties.Name="Decrease playback speed by 0.25x"
-                                Padding="8,4"
-                                Margin="0,0,4,0"/>
-
-                        <Button Content="{Binding PlaybackSpeed, StringFormat='{}{0:0.##}x'}"
-                                Command="{Binding ResetSpeedCommand}"
-                                AutomationProperties.Name="Reset speed to 1x"
-                                AutomationProperties.HelpText="Resets playback speed back to normal 1x."
-                                Padding="8,4"
-                                MinWidth="45"
-                                Margin="0,0,4,0"/>
-
-                        <Button Content="&gt;"
-                                Command="{Binding SpeedUpCommand}"
-                                AutomationProperties.Name="Increase playback speed by 0.25x"
-                                Padding="8,4"/>
-                    </StackPanel>
-                </Grid>
-            </Grid>
-        </Border>
-
-        <!-- Row 3: Status & Screen Reader Live Region Bar -->
-        <Border Grid.Row="3" Background="#141416" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="12,6">
+        <!-- Row 2: Status & Screen Reader Live Region Bar -->
+        <Border Grid.Row="2" Background="#141416" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="14,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
@@ -400,9 +901,9 @@
                            AutomationProperties.Name="Screen reader announcements"/>
 
                 <TextBlock Grid.Column="1"
-                           Text="Press F1 for keyboard shortcuts"
+                           Text="Shortcuts: Ctrl+E Search | Space/K Play | Left/Right Seek | Up/Down Vol | M Mute | Esc Back | F2 Settings"
                            Foreground="#71717A"
-                           FontSize="12"
+                           FontSize="11"
                            VerticalAlignment="Center"/>
             </Grid>
         </Border>
