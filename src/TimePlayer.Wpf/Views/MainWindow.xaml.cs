@@ -132,7 +132,15 @@ public partial class MainWindow : Window
             return;
         }
 
-        // 4. Space / K: Toggle Play/Pause when not editing text
+        // 4. Ctrl+Shift+D: Toggle Braille Display Progress Indicator
+        if (e.Key == Key.D && (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            _viewModel.ToggleBrailleProgress();
+            e.Handled = true;
+            return;
+        }
+
+        // 5. Space / K: Toggle Play/Pause when not editing text
         if (!isEditableTextBox && (e.Key == Key.Space || e.Key == Key.K))
         {
             _ = _viewModel.TogglePlayPauseAsync();

@@ -124,3 +124,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+---
+
+## 5. NVDA Controller Client
+
+* **Project**: NonVisual Desktop Access (NVDA) Controller Client
+* **URL**: https://github.com/nvaccess/nvda
+* **Author**: NV Access Limited and contributors
+* **License**: GNU Lesser General Public License version 2.1 (LGPL-2.1)
+
+TimePlayer interacts with the NVDA Controller Client dynamically via C-ABI P/Invoke (`nvdaController_testIfRunning` and `nvdaController_brailleMessage`). It does not link static code or alter NVDA libraries.
+

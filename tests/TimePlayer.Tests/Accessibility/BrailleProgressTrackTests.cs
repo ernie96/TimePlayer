@@ -40,6 +40,27 @@ public class BrailleProgressTrackTests
     }
 
     [Fact]
+    public void Display_On20CellDisplay_CalculatesAndFormatsCorrectly()
+    {
+        var track = new BrailleProgressTrack(20, useBrailleBlank: true);
+        var duration = TimeSpan.FromSeconds(190);
+        var halfway = TimeSpan.FromSeconds(95);
+
+        // 95 / 190 * 19 = 9.5 -> rounds AwayFromZero to 10
+        int halfwayIndex = track.CalculateCellIndex(halfway, duration);
+        Assert.Equal(10, halfwayIndex);
+
+        // Generate display line
+        var line = track.GenerateDisplayLine(halfway, duration, isPlaying: true, isPaused: false);
+        Assert.Equal(20, line.Length);
+        Assert.Equal(BrailleProgressTrack.LowerG, line[10]);
+
+        // Touch cursor routing on cell 10 returns 100 seconds
+        var seekTime = track.CalculateSeekTime(10, duration);
+        Assert.Equal(TimeSpan.FromSeconds(100), seekTime);
+    }
+
+    [Fact]
     public void CalculateCellIndex_StartAndEndBoundaries()
     {
         var track = new BrailleProgressTrack(40);

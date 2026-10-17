@@ -1184,6 +1184,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    [RelayCommand]
+    public void ToggleBrailleProgress()
+    {
+        EnableBrailleProgress = !EnableBrailleProgress;
+        var message = EnableBrailleProgress
+            ? $"Braille progress track enabled ({SelectedBrailleCellCount} cells)."
+            : "Braille progress track disabled. Screen reader standard display active.";
+        _accessibility.Announce(message, AnnouncementPriority.High);
+    }
+
     partial void OnSelectedBrailleCellCountChanged(int value)
     {
         if (value >= 2)
@@ -1199,10 +1209,15 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             StopBrailleBlinkTimer();
             BrailleDisplayLine = string.Empty;
+            NvdaBrailleBridge.SendBrailleMessage(string.Empty);
         }
         else
         {
             UpdateBrailleDisplayLine();
+            if (PlaybackState == PlaybackState.Paused)
+            {
+                StartBrailleBlinkTimer();
+            }
         }
     }
 

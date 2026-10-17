@@ -26,11 +26,12 @@ It is designed from the ground up for assistive technologies (screen readers lik
   - **Dialog Player Mode**: When a video opens, a focused dialog-type player opens. Pressing `Escape` at any time exits the player and returns focus predictably to the search results.
   - **Connected Braille Display Progress Indicator**:
     - Refreshable Braille displays and screen readers act as a physical track progress indicator.
+    - Supports **14, 18, 20, 32, 40, and 80 cell** displays (e.g. halfway on a 32-cell is cell 16, 20-cell is cell 10, 18-cell is cell 9).
     - The display line remains blank except for a "lower g" indicator (dots 2-3-5-6, Unicode `\u2836` `⠶`).
-    - The indicator moves evenly along the display as playback progresses (e.g. on a 32-cell display halfway is cell 16; on an 18-cell display halfway is cell 9).
     - Increments adjust dynamically based on video duration (a 5-minute track advances slower than a 3-minute track).
     - Touch cursor / routing buttons on the Braille display seek directly to that exact track position in either direction.
     - When paused, the lower g blinks slowly (600ms interval) at the stopped cell.
+    - **Instant Braille Toggle (`Ctrl+Shift+D`)**: Lets users instantly toggle between the track progress bar and standard screen reader text/subtitles on their Braille display.
     - Direct NVDA Braille bridge (`nvdaControllerClient64.dll`) and accessible onscreen monospace WPF control.
   - **Screen Reader Live Subtitles**: Displays captions and raises UI Automation live region announcements (`AutomationProperties.LiveSetting="Polite"`) so screen reader users hear captions in real time as subtitles move.
   - **Transport & Audio Controls**: Play/Pause, Previous/Next track, Stop, Seek (-5s, +5s), Time/Duration labels, Volume slider & mute toggle, playback speed selection (0.5x–2.0x), and subtitle track selector.
@@ -43,7 +44,8 @@ It is designed from the ground up for assistive technologies (screen readers lik
 ## Documentation
 
 - [Accessible YouTube Player Architecture](file:///C:/Users/eblin/.gemini/antigravity/brain/ebd48c66-0893-4019-910f-96c1097ee4c6/accessible_youtube_player_architecture.md)
-- [Accessibility Checklist](ACCESSIBILITY_CHECKLIST.md)
+- [Accessibility & Screen Reader Checklist](ACCESSIBILITY_CHECKLIST.md)
+- [Dependency Management & Verification](docs/DEPENDENCIES.md)
 - [Public Instance Directories](docs/INSTANCE_DIRECTORIES.md)
 - [Third-Party Notices & Licenses](docs/THIRD_PARTY_NOTICES.md)
 
@@ -130,6 +132,7 @@ dotnet run --project src/TimePlayer.Wpf
 | `Left` / `Right` | Seek backward / forward by 5 seconds |
 | `Up` / `Down` | Increase / decrease volume by 5% |
 | `M` | Toggle audio mute |
+| `Ctrl+Shift+D` | Toggle Braille progress indicator on/off (switch display to standard text/subtitles) |
 | `F2` | Open / close Settings and Diagnostics dialog |
 | `Touch Cursor Routing` | On Braille display, pressing a routing button skips to that exact point in the track |
 | `Tab` / `Shift+Tab` | Navigate logically through interactive controls |

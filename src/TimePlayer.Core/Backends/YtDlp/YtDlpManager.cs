@@ -53,6 +53,13 @@ public sealed class YtDlpManager : IYtDlpManager
                 return customPath;
             }
 
+            var baseDir = AppContext.BaseDirectory;
+            var appBinYtDlp = Path.Combine(baseDir, "bin", "yt-dlp.exe");
+            if (File.Exists(appBinYtDlp)) return appBinYtDlp;
+
+            var appRootYtDlp = Path.Combine(baseDir, "yt-dlp.exe");
+            if (File.Exists(appRootYtDlp)) return appRootYtDlp;
+
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             return Path.Combine(localAppData, "TimePlayer", "bin", "yt-dlp.exe");
         }

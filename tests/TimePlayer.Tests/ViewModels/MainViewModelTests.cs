@@ -350,4 +350,20 @@ public class MainViewModelTests
         Assert.True(config.Accessibility.EnableBrailleProgress);
         Assert.False(vm.IsSettingsDialogOpen);
     }
+
+    [Fact]
+    public async Task ToggleBrailleProgress_TogglesStateAndAnnounces()
+    {
+        await using var vm = CreateViewModel();
+
+        Assert.True(vm.EnableBrailleProgress);
+
+        vm.ToggleBrailleProgress();
+        Assert.False(vm.EnableBrailleProgress);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Braille progress track disabled"));
+
+        vm.ToggleBrailleProgress();
+        Assert.True(vm.EnableBrailleProgress);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Braille progress track enabled"));
+    }
 }

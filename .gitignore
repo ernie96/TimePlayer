@@ -13,3 +13,8 @@ x86/
 
 ## Reference study folders
 _learn/
+
+## Distribution outputs
+dist/
+*.zip
+*.7z

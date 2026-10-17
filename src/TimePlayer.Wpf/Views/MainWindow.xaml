@@ -1095,7 +1095,7 @@
                            AutomationProperties.Name="Screen reader announcements"/>
 
                 <TextBlock Grid.Column="1"
-                           Text="Shortcuts: Ctrl+E Search | Space/K Play | Left/Right Seek | Up/Down Vol | M Mute | Esc Back | F2 Settings"
+                           Text="Shortcuts: Ctrl+E Search | Space/K Play | Left/Right Seek | Up/Down Vol | M Mute | Ctrl+Shift+D Braille | Esc Back | F2 Settings"
                            Foreground="#71717A"
                            FontSize="11"
                            VerticalAlignment="Center"/>

@@ -42,6 +42,13 @@ public sealed class MpvManager : IMpvManager
                 return customPath;
             }
 
+            var baseDir = AppContext.BaseDirectory;
+            var appBinMpv = Path.Combine(baseDir, "bin", "mpv", "mpv.exe");
+            if (File.Exists(appBinMpv)) return appBinMpv;
+
+            var appRootMpv = Path.Combine(baseDir, "mpv.exe");
+            if (File.Exists(appRootMpv)) return appRootMpv;
+
             var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             var standardPath = Path.Combine(localAppData, "TimePlayer", "bin", "mpv", "mpv.exe");
             if (File.Exists(standardPath))
