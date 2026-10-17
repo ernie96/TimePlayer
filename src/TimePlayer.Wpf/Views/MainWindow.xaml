@@ -646,9 +646,7 @@
                                            FontWeight="SemiBold"
                                            VerticalAlignment="Center"
                                            TextWrapping="Wrap"
-                                           AutomationProperties.LiveSetting="Polite"
-                                           AutomationProperties.Name="Active video subtitle"
-                                           AutomationProperties.HelpText="Live captions read aloud by screen reader as subtitles move."/>
+                                           AutomationProperties.LiveSetting="Polite"/>
                             </Grid>
                         </Border>
                     </Grid>
@@ -1091,8 +1089,7 @@
                            Foreground="#A1A1AA"
                            FontSize="12"
                            VerticalAlignment="Center"
-                           AutomationProperties.LiveSetting="Assertive"
-                           AutomationProperties.Name="Screen reader announcements"/>
+                           AutomationProperties.LiveSetting="Polite"/>
 
                 <TextBlock Grid.Column="1"
                            Text="Shortcuts: Ctrl+E Search | Space/K Play | Left/Right Seek | Up/Down Vol | M Mute | Ctrl+Shift+D Braille | Esc Back | F2 Settings"

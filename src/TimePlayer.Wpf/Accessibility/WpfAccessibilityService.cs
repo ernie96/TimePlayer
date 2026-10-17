@@ -32,6 +32,7 @@ public sealed class WpfAccessibilityService : IAccessibilityService
     {
         _liveRegionControl = liveRegionControl ?? throw new ArgumentNullException(nameof(liveRegionControl));
         _dispatcher = liveRegionControl.Dispatcher;
+        _liveRegionControl.ClearValue(System.Windows.Automation.AutomationProperties.NameProperty);
     }
 
     public void Announce(string message, AnnouncementPriority priority = AnnouncementPriority.Medium)
@@ -61,15 +62,13 @@ public sealed class WpfAccessibilityService : IAccessibilityService
     {
         if (_liveRegionControl == null) return;
 
-        // Updating the text on a live region informs screen readers that new content has arrived
+        // Ensure AutomationProperties.Name is cleared so the screen reader reads the message text directly
+        _liveRegionControl.ClearValue(System.Windows.Automation.AutomationProperties.NameProperty);
         _liveRegionControl.Text = message;
 
         // Explicitly raise the UI Automation LiveRegionChanged event on the element's automation peer
-        var peer = UIElementAutomationPeer.FromElement(_liveRegionControl);
-        if (peer == null)
-        {
-            peer = UIElementAutomationPeer.CreatePeerForElement(_liveRegionControl);
-        }
+        var peer = UIElementAutomationPeer.FromElement(_liveRegionControl)
+                   ?? UIElementAutomationPeer.CreatePeerForElement(_liveRegionControl);
 
         peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
     }
