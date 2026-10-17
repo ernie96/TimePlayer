@@ -27,6 +27,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<FileInstanceCache>();
         services.TryAddSingleton<IPublicInstanceDirectory, PublicInstanceDirectory>();
         services.TryAddSingleton<IInstanceHealthService, InstanceHealthService>();
+        services.TryAddSingleton<Backends.Piped.PipedBackendProvider>();
 
         return services;
     }
