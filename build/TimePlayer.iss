@@ -36,6 +36,8 @@ UninstallDisplayName=TimePlayer
 UninstallDisplayIcon={app}\TimePlayer.exe
 InfoBeforeFile={#SourceDir}\README.txt
 CloseApplications=yes
+; TimePlayer holds this mutex while running; setup and uninstall ask the user to close it first.
+AppMutex=TimePlayerRunning
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

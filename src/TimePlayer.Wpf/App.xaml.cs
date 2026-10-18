@@ -23,6 +23,10 @@ public partial class App : Application
     private ServiceProvider? _serviceProvider;
     private ILogger<App>? _logger;
 
+    // Lets the installer and uninstaller (AppMutex in TimePlayer.iss) see that TimePlayer is open
+    // and ask the user to close it, instead of leaving a locked TimePlayer.exe behind.
+    private Mutex? _runningMutex;
+
     public App()
     {
         // Centralized unhandled exception handlers
@@ -34,6 +38,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        _runningMutex = new Mutex(initiallyOwned: false, "TimePlayerRunning");
 
 
         var services = new ServiceCollection();
