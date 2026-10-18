@@ -16,9 +16,9 @@ jobs:
       # The same mpv build TimePlayer downloads itself (MpvManager.DefaultDownloadUrl).
       MPV_URL: https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261017/mpv-x86_64-20261017-git-dde0671072.7z
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.x
 
@@ -54,7 +54,9 @@ jobs:
         shell: pwsh
         run: |
           $changelog = Get-Content CHANGELOG.md -Raw
-          $match = [regex]::Match($changelog, "(?ms)^## $([regex]::Escape($env:VERSION))\s*$(.*?)(?=^## |\z)")
+          # Single quotes: in a double-quoted string PowerShell would run "$(...)" as a command.
+          $pattern = '(?ms)^## ' + [regex]::Escape($env:VERSION) + '\s*$(.*?)(?=^## |\z)'
+          $match = [regex]::Match($changelog, $pattern)
           if (-not $match.Success) { throw "CHANGELOG.md has no '## $env:VERSION' section." }
           $match.Groups[1].Value.Trim() | Out-File release-notes.md -Encoding utf8
 
