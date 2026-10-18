@@ -64,6 +64,7 @@ Set-Content (Join-Path $binTarget 'yt-dlp.conf') '--extractor-args "youtube:play
 # 4. Documents and the portable marker.
 Copy-Item (Join-Path $PSScriptRoot 'README.txt') $staging
 Copy-Item (Join-Path $root 'docs\THIRD_PARTY_NOTICES.md') $staging
+Copy-Item (Join-Path $root 'LICENSE') (Join-Path $staging 'LICENSE.txt')
 Set-Content (Join-Path $staging 'portable.txt') 'This file keeps TimePlayer portable: settings, library and logs stay in this folder. Delete it to use %LOCALAPPDATA%\TimePlayer instead.'
 
 # 5. NVDA add-on as a standalone .nvda-addon (a zip of the add-on folder).

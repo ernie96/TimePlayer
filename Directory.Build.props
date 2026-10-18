@@ -6,6 +6,7 @@
     <Authors>TimePlayer Contributors</Authors>
     <Product>TimePlayer</Product>
     <Version>1.2.0</Version>
-    <Copyright>TimePlayer Contributors</Copyright>
+    <Copyright>Copyright (C) 2026 ernie96. Licensed under 0BSD.</Copyright>
+    <PackageLicenseExpression>0BSD</PackageLicenseExpression>
   </PropertyGroup>
 </Project>

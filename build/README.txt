@@ -107,5 +107,10 @@ Add-on Store, or untick it in TimePlayer's Settings first.
 Third-party software
 --------------------
 
-TimePlayer includes mpv (GPL), yt-dlp (Unlicense) and the NVDA Controller Client (LGPL).
-See THIRD_PARTY_NOTICES.md for details and source code locations.
+TimePlayer is free software under the BSD Zero Clause License (see LICENSE.txt).
+It includes mpv (GPL), yt-dlp (Unlicense) and the NVDA Controller Client (LGPL), which keep
+their own licenses. See THIRD_PARTY_NOTICES.md for the components used in this program and
+where to get their source code.
+
+TimePlayer is dedicated to Jenni and Diana. The full dedication is at the top of
+THIRD_PARTY_NOTICES.md.

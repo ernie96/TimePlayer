@@ -14,43 +14,41 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 
 ---
 
-## Key Features & Architecture
+## Features
 
-- **Zero Configuration & Privacy**:
-  - No Google API keys, account registration, or cookies required.
-  - No credentials or authorization headers are forwarded to external servers.
-- **Triple-Tier Resilient Backend Architecture**:
-  - **Primary**: Piped API public instance discovery with automatic failover.
-  - **Secondary**: Invidious API public instance directory with health and latency scoring.
-  - **Local Fallback**: Standalone application-managed `yt-dlp` binary with verified SHA256 integrity, automatic startup updates, safe process tree termination, and download progress reporting.
-  - **Instance Directory Caching**: Caches last known good instances locally to prevent outages if directory endpoints are temporarily down.
-- **Resilient Search-to-Playback Workflow Orchestration**:
-  - **Search Workflow**: Bounded search queries try healthiest Piped instance first, fail over to alternative Piped servers, fall back to Invidious, and seamlessly degrade to local `yt-dlp` search without freezing the UI or reporting premature failure.
-  - **Verified Playback Startup**: Confirms that mpv actually transitions to `Playing` or `Buffering` before declaring playback success. If a resolved stream returns HTTP 403 or decoding fails, it automatically falls back to Invidious, yt-dlp extracted streams, and ultimately direct yt-dlp hook playback.
-  - **Safe Stream Selection**: Protects against silent video playback by strictly requiring companion audio streams whenever DASH video-only formats are chosen, falling back to progressive formats if audio tracks are unavailable.
-  - **Cancellation Support**: Full `CancellationTokenSource` integration allows users to cancel searches and media loading at any time, restoring focus smoothly.
-- **Accessible User Interface & Modal Dialog Player**:
-  - **Catalog Mode**: Search box with paste & play, search results list with accessible summaries, and queue preview.
-  - **Dialog Player Mode**: When a video opens, a focused dialog-type player opens. Pressing `Escape` at any time exits the player and returns focus predictably to the search results.
-  - **Connected Braille Display Progress Indicator**:
-    - Refreshable Braille displays and screen readers act as a physical track progress indicator.
-    - Supports **14, 18, 20, 32, 40, and 80 cell** displays (e.g. halfway on a 32-cell is cell 16, 20-cell is cell 10, 18-cell is cell 9).
-    - The display line remains blank except for a "lower g" indicator (dots 2-3-5-6, Unicode `\u2836` `⠶`).
-    - Increments adjust dynamically based on video duration (a 5-minute track advances slower than a 3-minute track).
-    - Touch cursor / routing buttons on the Braille display seek directly to that exact track position in either direction.
-    - When paused, the lower g blinks slowly (600ms interval) at the stopped cell.
-    - **Instant Braille Toggle (`Ctrl+Shift+D`)**: Lets users instantly toggle between the track progress bar and standard screen reader text/subtitles on their Braille display.
-    - Direct NVDA Braille bridge (`nvdaControllerClient64.dll`) and accessible onscreen monospace WPF control.
-  - **Screen Reader Live Subtitles**: Displays captions and raises UI Automation live region announcements (`AutomationProperties.LiveSetting="Polite"`) so screen reader users hear captions in real time as subtitles move.
-  - **Transport & Audio Controls**: Play/Pause, Previous/Next track, Stop, Seek (-5s, +5s), Time/Duration labels, Volume slider & mute toggle, playback speed selection (0.5x–2.0x), and subtitle track selector.
-  - **Playback Queue**: Enqueue results, play next/previous, remove items (`Delete`), and clear queue. Videos in queue auto-advance when a track ends.
-  - **Resilient Error Banner & Retry**: User-friendly notification banner with one-click `Retry` action for transient network/instance issues, keeping technical diagnostics separated.
-  - **Settings & Diagnostics**: Accessible dialog (`F2`) with quality preference selection, hardware decoding toggle, Braille display cell count configuration (14, 18, 20, 32, 40, 80 cells), yt-dlp/mpv dependency verification and update checks, and a one-click "Run Diagnostics" test suite.
+- **No account, no keys.** No Google sign-in, API key or cookies. Everything an account would keep (subscriptions,
+  likes, playlists, Watch Later, history) is stored as plain JSON on your computer.
+- **Built for screen readers and the keyboard.** NVDA, JAWS and Narrator; F1 explains the keys wherever you are;
+  speech is kept short, and captions are read aloud only when you ask (`C`).
+- **Library**: Search, Featured, What's New (subscription feed), Channels, History with resume, Watch Later, Queue,
+  For You (local recommendations) and Playlists (Liked videos, your own and saved YouTube playlists).
+- **Player**: Up next with autoplay, comments with threaded replies, description, captions, speed, share links that
+  start at the current time, and audio or video downloads.
+- **Braille progress**: an NVDA add-on shows playback position as a "lower g" (⠶) on the braille display; the routing
+  keys seek to that point and `Ctrl+Shift+D` toggles it.
+- **Updates itself** from GitHub Releases, with every download checked against an Ed25519 signature.
+
+## How it works
+
+- **Finding videos and streams** tries several sources in order and moves on when one fails, so a single outage
+  doesn't stop playback:
+  1. **TubeRepair** (`tuberepair.uptimetrackers.com`), a YouTube-compatible API: search, details and streams.
+  2. **Invidious** public instances, picked by health and latency from the public directory (also used for Featured,
+     channel pages and as a fallback for related videos, comments and playlists).
+  3. **InnerTube**, YouTube's own web API, without signing in (also the main source for Up next, comments and playlists).
+  4. **yt-dlp**, a local copy that TimePlayer downloads, verifies and keeps updated.
+- **Playback** uses **mpv** in its own process, controlled over its JSON IPC pipe and drawn inside TimePlayer's window.
+  Playback only counts as started once mpv reports it is playing; otherwise the next source is tried.
+- **Subscription feeds** come from YouTube's public per-channel RSS feeds, as NewPipe's fast mode does.
+- **Speech**: announcements go through UI Automation notifications; captions use the NVDA Controller Client when NVDA
+  runs, so a new caption interrupts an old one instead of queueing behind it.
 
 ---
 
 ## Documentation
 
+- [User guide](build/README.txt) (plain text, shipped with the app)
+- [Changelog](CHANGELOG.md)
 - [Accessibility & Screen Reader Checklist](ACCESSIBILITY_CHECKLIST.md)
 - [Dependency Management & Verification](docs/DEPENDENCIES.md)
 - [Public Instance Directories](docs/INSTANCE_DIRECTORIES.md)
@@ -61,40 +59,30 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 ## Project Structure
 
 ```
-├── Directory.Build.props            # Solution-wide compiler & versioning settings
-├── Directory.Packages.props         # Central Package Management (CPM)
-├── TimePlayer.sln                   # Visual Studio / .NET Solution
-├── ACCESSIBILITY_CHECKLIST.md       # Screen reader & keyboard accessibility checklist
-├── docs/
-│   ├── INSTANCE_DIRECTORIES.md      # Piped & Invidious directory specifications
-│   └── THIRD_PARTY_NOTICES.md       # yt-dlp, mpv, and library licenses
+├── Directory.Build.props            # Version and solution-wide compiler settings
+├── Directory.Packages.props         # Central Package Management
+├── TimePlayer.sln
+├── LICENSE                          # 0BSD
+├── CHANGELOG.md                     # Release notes, read out in the update prompt
+├── build/                           # package.ps1, Inno Setup script, user guide, update signer
+├── docs/                            # Dependencies, instance directories, third-party notices
 ├── src/
-│   ├── TimePlayer.Core/             # Target: net10.0 (Class Library)
-│   │   ├── Accessibility/           # IAccessibilityService, KeyChord, AccessibleTextFormatter
-│   │   ├── Backends/                # Piped, Invidious, and YtDlp backend providers
-│   │   │   ├── Piped/               # Piped API catalog & stream provider
-│   │   │   ├── Invidious/           # Invidious API catalog & stream provider
-│   │   │   └── YtDlp/               # Local managed yt-dlp binary, download, and resolver
-│   │   ├── Common/                  # Result<T>, AppError, IProcessRunner, DefaultProcessRunner
-│   │   ├── Configuration/           # AppConfig, IConfigurationService, settings validation
-│   │   ├── Contracts/               # IVideoCatalogProvider, IStreamResolver, IPublicInstanceDirectory
-│   │   ├── Models/                  # VideoDetails, SearchResult, StreamCandidate, Enums
-│   │   └── Services/                # Core DI service registration extensions
+│   ├── TimePlayer.Core/             # net10.0 class library
+│   │   ├── Accessibility/           # Spoken text, braille progress track, NVDA add-on and bridge
+│   │   ├── Backends/                # TubeRepair, Invidious, InnerTube and yt-dlp providers
+│   │   ├── Common/                  # Result<T>, errors, process runner
+│   │   ├── Configuration/           # AppConfig, settings, portable/installed paths
+│   │   ├── Library/                 # Subscriptions, history, playlists, For You, Takeout import, downloads
+│   │   ├── Models/                  # SearchResult, VideoDetails, YouTubeUrl, comments
+│   │   ├── Playback/                # PlaybackCoordinator and the mpv engine (JSON IPC)
+│   │   └── Updates/                 # GitHub Releases updater and signature checks
 │   │
-│   └── TimePlayer.Wpf/              # Target: net10.0-windows (WPF Application)
-│       ├── Accessibility/           # WpfAccessibilityService (UIA live region updates)
-│       ├── Configuration/           # appsettings.json
-│       ├── ViewModels/              # MainViewModel (CommunityToolkit.Mvvm)
-│       ├── Views/                   # MainWindow.xaml & MainWindow.xaml.cs
-│       ├── App.xaml                 # Application styling and resources
-│       └── App.xaml.cs              # DI container, startup yt-dlp update, logging & error handling
+│   └── TimePlayer.Wpf/              # net10.0-windows WPF application
+│       ├── Accessibility/           # UI Automation announcements, caption speech
+│       ├── ViewModels/              # MainViewModel (library, player, playlists, sharing)
+│       └── Views/                   # Main window, settings, F1 help, update flow
 │
-└── tests/
-    └── TimePlayer.Tests/            # Target: net10.0 (xUnit Test Suite)
-        ├── Accessibility/           # KeyChordTests, AccessibleTextFormatterTests
-        ├── Backends/                # Piped, Invidious, YtDlp, ErrorClassifier, DownloadProgress tests
-        ├── Common/                  # ProcessRunnerTests, ResultTests, InstanceUrlValidatorTests
-        └── Models/                  # Model conversion and validation tests
+└── tests/TimePlayer.Tests/          # xUnit tests
 ```
 
 ---
@@ -134,20 +122,23 @@ dotnet run --project src/TimePlayer.Wpf
 
 | Key | Action |
 |---|---|
-| `Ctrl+1` ... `Ctrl+7` | Search, Featured, What's New, Channels, History, Watch Later, Queue |
+| `Ctrl+1` ... `Ctrl+9` | Search, Featured, What's New, Channels, History, Watch Later, Queue, For You, Playlists |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous section |
 | `Ctrl+E` | Search box (`Escape` there clears it) |
 | `Enter` | Play the video, or open the channel |
 | `Ctrl+Q` / `Ctrl+L` / `Ctrl+S` / `Ctrl+G` | Queue, Watch Later, subscribe, go to channel |
+| `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
 | `Ctrl+C` | Copy a share link (`https://youtu.be/...`) |
 | `Ctrl+D` | Download: audio (MP3) or video (MP4), open the downloads folder, cancel |
-| `Delete` | Remove from History, Watch Later, Channels or the Queue |
+| `Delete` | Remove from History, Watch Later, Channels, a playlist or the Queue; in For You, not interested |
+| `Shift+Delete` | Don't recommend this channel |
+| `Alt+Up` / `Alt+Down` | Move a video in your own playlist |
 | `Applications` / `Shift+F10` | Every action for the item |
-| `Alt+Left`, `Backspace`, `Escape` | Back from a channel page |
+| `Alt+Left`, `Backspace`, `Escape` | Back from a channel or playlist page |
 | `F5` | Refresh the section |
 | `F2` | Settings (a normal dialog; Escape closes and saves) |
 
-Lists keep loading as you reach the end: search results, channel pages and comments are not limited to the first 20.
+Lists keep loading as you reach the end: search results, channel pages, playlists and comments are not limited to the first 20.
 
 ### Player
 
@@ -164,6 +155,7 @@ Lists keep loading as you reach the end: search results, channel pages and comme
 | `A` | Autoplay on/off (plays the first unwatched related video when the queue ends) |
 | `C` | Read captions aloud on/off (off by default) |
 | `Ctrl+S` / `Ctrl+L` / `Ctrl+G` | Subscribe, Watch Later, go to channel |
+| `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
 | `Ctrl+C` / `Ctrl+Shift+C` | Copy a share link that starts at the current time / from the beginning |
 | `Ctrl+D` | Download audio or video of what is playing |
 | `Escape` | From a side panel: back to the controls; otherwise close the player |
@@ -214,3 +206,14 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 Updates are signed with Ed25519. The private key is the `UPDATE_SIGNING_KEY` repository secret, with a copy kept outside the repository at `%APPDATA%\TimePlayer-release\update-signing.key`; its public half is `UpdateService.PublicKey`. The app refuses any update that does not verify, so keep that key safe: losing it means shipping a new public key in a release that users install by hand.
 
 To build locally instead, `pwsh build/package.ps1` writes the same files to `release/`. It bundles mpv and yt-dlp from `%LOCALAPPDATA%\TimePlayer\bin` (or `-ToolsFrom <folder>`) and needs Inno Setup 6 for the installer (`winget install JRSoftware.InnoSetup`). `build/README.txt` is the plain-text guide shipped to users.
+
+---
+
+## License and dedication
+
+TimePlayer is released under the [BSD Zero Clause License (0BSD)](LICENSE): use, change and share it for any purpose.
+The programs and libraries it uses keep their own licenses; see the
+[Third-Party Notices](docs/THIRD_PARTY_NOTICES.md) for the components used in this program.
+
+TimePlayer, like all my apps, is dedicated to Jenni and Diana. The full dedication is at the top of the
+[Third-Party Notices](docs/THIRD_PARTY_NOTICES.md).
