@@ -10,10 +10,34 @@ public sealed class FakeDiscoveryService : IDiscoveryService
     public Dictionary<string, ChannelUploads> Channels { get; } = new();
     public int FeedRequests { get; private set; }
 
-    public Task<Result<IReadOnlyList<SearchResult>>> GetFeaturedAsync(FeaturedCategory category, string region, CancellationToken cancellationToken = default) =>
-        Task.FromResult(Featured.Count > 0
-            ? Result<IReadOnlyList<SearchResult>>.Success(Featured.ToList())
-            : Result<IReadOnlyList<SearchResult>>.Failure("EMPTY_FEED", "No featured videos."));
+    /// <summary>Further Featured pages, served for page tokens "1", "2", …</summary>
+    public List<List<SearchResult>> FeaturedPages { get; } = new();
+
+    public List<(FeaturedCategory Category, string Region, string? Token)> FeaturedRequests { get; } = new();
+
+    public Task<Result<PagedResult<SearchResult>>> GetFeaturedAsync(FeaturedCategory category, string region, string? pageToken = null, CancellationToken cancellationToken = default)
+    {
+        FeaturedRequests.Add((category, region, pageToken));
+        if (pageToken is not null)
+        {
+            var index = int.Parse(pageToken);
+            var items = index <= FeaturedPages.Count ? FeaturedPages[index - 1] : new List<SearchResult>();
+            return Task.FromResult(Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
+            {
+                Items = items.ToList(),
+                HasNextPage = index < FeaturedPages.Count,
+                NextPageToken = index < FeaturedPages.Count ? (index + 1).ToString() : null
+            }));
+        }
+        return Task.FromResult(Featured.Count > 0
+            ? Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
+            {
+                Items = Featured.ToList(),
+                HasNextPage = FeaturedPages.Count > 0,
+                NextPageToken = FeaturedPages.Count > 0 ? "1" : null
+            })
+            : Result<PagedResult<SearchResult>>.Failure("EMPTY_FEED", "No featured videos."));
+    }
 
     public Task<Result<ChannelUploads>> GetChannelUploadsAsync(string channelId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Channels.TryGetValue(channelId, out var uploads)

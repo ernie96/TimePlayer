@@ -33,7 +33,7 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 - **Finding videos and streams** tries several sources in order and moves on when one fails, so a single outage
   doesn't stop playback:
   1. **TubeRepair** (`tuberepair.uptimetrackers.com`), a YouTube-compatible API: search, details and streams.
-  2. **Invidious** public instances, picked by health and latency from the public directory (also used for Featured,
+  2. **Invidious** public instances, picked by health and latency from the public directory (also used for
      channel pages and as a fallback for related videos, comments and playlists).
   3. **InnerTube**, YouTube's own web API, without signing in (also the main source for Up next, comments and playlists).
   4. **yt-dlp**, a local copy that TimePlayer downloads, verifies and keeps updated.
@@ -190,7 +190,10 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 - **Export**: NewPipe JSON or OPML.
 - **What's New**: latest uploads of every subscribed channel from YouTube's public RSS feeds, newest first; uploads since your
   last visit are spoken as "New", Shorts are marked and can be hidden, and new uploads are announced at startup.
-- **Featured**: trending videos (with Music, Gaming and Movies categories) for a configurable region, via Invidious.
+- **Featured**, for a configurable region. YouTube retired its Trending page in 2025, so each category reads a source
+  YouTube still keeps current: Trending mixes YouTube's Music, Sports, News and Gaming pages; Music is the YouTube Charts
+  Top 100 music videos; Gaming is this week's gaming videos; Movies is this week's most watched trailers; News, Sports
+  and Live are YouTube's own pages for them. Music, Gaming and Movies page in as you reach the end.
 - **History** with **resume**: videos continue where you left off ("Resuming at 4 minutes 12 seconds. Press Home to start from the beginning"),
   and lists say "Watched" or "Resume at ..." before the title.
 - **Watch Later** list and **channel pages** reachable from any video.

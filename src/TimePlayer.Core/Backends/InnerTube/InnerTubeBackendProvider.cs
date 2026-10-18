@@ -50,21 +50,33 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
     private TimeSpan Timeout => TimeSpan.FromSeconds(
         Math.Max(5, _configService.CurrentConfig.Backend.InnerTubeTimeoutSeconds));
 
-    private static InnerTubeContext CreateWebContext() => new()
+    private static InnerTubeContext CreateWebContext(string? region = null) => new()
     {
         Client = new InnerTubeClientInfo
         {
             ClientName = "WEB",
             ClientVersion = "2.20261015.00.00",
             Hl = "en",
-            Gl = "US"
+            Gl = string.IsNullOrWhiteSpace(region) ? "US" : region.Trim().ToUpperInvariant()
         }
     };
 
     /// <param name="pageToken">InnerTube continuation token from the previous page, or null for page 1.</param>
-    public async Task<Result<PagedResult<SearchResult>>> SearchAsync(
+    public Task<Result<PagedResult<SearchResult>>> SearchAsync(
         string query,
         string? pageToken = null,
+        CancellationToken cancellationToken = default) =>
+        SearchFilteredAsync(query, null, pageToken, null, cancellationToken);
+
+    /// <summary>
+    /// Search with one of YouTube's search filters (<paramref name="searchParams"/>, the "sp" value of a
+    /// filtered search link, e.g. "this week, sorted by views") as seen from <paramref name="region"/>.
+    /// </summary>
+    public async Task<Result<PagedResult<SearchResult>>> SearchFilteredAsync(
+        string query,
+        string? searchParams,
+        string? pageToken,
+        string? region,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -72,11 +84,17 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
 
         var body = new JsonObject();
         if (string.IsNullOrWhiteSpace(pageToken))
+        {
             body["query"] = query;
+            if (!string.IsNullOrEmpty(searchParams))
+                body["params"] = searchParams;
+        }
         else
+        {
             body["continuation"] = pageToken;
+        }
 
-        var response = await PostAsync("search", body, cancellationToken);
+        var response = await PostAsync("search", body, cancellationToken, region);
         if (response.IsFailure)
             return Result<PagedResult<SearchResult>>.Failure(response.Error);
 
@@ -143,6 +161,45 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
         }
     }
 
+    /// <summary>
+    /// The videos on a YouTube page such as a channel's home (the Music, Sports, News, Gaming and Live
+    /// destination channels), as seen from <paramref name="region"/>, and the playlists it links to.
+    /// </summary>
+    public async Task<Result<(IReadOnlyList<SearchResult> Videos, IReadOnlyList<SearchResult> Playlists)>> BrowseAsync(
+        string browseId, string? region, CancellationToken cancellationToken = default)
+    {
+        var response = await PostAsync("browse", new JsonObject { ["browseId"] = browseId }, cancellationToken, region);
+        if (response.IsFailure)
+            return Result<(IReadOnlyList<SearchResult>, IReadOnlyList<SearchResult>)>.Failure(response.Error);
+        try
+        {
+            using var doc = JsonDocument.Parse(response.Value);
+            var videos = new List<SearchResult>();
+            var playlists = new List<SearchResult>();
+            var seen = new HashSet<string>();
+            foreach (var lockup in InnerTubeJson.FindAll(doc.RootElement, "lockupViewModel"))
+            {
+                if (InnerTubeJson.ParseLockup(lockup) is { } video && seen.Add(video.Id))
+                    videos.Add(video);
+                else if (InnerTubeJson.ParsePlaylistLockup(lockup) is { } playlist && seen.Add(playlist.Id))
+                    playlists.Add(playlist);
+            }
+            foreach (var name in new[] { "videoRenderer", "gridVideoRenderer" })
+            {
+                foreach (var renderer in InnerTubeJson.FindAll(doc.RootElement, name))
+                {
+                    if (InnerTubeJson.ParseVideoRenderer(renderer) is { } video && seen.Add(video.Id))
+                        videos.Add(video);
+                }
+            }
+            return Result<(IReadOnlyList<SearchResult>, IReadOnlyList<SearchResult>)>.Success((videos, playlists));
+        }
+        catch (JsonException ex)
+        {
+            return Result<(IReadOnlyList<SearchResult>, IReadOnlyList<SearchResult>)>.Failure("INNERTUBE_BROWSE_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
     /// <summary>One page of a YouTube playlist: the first when <paramref name="continuation"/> is null.</summary>
     public async Task<Result<YouTubePlaylistPage>> GetPlaylistAsync(string playlistId, string? continuation, CancellationToken cancellationToken = default)
     {
@@ -202,9 +259,9 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
         }
     }
 
-    private async Task<Result<string>> PostAsync(string endpoint, JsonObject body, CancellationToken cancellationToken)
+    private async Task<Result<string>> PostAsync(string endpoint, JsonObject body, CancellationToken cancellationToken, string? region = null)
     {
-        body["context"] = JsonSerializer.SerializeToNode(CreateWebContext());
+        body["context"] = JsonSerializer.SerializeToNode(CreateWebContext(region));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(Timeout);
         try

@@ -89,10 +89,17 @@ public sealed record SubscriptionFeedResult(
 
 public enum FeaturedCategory
 {
+    /// <summary>A mix of what YouTube's Music, Sports, News and Gaming pages feature now.</summary>
     Trending = 0,
+    /// <summary>YouTube Charts: the region's Top 100 music videos.</summary>
     Music = 1,
+    /// <summary>Gaming videos from this week.</summary>
     Gaming = 2,
-    Movies = 3
+    /// <summary>The most watched movie trailers this week.</summary>
+    Movies = 3,
+    News = 4,
+    Sports = 5,
+    Live = 6
 }
 
 public enum PlaylistKind

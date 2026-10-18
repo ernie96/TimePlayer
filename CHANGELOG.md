@@ -3,6 +3,11 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.2.1
+
+- Featured shows the right videos again. YouTube retired its Trending page, which left the old lists short and mixed up. Music is now the top 100 music videos for your region, Gaming is this week's gaming videos, and Movies is this week's most watched trailers. Trending mixes what YouTube features for music, sports, news and gaming. Music, Gaming and Movies keep loading as you reach the end.
+- New Featured categories: News, Sports and Live.
+
 ## 1.2.0
 
 - For You (Control+8): videos picked from what you watch, like and subscribe to, worked out on your computer. Delete means not interested; Shift+Delete stops recommending a channel.

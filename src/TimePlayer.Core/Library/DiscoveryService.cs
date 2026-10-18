@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
+using TimePlayer.Core.Backends.InnerTube;
 using TimePlayer.Core.Backends.Invidious;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Models;
@@ -8,7 +9,8 @@ namespace TimePlayer.Core.Library;
 
 public interface IDiscoveryService
 {
-    Task<Result<IReadOnlyList<SearchResult>>> GetFeaturedAsync(FeaturedCategory category, string region, CancellationToken cancellationToken = default);
+    /// <summary>Featured videos for a category; <paramref name="pageToken"/> is null for the first page.</summary>
+    Task<Result<PagedResult<SearchResult>>> GetFeaturedAsync(FeaturedCategory category, string region, string? pageToken = null, CancellationToken cancellationToken = default);
     Task<Result<ChannelUploads>> GetChannelUploadsAsync(string channelId, CancellationToken cancellationToken = default);
     /// <summary>Older uploads beyond the RSS feed's latest 15, one page at a time (null token = first page).</summary>
     Task<Result<PagedResult<SearchResult>>> GetChannelUploadsPageAsync(string channelId, string? pageToken, CancellationToken cancellationToken = default);
@@ -19,7 +21,7 @@ public interface IDiscoveryService
 }
 
 /// <summary>
-/// Featured videos (Invidious trending) and channel uploads / subscription feed
+/// Featured videos (YouTube's destination pages, charts and filtered searches) and channel uploads / subscription feed
 /// (YouTube's public per-channel RSS feeds, the same source NewPipe's fast feed mode uses).
 /// Neither needs an account or API key.
 /// </summary>
@@ -30,33 +32,135 @@ public sealed class DiscoveryService : IDiscoveryService
     private static readonly XNamespace Yt = "http://www.youtube.com/xml/schemas/2015";
     private static readonly XNamespace Media = "http://search.yahoo.com/mrss/";
 
+    // YouTube's own "destination" channels, which replaced the Trending page in 2025.
+    private const string MusicChannel = "UC-9-kyTW8ZkZNDHQJ6FgpwQ";
+    private const string GamingChannel = "UCOpNcN46UbXVtpKMrmU4Abg";
+    private const string NewsChannel = "UCYfdidRxbB8Qhf0Nx7ioOYw";
+    private const string SportsChannel = "UCEgdi0XIXXZ-qJOFPf4JSKw";
+    private const string LiveChannel = "UC4R8DWoMoI7CAwX8_LjQHig";
+    /// <summary>YouTube Charts "Top 100 Music Videos Global", when the region has no chart of its own.</summary>
+    private const string GlobalMusicVideosChart = "PL4fGSI1pDJn5kI81J1fYWK5eZRl1zJ5kM";
+    // Search filters ("sp"): uploaded this week, videos only; and this week sorted by views.
+    private const string ThisWeekVideos = "EgQIAxAB";
+    private const string ThisWeekByViews = "CAMSAggD";
+
     private readonly HttpClient _httpClient;
     private readonly InvidiousBackendProvider _invidious;
+    private readonly InnerTubeBackendProvider _innerTube;
     private readonly ILogger<DiscoveryService> _logger;
 
-    public DiscoveryService(HttpClient httpClient, InvidiousBackendProvider invidious, ILogger<DiscoveryService> logger)
+    public DiscoveryService(HttpClient httpClient, InvidiousBackendProvider invidious, InnerTubeBackendProvider innerTube, ILogger<DiscoveryService> logger)
     {
         _httpClient = httpClient;
         _invidious = invidious;
+        _innerTube = innerTube;
         _logger = logger;
     }
 
-    public async Task<Result<IReadOnlyList<SearchResult>>> GetFeaturedAsync(
-        FeaturedCategory category, string region, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// YouTube retired its Trending page in 2025, and Invidious's trending lists went stale with it. Each
+    /// category now reads a source that YouTube still keeps current, as seen from the chosen region.
+    /// </summary>
+    public async Task<Result<PagedResult<SearchResult>>> GetFeaturedAsync(
+        FeaturedCategory category, string region, string? pageToken = null, CancellationToken cancellationToken = default)
     {
-        var type = category switch
+        region = string.IsNullOrWhiteSpace(region) ? "US" : region.Trim().ToUpperInvariant();
+        var result = category switch
         {
-            FeaturedCategory.Music => "music",
-            FeaturedCategory.Gaming => "gaming",
-            FeaturedCategory.Movies => "movies",
-            _ => null
+            FeaturedCategory.Music => await GetMusicChartAsync(region, pageToken, cancellationToken),
+            FeaturedCategory.Gaming => await _innerTube.SearchFilteredAsync("gaming", ThisWeekVideos, pageToken, region, cancellationToken),
+            FeaturedCategory.Movies => await _innerTube.SearchFilteredAsync("official movie trailer", ThisWeekByViews, pageToken, region, cancellationToken),
+            FeaturedCategory.News => await GetPageVideosAsync(NewsChannel, region, cancellationToken),
+            FeaturedCategory.Sports => await GetPageVideosAsync(SportsChannel, region, cancellationToken),
+            FeaturedCategory.Live => await GetPageVideosAsync(LiveChannel, region, cancellationToken),
+            _ => await GetTrendingMixAsync(region, cancellationToken)
         };
-        var result = await _invidious.GetTrendingAsync(type, region, cancellationToken);
-        if (result.IsSuccess || category != FeaturedCategory.Trending)
+        if (result.IsSuccess && (result.Value.Items.Count > 0 || pageToken is not null))
             return result;
 
-        _logger.LogInformation("Invidious trending unavailable ({Error}); falling back to popular.", result.Error?.Message);
-        return await _invidious.GetPopularAsync(cancellationToken);
+        if (category == FeaturedCategory.Trending)
+        {
+            _logger.LogInformation("Featured {Category} unavailable ({Error}); falling back to Invidious popular.", category, result.Error?.Message);
+            var popular = await _invidious.GetPopularAsync(cancellationToken);
+            if (popular.IsSuccess)
+                return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult> { Items = popular.Value.ToList() });
+        }
+        return result.IsSuccess
+            ? Result<PagedResult<SearchResult>>.Failure("FEATURED_EMPTY", "YouTube returned no videos for this category.")
+            : result;
+    }
+
+    /// <summary>The region's "Top 100 Music Videos" chart, which the Music channel links to.</summary>
+    private async Task<Result<PagedResult<SearchResult>>> GetMusicChartAsync(string region, string? pageToken, CancellationToken cancellationToken)
+    {
+        // Page tokens carry the chart's playlist id: "PLAYLIST|continuation".
+        string playlistId;
+        string? continuation = null;
+        if (pageToken is not null)
+        {
+            var bar = pageToken.IndexOf('|');
+            playlistId = pageToken[..bar];
+            continuation = pageToken[(bar + 1)..];
+        }
+        else
+        {
+            var page = await _innerTube.BrowseAsync(MusicChannel, region, cancellationToken);
+            playlistId = page.IsSuccess
+                ? page.Value.Playlists.FirstOrDefault(p => p.Title.StartsWith("Top 100 Music Videos", StringComparison.OrdinalIgnoreCase))?.Id
+                  ?? GlobalMusicVideosChart
+                : GlobalMusicVideosChart;
+        }
+
+        var playlist = await _innerTube.GetPlaylistAsync(playlistId, continuation, cancellationToken);
+        if (playlist.IsFailure)
+            return Result<PagedResult<SearchResult>>.Failure(playlist.Error);
+        var next = playlist.Value.NextPageToken;
+        return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
+        {
+            Items = playlist.Value.Videos.ToList(),
+            HasNextPage = next is not null,
+            NextPageToken = next is null ? null : $"{playlistId}|{next}"
+        });
+    }
+
+    private async Task<Result<PagedResult<SearchResult>>> GetPageVideosAsync(string browseId, string region, CancellationToken cancellationToken)
+    {
+        var page = await _innerTube.BrowseAsync(browseId, region, cancellationToken);
+        return page.IsSuccess
+            ? Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult> { Items = page.Value.Videos.ToList() })
+            : Result<PagedResult<SearchResult>>.Failure(page.Error);
+    }
+
+    /// <summary>
+    /// Trending: what YouTube's Music, Sports, News and Gaming pages feature now, plus this week's gaming,
+    /// taken in turn from each so no single topic fills the list.
+    /// </summary>
+    private async Task<Result<PagedResult<SearchResult>>> GetTrendingMixAsync(string region, CancellationToken cancellationToken)
+    {
+        var sources = await Task.WhenAll(
+            GetPageVideosAsync(MusicChannel, region, cancellationToken),
+            GetPageVideosAsync(SportsChannel, region, cancellationToken),
+            GetPageVideosAsync(NewsChannel, region, cancellationToken),
+            GetPageVideosAsync(GamingChannel, region, cancellationToken),
+            _innerTube.SearchFilteredAsync("gaming", ThisWeekVideos, null, region, cancellationToken));
+
+        var lists = sources.Where(r => r.IsSuccess).Select(r => r.Value.Items).ToList();
+        if (lists.Count == 0)
+            return Result<PagedResult<SearchResult>>.Failure(sources[0].Error);
+
+        // News pages run long; a fair share each keeps the mix varied.
+        const int perSource = 25;
+        var mixed = new List<SearchResult>();
+        var seen = new HashSet<string>();
+        for (int i = 0; i < perSource; i++)
+        {
+            foreach (var list in lists)
+            {
+                if (i < list.Count && !list[i].IsLive && seen.Add(list[i].Id))
+                    mixed.Add(list[i]);
+            }
+        }
+        return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult> { Items = mixed });
     }
 
     public async Task<Result<ChannelUploads>> GetChannelUploadsAsync(string channelId, CancellationToken cancellationToken = default)

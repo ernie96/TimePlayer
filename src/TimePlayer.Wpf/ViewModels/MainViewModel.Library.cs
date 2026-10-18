@@ -50,7 +50,7 @@ public sealed partial class MainViewModel
     private readonly IDiscoveryService _discovery;
 
     private List<SearchResult> _lastSearchResults = new();
-    private readonly Dictionary<FeaturedCategory, (DateTimeOffset Fetched, IReadOnlyList<SearchResult> Items)> _featuredCache = new();
+    private readonly Dictionary<FeaturedCategory, (DateTimeOffset Fetched, IReadOnlyList<SearchResult> Items, string? NextPage)> _featuredCache = new();
     private CancellationTokenSource? _sectionCts;
     private bool _syncingTab;
     private SubscriptionFeedResult? _feed;
@@ -267,28 +267,59 @@ public sealed partial class MainViewModel
     private async Task ShowFeaturedAsync(bool moveFocus, bool forceRefresh, CancellationToken token)
     {
         var category = SelectedFeaturedCategory;
-        SectionTitle = category == FeaturedCategory.Trending ? "Featured" : $"Featured {category}";
+        SectionTitle = category switch
+        {
+            FeaturedCategory.Trending => "Featured",
+            FeaturedCategory.Music => "Featured: top music videos",
+            FeaturedCategory.Gaming => "Featured: gaming this week",
+            FeaturedCategory.Movies => "Featured: movie trailers this week",
+            FeaturedCategory.Live => "Featured: live now",
+            _ => $"Featured: {category}"
+        };
         SectionEmptyText = "Featured videos could not be loaded. Press F5 to try again.";
 
         if (!forceRefresh && _featuredCache.TryGetValue(category, out var cached) && DateTimeOffset.UtcNow - cached.Fetched < FeaturedCacheLifetime)
         {
             ShowItems(cached.Items, moveFocus);
+            ConfigureFeaturedPaging(category, cached.NextPage);
             return;
         }
 
         BeginLoading("Loading...");
-        var result = await _discovery.GetFeaturedAsync(category, FeaturedRegion, token);
+        var region = FeaturedRegion;
+        var result = await _discovery.GetFeaturedAsync(category, region, null, token);
         token.ThrowIfCancellationRequested();
         if (result.IsSuccess)
         {
-            _featuredCache[category] = (DateTimeOffset.UtcNow, result.Value);
-            ShowItems(result.Value, moveFocus);
+            _featuredCache[category] = (DateTimeOffset.UtcNow, result.Value.Items, result.Value.NextPageToken);
+            ShowItems(result.Value.Items, moveFocus);
+            ConfigureFeaturedPaging(category, result.Value.NextPageToken);
         }
         else
         {
             ShowItems(Array.Empty<SearchResult>(), moveFocus: false);
             _accessibility.Announce($"Featured videos are unavailable right now. {result.Error?.Message} Press F5 to retry.", AnnouncementPriority.High);
         }
+    }
+
+    /// <summary>Music, Gaming and Movies keep loading as you reach the end of the list.</summary>
+    private void ConfigureFeaturedPaging(FeaturedCategory category, string? firstToken)
+    {
+        var next = firstToken;
+        if (next is null)
+        {
+            SetLoadMore(null);
+            return;
+        }
+        var region = FeaturedRegion;
+        SetLoadMore(async token =>
+        {
+            var page = await _discovery.GetFeaturedAsync(category, region, next, token);
+            if (page.IsFailure)
+                return (Array.Empty<SearchResult>(), false);
+            next = page.Value.NextPageToken;
+            return (page.Value.Items, next is not null);
+        });
     }
 
     private async Task ShowWhatsNewAsync(bool moveFocus, bool forceRefresh, CancellationToken token)

@@ -245,8 +245,8 @@ public sealed class RecommendationService : IRecommendationService
 
     private async Task<Recommendations> TrendingAsync(RecommendationOptions options, CancellationToken cancellationToken)
     {
-        var trending = await _discovery.GetFeaturedAsync(FeaturedCategory.Trending, options.Region, cancellationToken);
-        var videos = trending.IsSuccess ? Filter(trending.Value, options).Take(MaxResults).ToList() : new List<SearchResult>();
+        var trending = await _discovery.GetFeaturedAsync(FeaturedCategory.Trending, options.Region, null, cancellationToken);
+        var videos = trending.IsSuccess ? Filter(trending.Value.Items, options).Take(MaxResults).ToList() : new List<SearchResult>();
         return new Recommendations(videos, _clock(), IsPersonal: false);
     }
 

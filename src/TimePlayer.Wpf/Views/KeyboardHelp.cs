@@ -30,7 +30,8 @@ public static class KeyboardHelp
         BrowseSection.Search =>
             "Search results. " + VideoListKeys + "\nMore results load as you reach the end of the list. Control+E goes back to the search box.",
         BrowseSection.Featured =>
-            "Featured videos. " + VideoListKeys + "\nShift+Tab reaches the Category box for Music, Gaming and Movies. F5 refreshes.",
+            "Featured videos. " + VideoListKeys + "\nShift+Tab reaches the Category box: Trending, Music (the top 100 music videos), Gaming, Movies (trailers), News, Sports and Live. " +
+            "Music, Gaming and Movies keep loading as you reach the end. F5 refreshes.",
         BrowseSection.WhatsNew =>
             "Latest videos from your channels, newest first. Videos you have not seen yet start with New.\n" + VideoListKeys + "\nF5 checks for new videos.",
         BrowseSection.Channels =>

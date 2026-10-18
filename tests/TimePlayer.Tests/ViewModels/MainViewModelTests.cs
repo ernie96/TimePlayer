@@ -513,6 +513,28 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task Featured_AsksForTheChosenCategory_AndLoadsMorePages()
+    {
+        await using var vm = CreateViewModel();
+        _discovery.Featured.AddRange(Enumerable.Range(0, 12).Select(i => Video($"aaaaaaaa{i:000}", $"Song {i}")));
+        _discovery.FeaturedPages.Add(Enumerable.Range(0, 12).Select(i => Video($"bbbbbbbb{i:000}", $"More {i}")).ToList());
+
+        await vm.ShowSectionByNumberAsync(2);
+        vm.SelectedFeaturedCategory = FeaturedCategory.Music;
+        await vm.RefreshSectionAsync();
+
+        Assert.Contains(_discovery.FeaturedRequests, r => r.Category == FeaturedCategory.Music && r.Region == "US" && r.Token is null);
+        Assert.Equal("Featured: top music videos", vm.SectionTitle);
+        Assert.True(vm.CanLoadMore);
+
+        await vm.LoadMoreAsync();
+
+        Assert.Equal(24, vm.SearchResults.Count);
+        Assert.Contains(_discovery.FeaturedRequests, r => r.Category == FeaturedCategory.Music && r.Token == "1");
+        Assert.False(vm.CanLoadMore);
+    }
+
+    [Fact]
     public async Task PlaylistLink_OpensPlaylist_SaveAndPlayAll()
     {
         await using var vm = CreateViewModel();
