@@ -131,6 +131,16 @@ public sealed partial class MainViewModel
         _downloadCts = new CancellationTokenSource();
     }
 
+    [ObservableProperty]
+    private bool _checkForAppUpdatesAtStartup = true;
+
+    partial void OnCheckForAppUpdatesAtStartupChanged(bool value)
+    {
+        var current = _configService.CurrentConfig;
+        if (current.Update.CheckAtStartup != value)
+            _ = _configService.UpdateConfigAsync(current with { Update = current.Update with { CheckAtStartup = value } });
+    }
+
     public string VersionText => $"TimePlayer {AppPaths.Version}" + (AppPaths.IsPortable ? ", portable" : string.Empty);
 
     [RelayCommand]

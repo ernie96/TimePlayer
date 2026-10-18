@@ -57,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Library.IDiscoveryService, Library.DiscoveryService>();
         services.TryAddSingleton<Library.IWatchPageService, Library.WatchPageService>();
         services.TryAddSingleton<Library.IDownloadService, Library.DownloadService>();
+        services.TryAddSingleton<Updates.IUpdateService, Updates.UpdateService>();
 
         // High-level Playback Coordinator
         services.TryAddSingleton<Playback.PlaybackCoordinator>();

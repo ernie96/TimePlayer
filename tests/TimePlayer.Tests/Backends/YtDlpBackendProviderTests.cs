@@ -367,7 +367,7 @@ public class YtDlpBackendProviderTests
             OutputDirectory = @"C:\Music",
             AudioOnly = true,
             AudioFormat = "mp3",
-            FfmpegLocation = @"C:fmpegin"
+            FfmpegLocation = @"C:\ffmpeg\bin"
         };
 
         var result = await provider.DownloadAsync(videoId, options);

@@ -11,6 +11,17 @@ public record AppConfig
     public BackendConfig Backend { get; init; } = new();
     public AccessibilityConfig Accessibility { get; init; } = new();
     public LibraryConfig Library { get; init; } = new();
+    public UpdateConfig Update { get; init; } = new();
+}
+
+public record UpdateConfig
+{
+    /// <summary>Look for a new TimePlayer release when the app starts.</summary>
+    public bool CheckAtStartup { get; init; } = true;
+    /// <summary>GitHub repository ("owner/name") whose releases are TimePlayer's updates.</summary>
+    public string Repository { get; init; } = "ernie96/TimePlayer";
+    /// <summary>A version the user chose to skip; startup checks stay quiet about it.</summary>
+    public string? SkippedVersion { get; init; }
 }
 
 public record LibraryConfig

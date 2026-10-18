@@ -9,11 +9,11 @@ No Google account or sign-in is needed.
 Installing
 ----------
 
-Installer (TimePlayer-Setup.exe): run it and follow the steps. It installs for your
+Installer (TimePlayer_setup.exe): run it and follow the steps. It installs for your
 Windows user only, so it does not ask for administrator rights. Your settings and library
 are kept in %LOCALAPPDATA%\TimePlayer.
 
-Portable zip: extract the whole folder anywhere you can write to (not Program Files) and
+Portable zip (TimePlayer.zip): extract the whole folder anywhere you can write to (not Program Files) and
 run TimePlayer.exe. Because the folder contains portable.txt, your settings, library and
 logs are kept inside that folder, so you can carry it on a USB drive. Delete portable.txt
 to keep them in %LOCALAPPDATA%\TimePlayer instead.
@@ -65,12 +65,21 @@ video as a single MP4. To install ffmpeg, open a command prompt and run:
     winget install Gyan.FFmpeg
 
 
+Updates
+-------
+
+TimePlayer checks for a new version when it starts (you can turn this off in Settings, F2)
+and offers it with a list of what changed. Choose Yes and it downloads the update, checks
+that it really comes from TimePlayer's publisher, installs it and opens again by itself.
+Settings also has "Check for TimePlayer updates" to look right away.
+
+
 Problems
 --------
 
 Settings (F2) has "Open log folder". Please attach the newest log file when reporting a
 problem. TimePlayer updates its YouTube downloader (yt-dlp) by itself at startup; if
-videos stop playing, "Check for updates" in Settings usually helps.
+videos stop playing, "Update YouTube downloader" in Settings usually helps.
 
 
 Uninstalling

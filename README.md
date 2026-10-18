@@ -4,6 +4,14 @@
 
 It is designed from the ground up for assistive technologies (screen readers like NVDA, JAWS, and Windows Narrator) and keyboard-only operation, without requiring Google API credentials, OAuth authentication, user registration, or manual server configuration.
 
+## Download
+
+- **Installer:** [TimePlayer_setup.exe](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer_setup.exe) installs for your user, with no administrator rights needed.
+- **Portable:** [TimePlayer.zip](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer.zip): extract anywhere you can write to.
+
+TimePlayer keeps itself up to date: it checks for a new release at startup and offers to install it.
+The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELOG.md](CHANGELOG.md) lists what changed in each version.
+
 ---
 
 ## Key Features & Architecture
@@ -43,7 +51,6 @@ It is designed from the ground up for assistive technologies (screen readers lik
 
 ## Documentation
 
-- [Accessible YouTube Player Architecture](file:///C:/Users/eblin/.gemini/antigravity/brain/ebd48c66-0893-4019-910f-96c1097ee4c6/accessible_youtube_player_architecture.md)
 - [Accessibility & Screen Reader Checklist](ACCESSIBILITY_CHECKLIST.md)
 - [Dependency Management & Verification](docs/DEPENDENCIES.md)
 - [Public Instance Directories](docs/INSTANCE_DIRECTORIES.md)
@@ -196,16 +203,10 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 
 ## Making a release
 
-```powershell
-pwsh build/package.ps1
-```
+1. Set `<Version>` in `Directory.Build.props` and add a `## <version>` section to `CHANGELOG.md`. That section becomes the release notes users hear in the update prompt.
+2. Commit, then tag and push: `git tag v1.2.0` and `git push origin main v1.2.0`.
+3. The **Release** workflow tests, builds, signs and publishes `TimePlayer_setup.exe` and `TimePlayer.zip` (each with a `.sig`), the NVDA add-on and `SHA256SUMS.txt`. Installed copies offer the update at their next start.
 
-This runs the tests, publishes a self-contained single-file build, and writes to `release/`:
+Updates are signed with Ed25519. The private key is the `UPDATE_SIGNING_KEY` repository secret, with a copy kept outside the repository at `%APPDATA%\TimePlayer-release\update-signing.key`; its public half is `UpdateService.PublicKey`. The app refuses any update that does not verify, so keep that key safe: losing it means shipping a new public key in a release that users install by hand.
 
-- `TimePlayer-<version>-win-x64-portable.zip`: extract and run; `portable.txt` keeps settings, library and logs in the folder.
-- `TimePlayer-<version>-Setup.exe`: per-user installer (no administrator prompt), built only when Inno Setup 6 is installed (`winget install JRSoftware.InnoSetup`).
-- `TimePlayerBraille.nvda-addon`: the NVDA braille add-on for manual installation.
-- `SHA256SUMS.txt`.
-
-mpv and yt-dlp are bundled from `%LOCALAPPDATA%\TimePlayerin` (where TimePlayer downloads them); pass `-ToolsFrom <folder>` to use others.
-The version comes from `Directory.Build.props`. `build/README.txt` is the plain-text guide shipped to users.
+To build locally instead, `pwsh build/package.ps1` writes the same files to `release/`. It bundles mpv and yt-dlp from `%LOCALAPPDATA%\TimePlayer\bin` (or `-ToolsFrom <folder>`) and needs Inno Setup 6 for the installer (`winget install JRSoftware.InnoSetup`). `build/README.txt` is the plain-text guide shipped to users.

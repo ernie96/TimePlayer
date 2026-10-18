@@ -11,7 +11,10 @@ using System.Windows.Media;
 using System.Windows.Automation;
 using System.Windows.Threading;
 using TimePlayer.Core.Accessibility;
+using Microsoft.Extensions.Logging;
+using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Models;
+using TimePlayer.Core.Updates;
 using TimePlayer.Wpf.Accessibility;
 using TimePlayer.Wpf.ViewModels;
 
@@ -27,12 +30,18 @@ public partial class MainWindow : Window
     private readonly IAccessibilityService _accessibility;
     private SettingsWindow? _settingsWindow;
 
-    public MainWindow(MainViewModel viewModel, IAccessibilityService accessibility)
+    private readonly UpdateFlow _updateFlow;
+    private readonly IConfigurationService _config;
+
+    public MainWindow(MainViewModel viewModel, IAccessibilityService accessibility, IUpdateService updates,
+        IConfigurationService config, ILogger<MainWindow> logger)
     {
         InitializeComponent();
 
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _accessibility = accessibility ?? throw new ArgumentNullException(nameof(accessibility));
+        _config = config;
+        _updateFlow = new UpdateFlow(updates, config, accessibility, logger);
         DataContext = _viewModel;
 
         if (_accessibility is WpfAccessibilityService wpfAccessibility)
@@ -104,6 +113,8 @@ public partial class MainWindow : Window
             _settingsWindow.ShowDialog();
             if (_settingsWindow.PlayTestPatternRequested)
                 _ = _viewModel.LoadTestVideoAsync();
+            if (_settingsWindow.AppUpdateCheckRequested)
+                _ = _updateFlow.RunAsync(this, manual: true);
         }
         finally
         {
@@ -142,6 +153,8 @@ public partial class MainWindow : Window
         {
             await Task.Delay(TimeSpan.FromSeconds(4));
             await _viewModel.CheckFeedInBackgroundAsync();
+            if (_config.CurrentConfig.Update.CheckAtStartup)
+                await _updateFlow.RunAsync(this, manual: false);
         }, DispatcherPriority.ApplicationIdle);
     }
 

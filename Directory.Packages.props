@@ -18,6 +18,9 @@
     <PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.13" />
     <PackageVersion Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.13" />
 
+    <!-- Ed25519 signatures for verifying downloaded updates -->
+    <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
+
     <!-- Testing Packages -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />

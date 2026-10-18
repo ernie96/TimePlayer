@@ -4,14 +4,21 @@
     Inno Setup is installed) the installer. Output goes to release\.
 
 .PARAMETER ToolsFrom
-    Folder holding the mpv and yt-dlp to bundle (bin\mpv\mpv.exe and bin\yt-dlp.exe layout).
+    Folder holding the mpv and yt-dlp to bundle (mpv\mpv.exe and yt-dlp.exe layout).
     Defaults to the copies TimePlayer downloaded into %LOCALAPPDATA%\TimePlayer\bin.
+
+.PARAMETER AllowUnsigned
+    Build without signing. Such a release cannot be installed by the in-app updater.
+
+    Signing uses the UPDATE_SIGNING_KEY environment variable (GitHub Actions secret), or the key
+    file in UPDATE_SIGNING_KEY_FILE, or %APPDATA%\TimePlayer-release\update-signing.key.
 
 .EXAMPLE
     pwsh build\package.ps1
 #>
 param(
-    [string]$ToolsFrom = (Join-Path $env:LOCALAPPDATA 'TimePlayer\bin')
+    [string]$ToolsFrom = (Join-Path $env:LOCALAPPDATA 'TimePlayer\bin'),
+    [switch]$AllowUnsigned
 )
 
 $ErrorActionPreference = 'Stop'
@@ -74,7 +81,8 @@ try {
 Write-Host "NVDA add-on $addonVersion packaged."
 
 # 6. Portable zip.
-$zipPath = Join-Path $release "TimePlayer-$version-win-x64-portable.zip"
+# Fixed asset names: the updater and the README's "latest" links look for exactly these.
+$zipPath = Join-Path $release 'TimePlayer.zip'
 Compress-Archive -Path $staging -DestinationPath $zipPath -CompressionLevel Optimal
 
 # 7. Installer, when Inno Setup's compiler is available.
@@ -90,7 +98,32 @@ if ($iscc) {
     Write-Warning 'Inno Setup 6 (ISCC.exe) not found: skipped the installer. Install it with: winget install JRSoftware.InnoSetup'
 }
 
-# 8. Checksums for everything published.
+# 8. Sign the update downloads, then check the signatures against the key built into the app.
+$signerProject = Join-Path $root 'build\Signer\TimePlayer.Signer.csproj'
+$keyFile = if ($env:UPDATE_SIGNING_KEY_FILE) { $env:UPDATE_SIGNING_KEY_FILE } else { Join-Path $env:APPDATA 'TimePlayer-release\update-signing.key' }
+if (-not $env:UPDATE_SIGNING_KEY -and (Test-Path $keyFile)) { $env:UPDATE_SIGNING_KEY_FILE = $keyFile }
+$updateFiles = @(Get-ChildItem $release -File | Where-Object { $_.Name -in 'TimePlayer.zip', 'TimePlayer_setup.exe' } | ForEach-Object FullName)
+if ($env:UPDATE_SIGNING_KEY -or $env:UPDATE_SIGNING_KEY_FILE) {
+    # Build once and run the exe: "dotnet run -- args" loses its "--" when called from PowerShell.
+    $signerOut = Join-Path $release 'signer'
+    dotnet build $signerProject -c Release -o $signerOut --nologo -v q
+    if ($LASTEXITCODE -ne 0) { throw 'Building the signer failed.' }
+    $signer = Join-Path $signerOut 'TimePlayer.Signer.exe'
+    & $signer sign @updateFiles
+    if ($LASTEXITCODE -ne 0) { throw 'Signing failed.' }
+    $publicKey = (Select-String -Path (Join-Path $root 'src\TimePlayer.Core\Updates\UpdateService.cs') -Pattern 'PublicKey = "([^"]+)"').Matches[0].Groups[1].Value
+    foreach ($file in $updateFiles) {
+        & $signer verify $publicKey $file
+        if ($LASTEXITCODE -ne 0) { throw "$file does not verify against the app's public key: the signing key does not match." }
+    }
+    Remove-Item $signerOut -Recurse -Force
+} elseif (-not $AllowUnsigned) {
+    throw 'No signing key found (see -AllowUnsigned). Unsigned releases cannot be installed by the updater.'
+} else {
+    Write-Warning 'Unsigned build: the in-app updater will refuse it.'
+}
+
+# 9. Checksums for everything published.
 $sums = Get-ChildItem $release -File | Where-Object { $_.Extension -in '.zip', '.exe' } | ForEach-Object {
     "{0}  {1}" -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant(), $_.Name
 }

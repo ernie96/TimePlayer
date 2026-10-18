@@ -13,6 +13,13 @@ public partial class SettingsWindow : Window
     private readonly MainViewModel _viewModel;
 
     public bool PlayTestPatternRequested { get; private set; }
+    public bool AppUpdateCheckRequested { get; private set; }
+
+    private void CheckAppUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        AppUpdateCheckRequested = true;
+        Close();
+    }
 
     public SettingsWindow(MainViewModel viewModel)
     {

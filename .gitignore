@@ -24,3 +24,6 @@ release/
 
 # Logs shared for bug reports
 *timeplayer-*.log
+
+# NVDA controller client (LGPL) is redistributed with the app
+!lib/x64/
