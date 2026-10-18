@@ -294,6 +294,8 @@ public class ChannelFeedParserTests
         var video = DiscoveryService.ParseChannelFeed(Feed, "UCBR8-60-B28hp2BmDPdntcQ").Videos[0] with { StatusPrefix = "New" };
 
         Assert.StartsWith("New. A short. by YouTube. Short.", video.AccessibleSummary);
-        Assert.Contains("ago", video.AccessibleSummary);
+        // The fixed upload date ages ("hours ago", then "yesterday", then "days ago"), so compare with the formatter.
+        Assert.EndsWith(TimePlayer.Core.Accessibility.AccessibleTextFormatter.FormatAgeSpoken(video.PublishedAt!.Value, DateTimeOffset.UtcNow),
+            video.AccessibleSummary);
     }
 }
