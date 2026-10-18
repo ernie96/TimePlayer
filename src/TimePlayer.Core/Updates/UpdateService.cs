@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -65,21 +66,46 @@ public sealed class UpdateService : IUpdateService
     public InstallKind InstallKind =>
         File.Exists(Path.Combine(AppPaths.ProgramFolder, "unins000.exe")) ? InstallKind.Installer : InstallKind.Portable;
 
-    private string Repository => _config.CurrentConfig.Update.Repository;
+    private string Repository => EffectiveRepository(_config.CurrentConfig.Update.Repository);
+
+    /// <summary>
+    /// The repository to check. Builds made before TimePlayer's repository existed used the placeholder
+    /// "OWNER/TimePlayer", and saving settings in those builds stored it in settings.json, where it would
+    /// still override the right value after an update. A placeholder or malformed value means the official one.
+    /// </summary>
+    internal static string EffectiveRepository(string? configured)
+    {
+        var value = configured?.Trim() ?? string.Empty;
+        var parts = value.Split('/');
+        bool wellFormed = parts.Length == 2 && parts.All(p => p.Length > 0 && p.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_' or '.'));
+        return !wellFormed || parts[0].Equals("OWNER", StringComparison.OrdinalIgnoreCase)
+            ? UpdateConfig.OfficialRepository
+            : value;
+    }
 
     public async Task<Result<UpdateInfo?>> CheckAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{Repository}/releases/latest");
-            request.Headers.UserAgent.Add(new ProductInfoHeaderValue("TimePlayer", AppPaths.Version));
-            request.Headers.Accept.ParseAdd("application/vnd.github+json");
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
 
-            using var response = await _http.SendAsync(request, timeout.Token);
+            var repository = Repository;
+            var response = await GetLatestReleaseAsync(repository, timeout.Token);
+            if (response.StatusCode == HttpStatusCode.NotFound && repository != UpdateConfig.OfficialRepository)
+            {
+                // A custom repository that is gone shouldn't cut the user off from official updates.
+                _logger.LogWarning("Update repository {Repository} was not found; checking {Official} instead.", repository, UpdateConfig.OfficialRepository);
+                response.Dispose();
+                repository = UpdateConfig.OfficialRepository;
+                response = await GetLatestReleaseAsync(repository, timeout.Token);
+            }
+            using var _ = response;
             if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Update check of {Repository} got HTTP {Status}.", repository, (int)response.StatusCode);
                 return Result<UpdateInfo?>.Failure("UPDATE_HTTP", $"GitHub answered {(int)response.StatusCode} when checking for updates.");
+            }
 
             var release = await JsonSerializer.DeserializeAsync<GitHubRelease>(await response.Content.ReadAsStreamAsync(timeout.Token), cancellationToken: timeout.Token);
             if (release is null || ParseVersion(release.TagName) is not { } latest)
@@ -101,6 +127,14 @@ public sealed class UpdateService : IUpdateService
         {
             return Result<UpdateInfo?>.Failure("UPDATE_NETWORK", $"Could not check for updates: {ex.Message}");
         }
+    }
+
+    private Task<HttpResponseMessage> GetLatestReleaseAsync(string repository, CancellationToken cancellationToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, $"https://api.github.com/repos/{repository}/releases/latest");
+        request.Headers.UserAgent.Add(new ProductInfoHeaderValue("TimePlayer", AppPaths.Version));
+        request.Headers.Accept.ParseAdd("application/vnd.github+json");
+        return _http.SendAsync(request, cancellationToken);
     }
 
     internal static UpdateInfo? PickAssets(GitHubRelease release, Version version, InstallKind kind)

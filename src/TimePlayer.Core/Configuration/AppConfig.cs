@@ -18,8 +18,11 @@ public record UpdateConfig
 {
     /// <summary>Look for a new TimePlayer release when the app starts.</summary>
     public bool CheckAtStartup { get; init; } = true;
+    /// <summary>Where official TimePlayer releases are published.</summary>
+    public const string OfficialRepository = "ernie96/TimePlayer";
+
     /// <summary>GitHub repository ("owner/name") whose releases are TimePlayer's updates.</summary>
-    public string Repository { get; init; } = "ernie96/TimePlayer";
+    public string Repository { get; init; } = OfficialRepository;
     /// <summary>A version the user chose to skip; startup checks stay quiet about it.</summary>
     public string? SkippedVersion { get; init; }
 }

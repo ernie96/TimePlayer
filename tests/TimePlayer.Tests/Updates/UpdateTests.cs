@@ -42,6 +42,58 @@ public class UpdateTests : IDisposable
         Assert.False(UpdateSignature.Verify(publicKey, file, "TimePlayer.zip", "not base64!"));
     }
 
+    [Theory]
+    [InlineData("OWNER/TimePlayer", "ernie96/TimePlayer")]
+    [InlineData("owner/TimePlayer", "ernie96/TimePlayer")]
+    [InlineData("", "ernie96/TimePlayer")]
+    [InlineData(null, "ernie96/TimePlayer")]
+    [InlineData("not a repo", "ernie96/TimePlayer")]
+    [InlineData("someone/fork-of.TimePlayer", "someone/fork-of.TimePlayer")]
+    public void PlaceholderOrMalformedRepository_MeansTheOfficialOne(string? configured, string expected) =>
+        Assert.Equal(expected, UpdateService.EffectiveRepository(configured));
+
+    [Fact]
+    public async Task Check_WithPlaceholderSavedInSettings_AsksTheOfficialRepository()
+    {
+        var asked = new List<string>();
+        var http = new HttpClient(new Helpers.MockHttpMessageHandler(request =>
+        {
+            asked.Add(request.RequestUri!.AbsolutePath);
+            return request.RequestUri.AbsolutePath == "/repos/ernie96/TimePlayer/releases/latest"
+                ? new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent("""{"tag_name":"v0.0.1","assets":[]}""") }
+                : new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+        }));
+        var config = new TimePlayer.Core.Configuration.ConfigurationService(Microsoft.Extensions.Options.Options.Create(
+            new TimePlayer.Core.Configuration.AppConfig { Update = new TimePlayer.Core.Configuration.UpdateConfig { Repository = "OWNER/TimePlayer" } }));
+        var service = new UpdateService(http, config, Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateService>.Instance);
+
+        var result = await service.CheckAsync();
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+        Assert.Equal(new[] { "/repos/ernie96/TimePlayer/releases/latest" }, asked);
+    }
+
+    [Fact]
+    public async Task Check_WhenACustomRepositoryIsGone_FallsBackToTheOfficialOne()
+    {
+        var asked = new List<string>();
+        var http = new HttpClient(new Helpers.MockHttpMessageHandler(request =>
+        {
+            asked.Add(request.RequestUri!.AbsolutePath);
+            return request.RequestUri.AbsolutePath.StartsWith("/repos/ernie96/", StringComparison.Ordinal)
+                ? new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent("""{"tag_name":"v0.0.1","assets":[]}""") }
+                : new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+        }));
+        var config = new TimePlayer.Core.Configuration.ConfigurationService(Microsoft.Extensions.Options.Options.Create(
+            new TimePlayer.Core.Configuration.AppConfig { Update = new TimePlayer.Core.Configuration.UpdateConfig { Repository = "someone/gone" } }));
+        var service = new UpdateService(http, config, Microsoft.Extensions.Logging.Abstractions.NullLogger<UpdateService>.Instance);
+
+        var result = await service.CheckAsync();
+
+        Assert.True(result.IsSuccess, result.Error?.Message);
+        Assert.Equal(new[] { "/repos/someone/gone/releases/latest", "/repos/ernie96/TimePlayer/releases/latest" }, asked);
+    }
+
     [Fact]
     public void ShippedPublicKey_IsAValidEd25519Key()
     {

@@ -144,9 +144,9 @@ public sealed class DiscoveryService : IDiscoveryService
             GetPageVideosAsync(GamingChannel, region, cancellationToken),
             _innerTube.SearchFilteredAsync("gaming", ThisWeekVideos, null, region, cancellationToken));
 
-        var lists = sources.Where(r => r.IsSuccess).Select(r => r.Value.Items).ToList();
+        var lists = sources.Where(r => r.IsSuccess).Select(r => r.Value!.Items).ToList();
         if (lists.Count == 0)
-            return Result<PagedResult<SearchResult>>.Failure(sources[0].Error);
+            return Result<PagedResult<SearchResult>>.Failure(sources[0].Error!);
 
         // News pages run long; a fair share each keeps the mix varied.
         const int perSource = 25;
