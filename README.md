@@ -191,6 +191,10 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 
 - `subscriptions.json` is written in **NewPipe's export format**, so it can be imported directly into NewPipe, Tubular or LibreTube.
 - **Import** (Channels section): the Google Takeout zip (no need to unzip), NewPipe / Tubular / LibreTube JSON, Takeout `subscriptions.csv`, OPML, FreeTube `profiles.db`. The "How to get my YouTube subscriptions" button walks through Google Takeout step by step and opens it.
+- **Google Takeout** (Playlists section): one zip brings subscriptions, playlists, liked videos, Watch later and watch history (`history/watch-history.json`, when JSON is chosen in Takeout). Takeout lists only video ids; titles are looked up through YouTube's public oEmbed endpoint.
+- **For You**: recommendations built locally. Recent history, likes and subscription uploads are seeds; each seed's "Up next" list is pooled and scored by how often and how high a video appears, subscribed and familiar channels get a boost, and watched, liked, Not interested and blocked videos are left out, with at most two per channel. Cached in `recommendations.json` for three hours; new users get trending videos.
+- **Playlists** (`playlists.json`): Liked videos, your own playlists (rename, reorder with Alt+Up/Down, Play all, Shuffle) and saved YouTube playlists (refresh with F5). YouTube playlists open from a pasted link or from playlist search (InnerTube `browse VL<id>`, Invidious fallback). Your own playlists share as a `watch_videos` link.
+- **Not interested** (`hidden.json`): hidden videos and channels you don't want recommended.
 - **Export**: NewPipe JSON or OPML.
 - **What's New**: latest uploads of every subscribed channel from YouTube's public RSS feeds, newest first; uploads since your
   last visit are spoken as "New", Shorts are marked and can be hidden, and new uploads are announced at startup.

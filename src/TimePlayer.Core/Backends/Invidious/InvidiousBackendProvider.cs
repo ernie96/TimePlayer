@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
+using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 
 namespace TimePlayer.Core.Backends.Invidious;
@@ -154,6 +155,21 @@ public sealed class InvidiousBackendProvider : IBackendProvider, IVideoCatalogPr
             HasNextPage = !string.IsNullOrEmpty(next),
             NextPageToken = next
         });
+    }
+
+    /// <summary>One page (about 100 videos) of a playlist; <paramref name="page"/> starts at 1.</summary>
+    public async Task<Result<YouTubePlaylistPage>> GetPlaylistAsync(string playlistId, int page, CancellationToken cancellationToken = default)
+    {
+        var response = await ExecuteWithRetryAsync<InvidiousPlaylistResponse>(
+            $"api/v1/playlists/{Uri.EscapeDataString(playlistId)}?page={page}", cancellationToken);
+        if (response.IsFailure)
+            return Result<YouTubePlaylistPage>.Failure(response.Error);
+        var videos = MapVideoItems(response.Value.Videos);
+        var total = response.Value.VideoCount ?? 0;
+        // Invidious pages hold up to 100 (sometimes 200) videos; keep going while a page is full and more remain.
+        var next = videos.Count >= 100 && page * videos.Count < total ? (page + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) : null;
+        return Result<YouTubePlaylistPage>.Success(new YouTubePlaylistPage(
+            playlistId, response.Value.Title ?? string.Empty, response.Value.Author, videos, next));
     }
 
     /// <summary>Trending videos; <paramref name="type"/> is null, "music", "gaming" or "movies".</summary>

@@ -94,3 +94,46 @@ public enum FeaturedCategory
     Gaming = 2,
     Movies = 3
 }
+
+public enum PlaylistKind
+{
+    /// <summary>Made in TimePlayer (or imported from YouTube Takeout).</summary>
+    Local,
+    /// <summary>The "Liked videos" playlist, filled by Like.</summary>
+    Liked,
+    /// <summary>A YouTube playlist saved to the library; its videos are refreshed from YouTube.</summary>
+    YouTube
+}
+
+public sealed record Playlist
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public PlaylistKind Kind { get; init; } = PlaylistKind.Local;
+    /// <summary>For saved YouTube playlists: the playlist id after "list=".</summary>
+    public string? YouTubeId { get; init; }
+    public string? Owner { get; init; }
+    public DateTimeOffset CreatedUtc { get; init; }
+    public DateTimeOffset UpdatedUtc { get; init; }
+    public List<SavedVideo> Videos { get; init; } = new();
+
+    public SearchResult ToSearchResult() => new()
+    {
+        Kind = SearchResultKind.Playlist,
+        Id = YouTubeId ?? Id,
+        LibraryPlaylistId = Id,
+        Title = Name,
+        ChannelTitle = Kind == PlaylistKind.YouTube ? Owner ?? string.Empty : string.Empty,
+        PlaylistVideoCount = Videos.Count
+    };
+}
+
+/// <summary>Things the user asked not to be recommended.</summary>
+public sealed record HiddenFromRecommendations
+{
+    public List<string> VideoIds { get; init; } = new();
+    public List<ChannelSubscription> Channels { get; init; } = new();
+}
+
+/// <summary>A YouTube playlist's title and one page of its videos.</summary>
+public sealed record YouTubePlaylistPage(string PlaylistId, string Title, string? Owner, IReadOnlyList<SearchResult> Videos, string? NextPageToken);

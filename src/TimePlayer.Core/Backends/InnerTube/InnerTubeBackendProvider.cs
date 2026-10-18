@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
+using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 
 namespace TimePlayer.Core.Backends.InnerTube;
@@ -89,7 +90,7 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
                 if (InnerTubeJson.ParseVideoRenderer(renderer) is { } item && seen.Add(item.Id))
                     results.Add(item);
             }
-            var next = InnerTubeJson.LastContinuationToken(doc.RootElement);
+            var next = InnerTubeJson.ListContinuationToken(doc.RootElement);
             _logger.LogInformation("InnerTube search returned {Count} items for '{Query}'.", results.Count, query);
 
             return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
@@ -139,6 +140,65 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
         catch (JsonException ex)
         {
             return Result<CommentPage>.Failure("INNERTUBE_COMMENTS_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    /// <summary>One page of a YouTube playlist: the first when <paramref name="continuation"/> is null.</summary>
+    public async Task<Result<YouTubePlaylistPage>> GetPlaylistAsync(string playlistId, string? continuation, CancellationToken cancellationToken = default)
+    {
+        var body = string.IsNullOrEmpty(continuation)
+            ? new JsonObject { ["browseId"] = "VL" + playlistId }
+            : new JsonObject { ["continuation"] = continuation };
+        var response = await PostAsync("browse", body, cancellationToken);
+        if (response.IsFailure)
+            return Result<YouTubePlaylistPage>.Failure(response.Error);
+        try
+        {
+            using var doc = JsonDocument.Parse(response.Value);
+            var page = InnerTubeJson.ParsePlaylistPage(doc.RootElement, playlistId);
+            if (continuation is null && page.Videos.Count == 0)
+                return Result<YouTubePlaylistPage>.Failure("PLAYLIST_EMPTY", "This playlist is private, empty or no longer exists.");
+            return Result<YouTubePlaylistPage>.Success(page);
+        }
+        catch (JsonException ex)
+        {
+            return Result<YouTubePlaylistPage>.Failure("INNERTUBE_PLAYLIST_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    /// <summary>Search for playlists instead of videos.</summary>
+    public async Task<Result<PagedResult<SearchResult>>> SearchPlaylistsAsync(string query, string? pageToken, CancellationToken cancellationToken = default)
+    {
+        var body = string.IsNullOrWhiteSpace(pageToken)
+            // "EgIQAw==" is YouTube's "Type: Playlist" search filter.
+            ? new JsonObject { ["query"] = query, ["params"] = "EgIQAw==" }
+            : new JsonObject { ["continuation"] = pageToken };
+        var response = await PostAsync("search", body, cancellationToken);
+        if (response.IsFailure)
+            return Result<PagedResult<SearchResult>>.Failure(response.Error);
+        try
+        {
+            using var doc = JsonDocument.Parse(response.Value);
+            var results = new List<SearchResult>();
+            var seen = new HashSet<string>();
+            foreach (var lockup in InnerTubeJson.FindAll(doc.RootElement, "lockupViewModel"))
+            {
+                if (InnerTubeJson.ParsePlaylistLockup(lockup) is { } item && seen.Add(item.Id))
+                    results.Add(item);
+            }
+            var next = results.Count > 0 ? InnerTubeJson.ListContinuationToken(doc.RootElement) : null;
+            return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
+            {
+                Items = results,
+                PageIndex = 1,
+                HasNextPage = next is not null,
+                NextPageToken = next,
+                TotalEstimatedResults = results.Count
+            });
+        }
+        catch (JsonException ex)
+        {
+            return Result<PagedResult<SearchResult>>.Failure("INNERTUBE_SEARCH_FAILED", ex.Message, ex.ToString(), ex);
         }
     }
 

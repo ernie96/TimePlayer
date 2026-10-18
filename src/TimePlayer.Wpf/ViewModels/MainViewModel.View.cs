@@ -31,7 +31,8 @@ public sealed partial class MainViewModel
     public bool IsQueueSection => CurrentSection == BrowseSection.Queue;
     public bool IsResultsListVisible => !IsQueueSection && !IsSectionEmpty;
     public bool IsQueueListVisible => IsQueueSection && PlaybackQueue.Count > 0;
-    public bool CanRemoveFromSection => CurrentSection is BrowseSection.History or BrowseSection.WatchLater or BrowseSection.Channels;
+    public bool CanRemoveFromSection => CurrentSection is BrowseSection.History or BrowseSection.WatchLater or BrowseSection.Channels
+        or BrowseSection.Playlists or BrowseSection.ForYou || IsOpenPlaylistInLibrary;
 
     public bool IsSectionEmpty => IsQueueSection
         ? PlaybackQueue.Count == 0
@@ -43,9 +44,8 @@ public sealed partial class MainViewModel
         {
             int count = IsQueueSection ? PlaybackQueue.Count : SearchResults.Count;
             if (count == 0) return string.Empty;
-            var noun = CurrentSection == BrowseSection.Channels ? "channel" : "video";
             var more = CanLoadMore && !IsQueueSection ? ", more load as you go" : string.Empty;
-            return $"{count} {noun}{(count == 1 ? "" : "s")}{more}";
+            return $"{count} {SectionNoun(count)}{more}";
         }
     }
 
@@ -53,6 +53,7 @@ public sealed partial class MainViewModel
     {
         OnPropertyChanged(nameof(IsQueueSection));
         OnPropertyChanged(nameof(CanRemoveFromSection));
+        RaisePlaylistViewState();
         RaiseListStateChanged();
     }
 

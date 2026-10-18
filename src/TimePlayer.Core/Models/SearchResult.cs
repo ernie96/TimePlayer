@@ -4,7 +4,9 @@ public enum SearchResultKind
 {
     Video = 0,
     /// <summary>A subscribed channel; <see cref="SearchResult.Id"/> holds the channel id.</summary>
-    Channel = 1
+    Channel = 1,
+    /// <summary>A playlist (local or YouTube); <see cref="SearchResult.Id"/> holds its library or YouTube id.</summary>
+    Playlist = 2
 }
 
 /// <summary>
@@ -24,6 +26,12 @@ public record SearchResult
 
     public bool IsVideo => Kind == SearchResultKind.Video;
 
+    /// <summary>Number of videos, for playlist rows.</summary>
+    public int? PlaylistVideoCount { get; init; }
+
+    /// <summary>Set on playlist rows that are in the user's library (Playlists section); null for YouTube search results.</summary>
+    public string? LibraryPlaylistId { get; init; }
+
     public required string Id { get; init; }
     public required string Title { get; init; }
     public required string ChannelTitle { get; init; }
@@ -42,6 +50,13 @@ public record SearchResult
     {
         get
         {
+            if (Kind == SearchResultKind.Playlist)
+            {
+                var count = PlaylistVideoCount is { } n ? (n == 1 ? ", 1 video" : $", {n} videos") : string.Empty;
+                var owner = string.IsNullOrWhiteSpace(ChannelTitle) ? string.Empty : $", by {ChannelTitle}";
+                return $"Playlist: {Title}{count}{owner}";
+            }
+
             if (Kind == SearchResultKind.Channel)
             {
                 var channelParts = new List<string> { $"Channel: {Title}" };

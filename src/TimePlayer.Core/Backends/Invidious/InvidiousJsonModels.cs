@@ -291,3 +291,18 @@ internal sealed class InvidiousChannelVideosResponse
     [JsonPropertyName("continuation")]
     public string? Continuation { get; set; }
 }
+
+internal sealed class InvidiousPlaylistResponse
+{
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("author")]
+    public string? Author { get; set; }
+
+    [JsonPropertyName("videoCount")]
+    public int? VideoCount { get; set; }
+
+    [JsonPropertyName("videos")]
+    public List<InvidiousSearchItem>? Videos { get; set; }
+}

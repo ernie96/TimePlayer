@@ -37,23 +37,35 @@ Keys
 Press F1 anywhere: it explains the keys for the part of the app that has focus.
 F6 moves between the main areas. The Applications key lists the actions for any item.
 
-Library: Control+1 to Control+7 open Search, Featured, What's New, Channels, History,
-Watch Later and Queue. In any list, Enter plays, Control+Q queues, Control+L saves to
-Watch Later, Control+S subscribes, Control+G opens the channel, Control+C copies a share
-link and Control+D downloads.
+Library: Control+1 to Control+9 open Search, Featured, What's New, Channels, History,
+Watch Later, Queue, For You and Playlists. In any list, Enter plays, Control+Q queues,
+Control+L saves to Watch Later, Control+K likes, Control+P adds to a playlist,
+Control+S subscribes, Control+G opens the channel, Control+C copies a share link and
+Control+D downloads.
 
 Player: K plays and pauses, Left and Right seek, 0 to 9 jump through the video, T says the
 time, Alt+U, Alt+C, Alt+D and Alt+Q open Up next, Comments, Description and Queue.
 Escape goes back.
 
 
-Subscriptions
--------------
+Subscriptions, playlists and For You
+------------------------------------
 
-Press Control+4 for Channels. "How to get my YouTube subscriptions" walks you through
-exporting them from Google Takeout; then use Import subscriptions and choose the zip
-Google sends you. NewPipe, LibreTube, FreeTube and OPML files can be imported too, and
-Export subscriptions saves a file NewPipe can read.
+Everything an account would keep stays on this computer instead: subscriptions, likes,
+playlists, Watch Later and history. Nothing is sent to Google.
+
+For You (Control+8) suggests videos from what you watch, like and subscribe to. Delete on
+a video means not interested; Shift+Delete stops recommending that channel.
+
+Playlists (Control+9) holds Liked videos and your own playlists. Paste a YouTube playlist
+link into the search box to open it, and Save to Playlists keeps it. To find playlists,
+choose Playlists in the Find box next to the search results.
+
+Bring your YouTube account's data with Google Takeout: in Playlists, "How to get my
+YouTube data" walks you through it; then Import from Google Takeout and choose the zip
+Google sends you. It brings subscriptions, playlists, liked videos and watch history.
+NewPipe, LibreTube, FreeTube and OPML subscription files can be imported in Channels
+(Control+4), and Export subscriptions saves a file NewPipe can read.
 
 
 Downloads

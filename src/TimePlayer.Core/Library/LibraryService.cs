@@ -30,6 +30,9 @@ public interface ILibraryService
     void RecordProgress(SearchResult video, TimeSpan position, TimeSpan duration, bool flush = false);
     void RemoveFromHistory(string videoId);
     void ClearHistory();
+    /// <summary>Adds watch history from an export, keeping what's already here.</summary>
+    /// <returns>Number of videos that were not already in history.</returns>
+    int ImportHistory(IEnumerable<HistoryEntry> entries);
 
     bool IsInWatchLater(string videoId);
     /// <returns>True when now saved.</returns>
@@ -39,13 +42,43 @@ public interface ILibraryService
     void SaveFeed(SubscriptionFeedResult feed);
     void MarkFeedViewed(DateTimeOffset whenUtc);
 
+    /// <summary>All playlists; "Liked videos" first, then the user's in the order they were made.</summary>
+    IReadOnlyList<Playlist> Playlists { get; }
+    Playlist? GetPlaylist(string id);
+    Playlist CreatePlaylist(string name, IEnumerable<SearchResult>? videos = null);
+    void RenamePlaylist(string id, string name);
+    void DeletePlaylist(string id);
+    /// <returns>False when the video was already in the playlist.</returns>
+    bool AddToPlaylist(string id, SearchResult video);
+    void RemoveFromPlaylist(string id, string videoId);
+    /// <summary>Moves a video up (negative) or down (positive). Returns its new index, or -1.</summary>
+    int MoveInPlaylist(string id, string videoId, int offset);
+    /// <summary>Saves (or refreshes) a YouTube playlist in the library.</summary>
+    Playlist SaveYouTubePlaylist(string youTubeId, string title, string? owner, IEnumerable<SearchResult> videos);
+    Playlist? FindSavedYouTubePlaylist(string youTubeId);
+
+    bool IsLiked(string videoId);
+    /// <returns>True when now liked.</returns>
+    bool ToggleLike(SearchResult video);
+    IReadOnlyList<SavedVideo> LikedVideos { get; }
+    /// <returns>Number of videos that were not already there.</returns>
+    int ImportLikes(IEnumerable<SearchResult> videos);
+    /// <returns>Number of videos that were not already there.</returns>
+    int ImportWatchLater(IEnumerable<SearchResult> videos);
+
+    HiddenFromRecommendations Hidden { get; }
+    void HideVideo(string videoId);
+    void BlockChannel(string channelId, string channelName);
+    void UnblockChannel(string channelId);
+    bool IsHidden(SearchResult video);
+
     void Flush();
 }
 
 /// <summary>
 /// Local, account-free library stored as JSON files, NewPipe style:
 /// subscriptions.json (NewPipe export format, so it can be copied straight into NewPipe),
-/// history.json, watch_later.json and feed.json.
+/// history.json, watch_later.json, feed.json, playlists.json and hidden.json.
 /// Lives next to the executable for portable installs (when settings.json is there),
 /// otherwise in %LOCALAPPDATA%\TimePlayer\library.
 /// </summary>
@@ -66,6 +99,8 @@ public sealed class LibraryService : ILibraryService
     private List<HistoryEntry> _history;
     private List<SavedVideo> _watchLater;
     private FeedFile _feed;
+    private List<Playlist> _playlists;
+    private HiddenFromRecommendations _hidden;
     private DateTimeOffset _lastHistorySave = DateTimeOffset.MinValue;
     private bool _historyDirty;
 
@@ -81,6 +116,8 @@ public sealed class LibraryService : ILibraryService
         _history = Load<List<HistoryEntry>>(HistoryFile) ?? new();
         _watchLater = Load<List<SavedVideo>>(WatchLaterFile) ?? new();
         _feed = Load<FeedFile>(FeedFileName) ?? new();
+        _playlists = Load<List<Playlist>>(PlaylistsFile) ?? new();
+        _hidden = Load<HiddenFromRecommendations>(HiddenFile) ?? new();
     }
 
     public static string DefaultDataDirectory() => Configuration.AppPaths.LibraryFolder;
@@ -91,6 +128,10 @@ public sealed class LibraryService : ILibraryService
     private string HistoryFile => Path.Combine(DataDirectory, "history.json");
     private string WatchLaterFile => Path.Combine(DataDirectory, "watch_later.json");
     private string FeedFileName => Path.Combine(DataDirectory, "feed.json");
+    private string PlaylistsFile => Path.Combine(DataDirectory, "playlists.json");
+    private string HiddenFile => Path.Combine(DataDirectory, "hidden.json");
+
+    public const string LikedPlaylistId = "liked";
 
     public event EventHandler? Changed;
 
@@ -263,6 +304,31 @@ public sealed class LibraryService : ILibraryService
         Changed?.Invoke(this, EventArgs.Empty);
     }
 
+    public int ImportHistory(IEnumerable<HistoryEntry> entries)
+    {
+        int added = 0;
+        lock (_gate)
+        {
+            var known = new HashSet<string>(_history.Select(h => h.VideoId));
+            foreach (var entry in entries)
+            {
+                if (known.Add(entry.VideoId))
+                {
+                    _history.Add(entry);
+                    added++;
+                }
+            }
+            if (added == 0)
+                return 0;
+            _history.Sort((a, b) => b.LastWatchedUtc.CompareTo(a.LastWatchedUtc));
+            if (_history.Count > MaxHistoryEntries)
+                _history.RemoveRange(MaxHistoryEntries, _history.Count - MaxHistoryEntries);
+            SaveHistory();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return added;
+    }
+
     private void SaveHistory()
     {
         WriteAtomic(HistoryFile, JsonSerializer.Serialize(_history, JsonOptions));
@@ -327,6 +393,360 @@ public sealed class LibraryService : ILibraryService
             WriteAtomic(FeedFileName, JsonSerializer.Serialize(_feed, JsonOptions));
         }
     }
+
+    // --- Playlists ---
+
+    public IReadOnlyList<Playlist> Playlists
+    {
+        get
+        {
+            lock (_gate)
+            {
+                var liked = _playlists.Where(p => p.Kind == PlaylistKind.Liked);
+                return liked.Concat(_playlists.Where(p => p.Kind != PlaylistKind.Liked)).Select(Copy).ToList();
+            }
+        }
+    }
+
+    public Playlist? GetPlaylist(string id)
+    {
+        lock (_gate)
+        {
+            var p = _playlists.FirstOrDefault(p => p.Id == id);
+            if (p is null && id == LikedPlaylistId)
+                return NewLiked();
+            return p is null ? null : Copy(p);
+        }
+    }
+
+    public Playlist CreatePlaylist(string name, IEnumerable<SearchResult>? videos = null)
+    {
+        Playlist created;
+        lock (_gate)
+        {
+            var now = _clock();
+            created = new Playlist
+            {
+                Id = Guid.NewGuid().ToString("N")[..12],
+                Name = CleanName(name),
+                CreatedUtc = now,
+                UpdatedUtc = now,
+                Videos = Distinct(videos ?? Array.Empty<SearchResult>(), now)
+            };
+            _playlists.Add(created);
+            SavePlaylists();
+            created = Copy(created);
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return created;
+    }
+
+    public void RenamePlaylist(string id, string name) =>
+        UpdatePlaylist(id, p => p.Kind == PlaylistKind.Liked ? null : p with { Name = CleanName(name) });
+
+    public void DeletePlaylist(string id)
+    {
+        lock (_gate)
+        {
+            if (_playlists.RemoveAll(p => p.Id == id) == 0)
+                return;
+            SavePlaylists();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public bool AddToPlaylist(string id, SearchResult video)
+    {
+        if (!video.IsVideo || string.IsNullOrWhiteSpace(video.Id))
+            return false;
+        bool added = false;
+        UpdatePlaylist(id, p =>
+        {
+            if (p.Videos.Any(v => v.VideoId == video.Id))
+                return null;
+            added = true;
+            var videos = p.Videos.ToList();
+            videos.Add(SavedVideo.From(video, _clock()));
+            return p with { Videos = videos };
+        });
+        return added;
+    }
+
+    public void RemoveFromPlaylist(string id, string videoId) =>
+        UpdatePlaylist(id, p =>
+        {
+            var videos = p.Videos.Where(v => v.VideoId != videoId).ToList();
+            return videos.Count == p.Videos.Count ? null : p with { Videos = videos };
+        });
+
+    public int MoveInPlaylist(string id, string videoId, int offset)
+    {
+        int newIndex = -1;
+        UpdatePlaylist(id, p =>
+        {
+            var videos = p.Videos.ToList();
+            var index = videos.FindIndex(v => v.VideoId == videoId);
+            if (index < 0)
+                return null;
+            var target = Math.Clamp(index + offset, 0, videos.Count - 1);
+            newIndex = target;
+            if (target == index)
+                return null;
+            var item = videos[index];
+            videos.RemoveAt(index);
+            videos.Insert(target, item);
+            return p with { Videos = videos };
+        });
+        return newIndex;
+    }
+
+    public Playlist SaveYouTubePlaylist(string youTubeId, string title, string? owner, IEnumerable<SearchResult> videos)
+    {
+        Playlist saved;
+        lock (_gate)
+        {
+            var now = _clock();
+            var index = _playlists.FindIndex(p => p.Kind == PlaylistKind.YouTube && p.YouTubeId == youTubeId);
+            var list = Distinct(videos, now);
+            if (index >= 0)
+            {
+                // Keep the user's chosen name if they renamed it.
+                saved = _playlists[index] with { Owner = owner ?? _playlists[index].Owner, UpdatedUtc = now, Videos = list };
+                _playlists[index] = saved;
+            }
+            else
+            {
+                saved = new Playlist
+                {
+                    Id = "yt-" + youTubeId,
+                    Name = CleanName(title),
+                    Kind = PlaylistKind.YouTube,
+                    YouTubeId = youTubeId,
+                    Owner = owner,
+                    CreatedUtc = now,
+                    UpdatedUtc = now,
+                    Videos = list
+                };
+                _playlists.Add(saved);
+            }
+            SavePlaylists();
+            saved = Copy(saved);
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return saved;
+    }
+
+    public Playlist? FindSavedYouTubePlaylist(string youTubeId)
+    {
+        lock (_gate)
+        {
+            var p = _playlists.FirstOrDefault(p => p.Kind == PlaylistKind.YouTube && p.YouTubeId == youTubeId);
+            return p is null ? null : Copy(p);
+        }
+    }
+
+    // --- Likes ---
+
+    public bool IsLiked(string videoId)
+    {
+        lock (_gate) return LikedOrNull()?.Videos.Any(v => v.VideoId == videoId) == true;
+    }
+
+    public IReadOnlyList<SavedVideo> LikedVideos
+    {
+        get { lock (_gate) return LikedOrNull()?.Videos.ToList() ?? new List<SavedVideo>(); }
+    }
+
+    public bool ToggleLike(SearchResult video)
+    {
+        bool liked;
+        lock (_gate)
+        {
+            var playlist = EnsureLiked();
+            var videos = playlist.Videos.ToList();
+            if (videos.RemoveAll(v => v.VideoId == video.Id) > 0)
+            {
+                liked = false;
+            }
+            else
+            {
+                // Newest likes first, like YouTube.
+                videos.Insert(0, SavedVideo.From(video, _clock()));
+                liked = true;
+            }
+            ReplacePlaylist(playlist with { Videos = videos, UpdatedUtc = _clock() });
+            SavePlaylists();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return liked;
+    }
+
+    public int ImportLikes(IEnumerable<SearchResult> videos)
+    {
+        int added = 0;
+        lock (_gate)
+        {
+            var playlist = EnsureLiked();
+            var list = playlist.Videos.ToList();
+            var now = _clock();
+            foreach (var v in videos)
+            {
+                if (!v.IsVideo || string.IsNullOrWhiteSpace(v.Id) || list.Any(x => x.VideoId == v.Id))
+                    continue;
+                list.Add(SavedVideo.From(v, now));
+                added++;
+            }
+            if (added > 0)
+            {
+                ReplacePlaylist(playlist with { Videos = list, UpdatedUtc = now });
+                SavePlaylists();
+            }
+        }
+        if (added > 0)
+            Changed?.Invoke(this, EventArgs.Empty);
+        return added;
+    }
+
+    public int ImportWatchLater(IEnumerable<SearchResult> videos)
+    {
+        int added = 0;
+        lock (_gate)
+        {
+            var now = _clock();
+            foreach (var v in videos)
+            {
+                if (!v.IsVideo || string.IsNullOrWhiteSpace(v.Id) || _watchLater.Any(x => x.VideoId == v.Id))
+                    continue;
+                _watchLater.Add(SavedVideo.From(v, now));
+                added++;
+            }
+            if (added > 0)
+                WriteAtomic(WatchLaterFile, JsonSerializer.Serialize(_watchLater, JsonOptions));
+        }
+        if (added > 0)
+            Changed?.Invoke(this, EventArgs.Empty);
+        return added;
+    }
+
+    private Playlist? LikedOrNull() => _playlists.FirstOrDefault(p => p.Kind == PlaylistKind.Liked);
+
+    private Playlist EnsureLiked()
+    {
+        var liked = LikedOrNull();
+        if (liked is null)
+        {
+            liked = NewLiked();
+            _playlists.Insert(0, liked);
+        }
+        return liked;
+    }
+
+    private Playlist NewLiked() => new()
+    {
+        Id = LikedPlaylistId,
+        Name = "Liked videos",
+        Kind = PlaylistKind.Liked,
+        CreatedUtc = _clock(),
+        UpdatedUtc = _clock()
+    };
+
+    private void UpdatePlaylist(string id, Func<Playlist, Playlist?> change)
+    {
+        lock (_gate)
+        {
+            var current = _playlists.FirstOrDefault(p => p.Id == id);
+            if (current is null && id == LikedPlaylistId)
+                current = EnsureLiked();
+            if (current is null)
+                return;
+            var updated = change(current);
+            if (updated is null)
+                return;
+            ReplacePlaylist(updated with { UpdatedUtc = _clock() });
+            SavePlaylists();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ReplacePlaylist(Playlist playlist)
+    {
+        var index = _playlists.FindIndex(p => p.Id == playlist.Id);
+        if (index >= 0)
+            _playlists[index] = playlist;
+        else
+            _playlists.Add(playlist);
+    }
+
+    private static Playlist Copy(Playlist p) => p with { Videos = p.Videos.ToList() };
+
+    private static List<SavedVideo> Distinct(IEnumerable<SearchResult> videos, DateTimeOffset now) =>
+        videos.Where(v => v.IsVideo && !string.IsNullOrWhiteSpace(v.Id))
+            .DistinctBy(v => v.Id)
+            .Select(v => SavedVideo.From(v, now))
+            .ToList();
+
+    private static string CleanName(string name) =>
+        string.IsNullOrWhiteSpace(name) ? "Untitled playlist" : name.Trim();
+
+    private void SavePlaylists() => WriteAtomic(PlaylistsFile, JsonSerializer.Serialize(_playlists, JsonOptions));
+
+    // --- Not interested ---
+
+    public HiddenFromRecommendations Hidden
+    {
+        get { lock (_gate) return new HiddenFromRecommendations { VideoIds = _hidden.VideoIds.ToList(), Channels = _hidden.Channels.ToList() }; }
+    }
+
+    public void HideVideo(string videoId)
+    {
+        lock (_gate)
+        {
+            if (_hidden.VideoIds.Contains(videoId))
+                return;
+            _hidden.VideoIds.Add(videoId);
+            // Keep the file small; old entries rarely come back into recommendations anyway.
+            if (_hidden.VideoIds.Count > 2000)
+                _hidden.VideoIds.RemoveRange(0, _hidden.VideoIds.Count - 2000);
+            SaveHidden();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void BlockChannel(string channelId, string channelName)
+    {
+        lock (_gate)
+        {
+            if (_hidden.Channels.Any(c => c.ChannelId == channelId))
+                return;
+            _hidden.Channels.Add(new ChannelSubscription(channelId, channelName));
+            SaveHidden();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void UnblockChannel(string channelId)
+    {
+        lock (_gate)
+        {
+            if (_hidden.Channels.RemoveAll(c => c.ChannelId == channelId) == 0)
+                return;
+            SaveHidden();
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public bool IsHidden(SearchResult video)
+    {
+        lock (_gate)
+        {
+            return _hidden.VideoIds.Contains(video.Id) ||
+                   (video.ChannelId is { } c && _hidden.Channels.Any(b => b.ChannelId == c)) ||
+                   (!string.IsNullOrWhiteSpace(video.ChannelTitle) &&
+                    _hidden.Channels.Any(b => string.Equals(b.Name, video.ChannelTitle, StringComparison.OrdinalIgnoreCase)));
+        }
+    }
+
+    private void SaveHidden() => WriteAtomic(HiddenFile, JsonSerializer.Serialize(_hidden, JsonOptions));
 
     public void Flush()
     {

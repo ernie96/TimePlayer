@@ -21,7 +21,13 @@ public enum BrowseSection
     WatchLater,
     Queue,
     /// <summary>Uploads of one channel, opened from any list; Back returns to the previous section.</summary>
-    Channel
+    Channel,
+    /// <summary>Recommendations from history, likes and subscriptions.</summary>
+    ForYou,
+    /// <summary>Liked videos, your playlists and saved YouTube playlists.</summary>
+    Playlists,
+    /// <summary>The videos of one playlist, opened from any list; Back returns.</summary>
+    Playlist
 }
 
 public sealed record SectionTab(BrowseSection Section, string Header, string Shortcut)
@@ -47,8 +53,6 @@ public sealed partial class MainViewModel
     private readonly Dictionary<FeaturedCategory, (DateTimeOffset Fetched, IReadOnlyList<SearchResult> Items)> _featuredCache = new();
     private CancellationTokenSource? _sectionCts;
     private bool _syncingTab;
-    private BrowseSection _sectionBeforeChannel = BrowseSection.Search;
-    private int _selectionBeforeChannel;
     private SubscriptionFeedResult? _feed;
     private Task? _feedRefreshTask;
 
@@ -65,6 +69,8 @@ public sealed partial class MainViewModel
         new(BrowseSection.History, "History", "Control+5"),
         new(BrowseSection.WatchLater, "Watch Later", "Control+6"),
         new(BrowseSection.Queue, "Queue", "Control+7"),
+        new(BrowseSection.ForYou, "For You", "Control+8"),
+        new(BrowseSection.Playlists, "Playlists", "Control+9"),
     };
 
     public IReadOnlyList<FeaturedCategory> FeaturedCategories { get; } = Enum.GetValues<FeaturedCategory>();
@@ -73,7 +79,8 @@ public sealed partial class MainViewModel
     private SectionTab? _selectedSectionTab;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsFeaturedSection), nameof(IsChannelsSection), nameof(IsHistorySection), nameof(IsChannelView))]
+    [NotifyPropertyChangedFor(nameof(IsFeaturedSection), nameof(IsChannelsSection), nameof(IsHistorySection), nameof(IsChannelView),
+        nameof(IsForYouSection), nameof(IsPlaylistsSection), nameof(IsPlaylistView), nameof(IsDetailView), nameof(IsSearchSection))]
     private BrowseSection _currentSection = BrowseSection.Search;
 
     [ObservableProperty]
@@ -172,7 +179,7 @@ public sealed partial class MainViewModel
                     SectionTitle = "Search results";
                     SectionEmptyText = "Type keywords or paste a YouTube video link above and press Enter to search.\nOr press Control+2 for featured videos.";
                     ShowItems(_lastSearchResults, moveFocus);
-                    if (_lastSearchResults.Count > 0)
+                    if (_lastSearchResults.Count > 0 && _lastSearchResults[0].Kind != SearchResultKind.Playlist)
                         ConfigureSearchPaging();
                     break;
 
@@ -212,6 +219,18 @@ public sealed partial class MainViewModel
                     await ShowChannelUploadsAsync(moveFocus, token);
                     break;
 
+                case BrowseSection.ForYou:
+                    await ShowForYouAsync(moveFocus, forceRefresh, token);
+                    break;
+
+                case BrowseSection.Playlists:
+                    ShowPlaylists(moveFocus);
+                    break;
+
+                case BrowseSection.Playlist:
+                    await ShowPlaylistPageAsync(moveFocus, forceRefresh, token);
+                    break;
+
                 case BrowseSection.Queue:
                     SectionTitle = "Queue";
                     SectionEmptyText = "The queue is empty. Press Control+Q on any video to add it; queued videos play one after another.";
@@ -238,8 +257,8 @@ public sealed partial class MainViewModel
 
     private void SyncSelectedTab(BrowseSection section)
     {
-        if (section == BrowseSection.Channel)
-            return; // keep the tab the channel was opened from
+        if (section is BrowseSection.Channel or BrowseSection.Playlist)
+            return; // keep the tab the page was opened from
         _syncingTab = true;
         SelectedSectionTab = SectionTabs.First(t => t.Section == section);
         _syncingTab = false;
@@ -527,15 +546,25 @@ public sealed partial class MainViewModel
         }
         else
         {
-            var noun = CurrentSection == BrowseSection.Channels
-                ? $"{count} channel{(count == 1 ? "" : "s")}"
-                : $"{count} video{(count == 1 ? "" : "s")}";
+            var noun = $"{count} {SectionNoun(count)}";
             spoken = string.Join(", ", new[] { noun, extraSummary }.Where(s => !string.IsNullOrWhiteSpace(s)));
         }
         _accessibility.Announce(spoken, AnnouncementPriority.Medium);
 
         if (moveFocus && count > 0)
             RequestFocusResults?.Invoke(this, EventArgs.Empty);
+    }
+
+    private string SectionNoun(int count)
+    {
+        var noun = CurrentSection switch
+        {
+            BrowseSection.Channels => "channel",
+            BrowseSection.Playlists => "playlist",
+            BrowseSection.Search when SearchResults.FirstOrDefault()?.Kind == SearchResultKind.Playlist => "playlist",
+            _ => "video"
+        };
+        return count == 1 ? noun : noun + "s";
     }
 
     /// <summary>Adds the spoken library status: New, Watched, Resume at ...</summary>
@@ -573,26 +602,11 @@ public sealed partial class MainViewModel
             return;
         }
 
-        if (CurrentSection != BrowseSection.Channel)
-        {
-            _sectionBeforeChannel = CurrentSection;
-            _selectionBeforeChannel = Math.Max(0, SearchResults.IndexOf(SelectedSearchResult!));
-        }
+        if (CurrentSection != BrowseSection.Channel || _currentChannelId != channelId)
+            PushNavigation();
         _currentChannelId = channelId;
         _currentChannelName = item.Kind == SearchResultKind.Channel ? item.Title : item.ChannelTitle;
         await ShowSectionAsync(BrowseSection.Channel, moveFocus: true);
-    }
-
-    [RelayCommand]
-    public async Task GoBackAsync()
-    {
-        if (CurrentSection != BrowseSection.Channel)
-            return;
-        var restoreIndex = _selectionBeforeChannel;
-        await ShowSectionAsync(_sectionBeforeChannel, moveFocus: false);
-        if (restoreIndex < SearchResults.Count)
-            SelectedSearchResult = SearchResults[restoreIndex];
-        RequestFocusResults?.Invoke(this, EventArgs.Empty);
     }
 
     [RelayCommand]
@@ -650,8 +664,21 @@ public sealed partial class MainViewModel
                 _library.Unsubscribe(item.Id);
                 _accessibility.Announce($"Unsubscribed from {item.Title}.", AnnouncementPriority.High);
                 break;
+            case BrowseSection.ForYou:
+                NotInterested(item);
+                return;
+            case BrowseSection.Playlists:
+                _ = DeleteOpenPlaylistAsync();
+                return;
+            case BrowseSection.Playlist when _openLibraryPlaylistId is { } playlistId:
+                if (playlistId == LibraryService.LikedPlaylistId)
+                    _library.ToggleLike(item);
+                else
+                    _library.RemoveFromPlaylist(playlistId, item.Id);
+                _accessibility.Announce($"Removed {item.Title}.", AnnouncementPriority.High);
+                break;
             default:
-                _accessibility.Announce("Delete removes items from History, Watch Later and Channels.", AnnouncementPriority.Medium);
+                _accessibility.Announce("Delete removes items from History, Watch Later, Channels, For You and your playlists.", AnnouncementPriority.Medium);
                 return;
         }
         RemoveItemKeepingPosition(item);
@@ -717,16 +744,13 @@ public sealed partial class MainViewModel
     {
         try
         {
-            SubscriptionImportResult parsed;
             if (Path.GetExtension(path).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             {
-                using var stream = File.OpenRead(path);
-                parsed = SubscriptionFormats.ParseZip(stream);
+                // A Takeout zip holds playlists, likes and history too; bring them all.
+                _ = ImportTakeoutAsync(path);
+                return;
             }
-            else
-            {
-                parsed = SubscriptionFormats.Parse(File.ReadAllText(path));
-            }
+            var parsed = SubscriptionFormats.Parse(File.ReadAllText(path));
             int added = _library.ImportSubscriptions(parsed.Channels);
             int already = parsed.Channels.Count - added;
             var message = $"Imported {added} channel{(added == 1 ? "" : "s")} from {parsed.FormatName}.";
@@ -782,6 +806,7 @@ public sealed partial class MainViewModel
         var channelId = CurrentVideo?.Channel.Id ?? _currentLibraryVideo?.ChannelId;
         IsCurrentChannelSubscribed = !string.IsNullOrWhiteSpace(channelId) && _library.IsSubscribed(channelId);
         IsCurrentVideoInWatchLater = CurrentVideoId is { } id && _library.IsInWatchLater(id);
+        IsCurrentVideoLiked = CurrentVideoId is { } likedId && _library.IsLiked(likedId);
     }
 
     [RelayCommand]
@@ -852,6 +877,8 @@ public sealed partial class MainViewModel
             parts.Add($"uploaded {AccessibleTextFormatter.FormatAgeSpoken(uploaded, DateTimeOffset.UtcNow)}");
         if (CurrentVideo?.ViewCount is { } views)
             parts.Add($"{views:N0} views");
+        if (IsCurrentVideoLiked)
+            parts.Add("liked");
         if (IsCurrentVideoInWatchLater)
             parts.Add("in Watch Later");
         _accessibility.Announce(string.Join(". ", parts) + ".", AnnouncementPriority.High);

@@ -35,6 +35,12 @@
                             <MenuItem Header="Save to or remove from _Watch Later" InputGestureText="Ctrl+L"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.ToggleWatchLaterForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                            <MenuItem Header="_Like or unlike" InputGestureText="Ctrl+K"
+                                      Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                      Command="{Binding PlacementTarget.Tag.ToggleLikeForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                            <MenuItem Header="Add to _playlist..." InputGestureText="Ctrl+P"
+                                      Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                      Command="{Binding PlacementTarget.Tag.ShowAddToPlaylistMenuCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             <MenuItem Header="_Subscribe or unsubscribe" InputGestureText="Ctrl+S"
                                       Command="{Binding PlacementTarget.Tag.ToggleSubscriptionForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             <MenuItem Header="Go to _channel" InputGestureText="Ctrl+G"
@@ -50,6 +56,11 @@
                             <MenuItem Header="_Remove from this list" InputGestureText="Delete"
                                       Visibility="{Binding PlacementTarget.Tag.CanRemoveFromSection, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.RemoveSelectedItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                            <MenuItem Header="_Not interested" InputGestureText="Delete"
+                                      Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                      Command="{Binding PlacementTarget.Tag.NotInterestedCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                            <MenuItem Header="Don't recommend this c_hannel" InputGestureText="Shift+Delete"
+                                      Command="{Binding PlacementTarget.Tag.DontRecommendChannelCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                         </ContextMenu>
                     </Setter.Value>
                 </Setter>
@@ -218,8 +229,42 @@
                 <!-- Section toolbar: only the buttons that apply to this section are shown -->
                 <WrapPanel Grid.Row="2" Margin="0,0,0,8">
                     <Button Content="&lt; _Back" Command="{Binding GoBackCommand}" Style="{StaticResource SmallButtonStyle}"
-                            Visibility="{Binding IsChannelView, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            Visibility="{Binding IsDetailView, Converter={StaticResource BooleanToVisibilityConverter}}"
                             AutomationProperties.Name="Back" AutomationProperties.AcceleratorKey="Alt+Left"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,8,0"
+                                Visibility="{Binding IsSearchSection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Label Content="_Find:" Target="{Binding ElementName=SearchKindBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
+                        <ComboBox x:Name="SearchKindBox" ItemsSource="{Binding SearchKinds}"
+                                  SelectedItem="{Binding SelectedSearchKind, Mode=TwoWay}" MinWidth="110"
+                                  AutomationProperties.Name="Find"/>
+                    </StackPanel>
+                    <Button Content="Play _all" Command="{Binding PlayAllCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding CanPlayAll, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Play all"/>
+                    <Button Content="Sh_uffle" Command="{Binding ShufflePlayCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding CanPlayAll, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Shuffle play"/>
+                    <Button Content="_Save to Playlists" Command="{Binding SaveOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding CanSaveOpenPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Save to Playlists"/>
+                    <Button Content="Copy _link" Command="{Binding CopyOpenPlaylistLinkCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding IsPlaylistView, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Copy playlist link"/>
+                    <Button Content="_New playlist..." Command="{Binding CreatePlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="New playlist"/>
+                    <Button Content="_Rename..." Command="{Binding RenameOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding CanEditPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Rename playlist"/>
+                    <Button Content="_Delete playlist..." Command="{Binding DeleteOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding CanEditPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Delete playlist"/>
+                    <Button Content="_Import from Google Takeout..." Click="ImportTakeout_Click" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="Import from Google Takeout"/>
+                    <Button Content="_How to get my YouTube data..." Click="YouTubeSubscriptionsHelp_Click" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="How to get my YouTube data"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,8,0"
                                 Visibility="{Binding IsFeaturedSection, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <Label Content="_Category:" Target="{Binding ElementName=FeaturedCategoryBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
@@ -270,6 +315,9 @@
                         <KeyBinding Key="G" Modifiers="Control" Command="{Binding OpenChannelCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="C" Modifiers="Control" Command="{Binding CopyLinkCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="Delete" Command="{Binding RemoveSelectedItemCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
+                        <KeyBinding Key="Delete" Modifiers="Shift" Command="{Binding DontRecommendChannelCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
+                        <KeyBinding Key="K" Modifiers="Control" Command="{Binding ToggleLikeForItemCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
+                        <KeyBinding Key="P" Modifiers="Control" Command="{Binding ShowAddToPlaylistMenuCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                     </ListBox.InputBindings>
                 </ListBox>
 
@@ -316,8 +364,12 @@
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                             <Button Content="{Binding SubscribeButtonText}" Command="{Binding ToggleSubscribeCurrentChannelCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="{Binding SubscribeButtonText}" AutomationProperties.AcceleratorKey="Control+S"/>
+                            <Button Content="{Binding LikeButtonText}" Command="{Binding ToggleLikeCurrentCommand}" Style="{StaticResource SmallButtonStyle}"
+                                    AutomationProperties.Name="{Binding LikeButtonText}" AutomationProperties.AcceleratorKey="Control+K"/>
                             <Button Content="{Binding WatchLaterButtonText}" Command="{Binding ToggleWatchLaterCurrentCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="{Binding WatchLaterButtonText}" AutomationProperties.AcceleratorKey="Control+L"/>
+                            <Button x:Name="PlayerPlaylistButton" Content="Playlist..." Command="{Binding ShowAddToPlaylistMenuCommand}" Style="{StaticResource SmallButtonStyle}"
+                                    AutomationProperties.Name="Add to playlist" AutomationProperties.AcceleratorKey="Control+P"/>
                             <Button Content="Channel" Command="{Binding OpenCurrentChannelCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="Go to channel" AutomationProperties.AcceleratorKey="Control+G"/>
                             <Button Content="Share" Command="{Binding CopyShareLinkAtCurrentTimeCommand}" Style="{StaticResource SmallButtonStyle}"
@@ -390,6 +442,8 @@
                                         <KeyBinding Key="S" Modifiers="Control" Command="{Binding ToggleSubscriptionForItemCommand}" CommandParameter="{Binding SelectedUpNext}"/>
                                         <KeyBinding Key="G" Modifiers="Control" Command="{Binding OpenChannelCommand}" CommandParameter="{Binding SelectedUpNext}"/>
                                         <KeyBinding Key="C" Modifiers="Control" Command="{Binding CopyLinkCommand}" CommandParameter="{Binding SelectedUpNext}"/>
+                                        <KeyBinding Key="K" Modifiers="Control" Command="{Binding ToggleLikeForItemCommand}" CommandParameter="{Binding SelectedUpNext}"/>
+                                        <KeyBinding Key="P" Modifiers="Control" Command="{Binding ShowAddToPlaylistMenuCommand}" CommandParameter="{Binding SelectedUpNext}"/>
                                     </ListBox.InputBindings>
                                 </ListBox>
                             </Grid>

@@ -73,6 +73,8 @@ public class MainViewModelTests
     private readonly FakeDiscoveryService _discovery = new();
     private readonly FakeWatchPageService _watchPage = new();
     private readonly FakeDownloadService _downloads = new();
+    private readonly FakePlaylistService _playlists = new();
+    private readonly FakeRecommendationService _recommendations = new();
 
     public MainViewModelTests()
     {
@@ -109,6 +111,8 @@ public class MainViewModelTests
             _discovery,
             _watchPage,
             _downloads,
+            _playlists,
+            _recommendations,
             NullLogger<MainViewModel>.Instance);
     }
 
@@ -506,6 +510,113 @@ public class MainViewModelTests
 
         Assert.Empty(vm.SearchResults);
         Assert.Empty(_library.WatchLater);
+    }
+
+    [Fact]
+    public async Task PlaylistLink_OpensPlaylist_SaveAndPlayAll()
+    {
+        await using var vm = CreateViewModel();
+        _playlists.Playlists["PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI"] = new YouTubePlaylistPage(
+            "PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI", "Road songs", "Music",
+            new[] { Video("jNQXAC9IVRw", "One"), Video("dQw4w9WgXcQ", "Two") }, null);
+
+        vm.SearchQuery = "https://www.youtube.com/playlist?list=PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI";
+        await vm.SearchAsync();
+
+        Assert.Equal(BrowseSection.Playlist, vm.CurrentSection);
+        Assert.Equal("Road songs", vm.SectionTitle);
+        Assert.Equal(2, vm.SearchResults.Count);
+        Assert.True(vm.CanSaveOpenPlaylist);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "2 videos, by Music");
+
+        await vm.SaveOpenPlaylistAsync();
+        Assert.False(vm.CanSaveOpenPlaylist);
+        Assert.True(vm.IsOpenPlaylistInLibrary);
+        Assert.Equal(2, _library.FindSavedYouTubePlaylist("PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI")!.Videos.Count);
+
+        await vm.PlayAllAsync();
+        Assert.Equal(new[] { "jNQXAC9IVRw", "dQw4w9WgXcQ" }, vm.PlaybackQueue.Select(q => q.VideoId.Value));
+        Assert.True(vm.IsPlayerDialogOpen);
+    }
+
+    [Fact]
+    public async Task Likes_ShowInPlaylists_AndBackReturns()
+    {
+        await using var vm = CreateViewModel();
+        await vm.ShowSectionByNumberAsync(1);
+        vm.ToggleLikeForItem(Video("jNQXAC9IVRw", "Liked one"));
+
+        await vm.ShowSectionByNumberAsync(9);
+        Assert.Equal("Playlist: Liked videos, 1 video", vm.SearchResults[0].AccessibleSummary);
+
+        await vm.PlaySearchResultAsync(vm.SearchResults[0]);
+        Assert.Equal(BrowseSection.Playlist, vm.CurrentSection);
+        Assert.Equal("Liked one", vm.SearchResults.Single().Title);
+
+        // Delete in Liked videos removes the like.
+        vm.RemoveSelectedItem(vm.SearchResults[0]);
+        Assert.False(_library.IsLiked("jNQXAC9IVRw"));
+
+        await vm.GoBackAsync();
+        Assert.Equal(BrowseSection.Playlists, vm.CurrentSection);
+    }
+
+    [Fact]
+    public async Task OwnPlaylist_AddMoveAndRemove()
+    {
+        await using var vm = CreateViewModel();
+        var playlist = _library.CreatePlaylist("Mine");
+        vm.AddToPlaylist(Video("jNQXAC9IVRw", "First"), playlist.Id);
+        vm.AddToPlaylist(Video("dQw4w9WgXcQ", "Second"), playlist.Id);
+        vm.AddToPlaylist(Video("dQw4w9WgXcQ", "Second"), playlist.Id);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Already in Mine.");
+
+        await vm.ShowSectionByNumberAsync(9);
+        await vm.PlaySearchResultAsync(vm.SearchResults.Single(r => r.LibraryPlaylistId == playlist.Id));
+        Assert.True(vm.IsOpenPlaylistEditable);
+
+        vm.SelectedSearchResult = vm.SearchResults[1];
+        vm.MoveSelectedInPlaylist(-1);
+        Assert.Equal("Second", vm.SearchResults[0].Title);
+        Assert.Equal("dQw4w9WgXcQ", _library.GetPlaylist(playlist.Id)!.Videos[0].VideoId);
+
+        vm.RemoveSelectedItem(vm.SearchResults[0]);
+        Assert.Equal("jNQXAC9IVRw", Assert.Single(_library.GetPlaylist(playlist.Id)!.Videos).VideoId);
+    }
+
+    [Fact]
+    public async Task ForYou_ShowsRecommendations_AndDeleteMeansNotInterested()
+    {
+        await using var vm = CreateViewModel();
+        _recommendations.Videos.Add(Video("jNQXAC9IVRw", "Pick one"));
+        _recommendations.Videos.Add(Video("dQw4w9WgXcQ", "Pick two"));
+
+        await vm.ShowSectionByNumberAsync(8);
+        Assert.Equal(BrowseSection.ForYou, vm.CurrentSection);
+        Assert.Equal(2, vm.SearchResults.Count);
+
+        vm.RemoveSelectedItem(vm.SearchResults[0]);
+
+        Assert.Single(vm.SearchResults);
+        Assert.True(_library.IsHidden(Video("jNQXAC9IVRw", "Pick one")));
+        Assert.Single(_recommendations.Videos);
+    }
+
+    [Fact]
+    public async Task SearchingForPlaylists_ListsPlaylistRows()
+    {
+        await using var vm = CreateViewModel();
+        _playlists.SearchResults.Add(new SearchResult
+        {
+            Kind = SearchResultKind.Playlist, Id = "PLXIclLvfETS3AgCnZg4N6QqHu_T27XKIq", Title = "Lofi", ChannelTitle = "Mimi", PlaylistVideoCount = 76
+        });
+        vm.SelectedSearchKind = SearchKind.Playlists;
+        vm.SearchQuery = "lofi";
+
+        await vm.SearchAsync();
+
+        Assert.Equal("Playlist: Lofi, 76 videos, by Mimi", vm.SearchResults.Single().AccessibleSummary);
+        Assert.Equal("1 playlist", vm.SectionCountText);
     }
 
     [Fact]

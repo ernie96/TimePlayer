@@ -108,6 +108,23 @@ public sealed record YouTubeUrl
         return false;
     }
 
+    /// <summary>The id after "list=" in a YouTube link, for opening playlists.</summary>
+    public static bool TryGetPlaylistId(string? input, [NotNullWhen(true)] out string? playlistId)
+    {
+        playlistId = null;
+        if (string.IsNullOrWhiteSpace(input) || !input.Contains("youtu", StringComparison.OrdinalIgnoreCase))
+            return false;
+        var match = System.Text.RegularExpressions.Regex.Match(input, @"[?&]list=([A-Za-z0-9_-]{10,})");
+        if (!match.Success)
+            return false;
+        playlistId = match.Groups[1].Value;
+        return true;
+    }
+
+    /// <summary>A link to a playlist itself (not a video that happens to be in one).</summary>
+    public static bool IsPlaylistLink(string? input) =>
+        TryGetPlaylistId(input, out _) && !WatchPattern.IsMatch(input!.Trim());
+
     public static Result<YouTubeUrl> Validate(string? input)
     {
         if (string.IsNullOrWhiteSpace(input))

@@ -216,8 +216,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         IDiscoveryService discovery,
         IWatchPageService watchPage,
         IDownloadService downloads,
+        IPlaylistService playlists,
+        IRecommendationService recommendations,
         ILogger<MainViewModel> logger)
     {
+        _playlists = playlists ?? throw new ArgumentNullException(nameof(playlists));
+        _recommendations = recommendations ?? throw new ArgumentNullException(nameof(recommendations));
         _downloads = downloads ?? throw new ArgumentNullException(nameof(downloads));
         _watchPage = watchPage ?? throw new ArgumentNullException(nameof(watchPage));
         // Engine and coordinator events arrive on background threads; collections must change on this one.
@@ -319,6 +323,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
+        // A playlist link opens the playlist; a video link (even one inside a playlist) plays the video.
+        if (YouTubeUrl.IsPlaylistLink(query) && YouTubeUrl.TryGetPlaylistId(query, out var listId))
+        {
+            await OpenYouTubePlaylistAsync(listId);
+            return;
+        }
+
         // Direct YouTube URL playback check
         if (YouTubeUrl.TryParse(query, out var ytUrl))
         {
@@ -340,7 +351,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         try
         {
-            var searchResult = await _playbackCoordinator.SearchAsync(query, cancellationToken);
+            var searchResult = SelectedSearchKind == SearchKind.Playlists
+                ? await _playlists.SearchAsync(query, null, cancellationToken)
+                : await _playbackCoordinator.SearchAsync(query, cancellationToken);
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -358,7 +371,10 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
                 {
                     SearchResults.Add(Decorate(item));
                 }
-                ConfigureSearchPaging();
+                if (SelectedSearchKind == SearchKind.Playlists)
+                    ConfigurePlaylistSearchPaging(query, searchResult.Value.NextPageToken);
+                else
+                    ConfigureSearchPaging();
 
                 UpdateActiveBackendName();
                 var count = SearchResults.Count;
@@ -449,7 +465,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
-        if (YouTubeUrl.TryParse(text, out var ytUrl))
+        if (YouTubeUrl.IsPlaylistLink(text) && YouTubeUrl.TryGetPlaylistId(text, out var listId))
+        {
+            SearchQuery = text;
+            await OpenYouTubePlaylistAsync(listId);
+        }
+        else if (YouTubeUrl.TryParse(text, out var ytUrl))
         {
             SearchQuery = ytUrl.NormalizedWatchUrl;
             _accessibility.Announce("Loading video...", AnnouncementPriority.Medium);
@@ -471,6 +492,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (item.Kind == SearchResultKind.Channel)
         {
             await OpenChannelAsync(item);
+            return;
+        }
+        if (item.Kind == SearchResultKind.Playlist)
+        {
+            if (IsPlayerDialogOpen)
+                await ClosePlayerDialogAsync();
+            await OpenPlaylistAsync(item);
             return;
         }
         BeginNewPlayback();

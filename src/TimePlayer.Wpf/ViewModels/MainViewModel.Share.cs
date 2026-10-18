@@ -182,6 +182,8 @@ public sealed partial class MainViewModel
     {
         if (item.Kind == SearchResultKind.Channel)
             return $"https://www.youtube.com/channel/{item.Id}";
+        if (item.Kind == SearchResultKind.Playlist)
+            return $"https://www.youtube.com/playlist?list={item.Id}";
         var link = $"https://youtu.be/{item.Id}";
         return startAt is { TotalSeconds: >= 1 } t ? $"{link}?t={(int)t.TotalSeconds}" : link;
     }
@@ -192,8 +194,45 @@ public sealed partial class MainViewModel
     {
         item ??= SelectedSearchResult;
         if (item is null) return;
+        if (item.Kind == SearchResultKind.Playlist)
+        {
+            CopyPlaylistLink(item.LibraryPlaylistId, item.Id);
+            return;
+        }
         if (CopyToClipboard(ShareLink(item)))
             _accessibility.Announce(item.Kind == SearchResultKind.Channel ? "Channel link copied." : "Share link copied.", AnnouncementPriority.Medium);
+    }
+
+    /// <summary>The open playlist's link (toolbar button on playlist pages).</summary>
+    [RelayCommand]
+    public void CopyOpenPlaylistLink() => CopyPlaylistLink(_openLibraryPlaylistId, _openYouTubePlaylistId);
+
+    /// <summary>
+    /// YouTube playlists share their own link. Your own playlists have none on YouTube, so the link
+    /// is YouTube's "watch_videos" list of up to 50 videos, which opens as an unnamed playlist.
+    /// </summary>
+    private void CopyPlaylistLink(string? libraryId, string? youTubeId)
+    {
+        var playlist = libraryId is null ? null : _library.GetPlaylist(libraryId);
+        var ytId = playlist?.YouTubeId ?? (playlist is null ? youTubeId : null);
+        if (ytId is not null)
+        {
+            if (CopyToClipboard($"https://www.youtube.com/playlist?list={ytId}"))
+                _accessibility.Announce("Playlist link copied.", AnnouncementPriority.Medium);
+            return;
+        }
+        if (playlist is null || playlist.Videos.Count == 0)
+        {
+            _accessibility.Announce("This playlist is empty; there is nothing to share.", AnnouncementPriority.Medium);
+            return;
+        }
+        var ids = string.Join(",", playlist.Videos.Take(50).Select(v => v.VideoId));
+        if (CopyToClipboard($"https://www.youtube.com/watch_videos?video_ids={ids}"))
+        {
+            _accessibility.Announce(playlist.Videos.Count > 50
+                ? "Link copied with the first 50 videos; YouTube allows no more in a shared list."
+                : "Playlist link copied.", AnnouncementPriority.Medium);
+        }
     }
 
     /// <summary>In the player: a link that starts where you are now.</summary>

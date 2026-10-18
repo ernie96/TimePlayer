@@ -61,6 +61,10 @@ public partial class MainWindow : Window
         _viewModel.RequestFocusResults += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Input, FocusCurrentList);
         _viewModel.RequestFocusPlayer += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => PlayPauseButton.Focus());
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        _viewModel.RequestAddToPlaylistMenu += (_, item) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ShowAddToPlaylistMenu(item));
+        _viewModel.Confirm = (title, message) =>
+            MessageBox.Show(this, message, title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
+        _viewModel.AskForText = (title, prompt, initial) => TextPromptWindow.Ask(this, title, prompt, initial);
 
         // Load more when the mouse wheel or scroll bar nears the end (keyboard users trigger it by selection).
         ResultsListBox.AddHandler(ScrollViewer.ScrollChangedEvent, new ScrollChangedEventHandler((_, e) =>
@@ -249,6 +253,39 @@ public partial class MainWindow : Window
 
     private void PlayerDownload_Click(object sender, RoutedEventArgs e) => ShowDownloadMenu(PlayerDownloadButton, null);
 
+    /// <summary>Ctrl+P: your playlists, then "New playlist...". Liked videos has its own key, Ctrl+K.</summary>
+    private void ShowAddToPlaylistMenu(SearchResult? item)
+    {
+        UIElement anchor = Keyboard.FocusedElement as UIElement ?? (UIElement)PlayerPlaylistButton;
+        if (item is null && _viewModel.IsPlayerDialogOpen && !IsWithin(anchor as DependencyObject, PlayerPanelTabs))
+            anchor = PlayerPlaylistButton;
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
+        AutomationProperties.SetName(menu, "Add to playlist");
+        foreach (var playlist in _viewModel.PlaylistsForMenu())
+        {
+            var id = playlist.Id;
+            var menuItem = new MenuItem { Header = playlist.Name.Replace("_", "__") };
+            menuItem.Click += (_, _) => _viewModel.AddToPlaylist(item, id);
+            menu.Items.Add(menuItem);
+        }
+        var create = new MenuItem { Header = "_New playlist..." };
+        create.Click += (_, _) => _viewModel.AddToPlaylist(item, null);
+        menu.Items.Add(create);
+        menu.Opened += (_, _) => (menu.Items[0] as MenuItem)?.Focus();
+        menu.IsOpen = true;
+    }
+
+    private void ImportTakeout_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = "Import from Google Takeout",
+            Filter = "Google Takeout zip (*.zip)|*.zip|All files|*.*"
+        };
+        if (dialog.ShowDialog(this) == true)
+            _ = _viewModel.ImportTakeoutAsync(dialog.FileName);
+    }
+
     private void ShowPlayerPanel(PlayerPanel panel)
     {
         _viewModel.SelectedPlayerPanel = panel;
@@ -389,7 +426,7 @@ public partial class MainWindow : Window
                 SearchBox.Clear();
                 return true;
             }
-            if (_viewModel.IsChannelView)
+            if (_viewModel.IsDetailView)
             {
                 _ = _viewModel.GoBackAsync();
                 return true;
@@ -431,10 +468,18 @@ public partial class MainWindow : Window
             return true;
         }
 
-        if (_viewModel.IsChannelView &&
+        if (_viewModel.IsDetailView &&
             ((key == Key.Left && mods == ModifierKeys.Alt) || (key == Key.Back && mods == ModifierKeys.None && !inTextBox)))
         {
             _ = _viewModel.GoBackAsync();
+            return true;
+        }
+
+        // Your own playlists: Alt+Up and Alt+Down move the selected video.
+        if (_viewModel.IsOpenPlaylistInLibrary && mods == ModifierKeys.Alt && (key == Key.Up || key == Key.Down) &&
+            focused is ListBoxItem { DataContext: SearchResult })
+        {
+            _viewModel.MoveSelectedInPlaylist(key == Key.Up ? -1 : 1);
             return true;
         }
 
@@ -508,6 +553,8 @@ public partial class MainWindow : Window
                 case Key.C when !isList && focused is not TreeViewItem && !inTextBox: _viewModel.CopyShareLinkAtCurrentTime(); return true;
                 case Key.S when !isList: _viewModel.ToggleSubscribeCurrentChannel(); return true;
                 case Key.L when !isList: _viewModel.ToggleWatchLaterCurrent(); return true;
+                case Key.K when !isList: _viewModel.ToggleLikeCurrent(); return true;
+                case Key.P when !isList: _viewModel.ShowAddToPlaylistMenu(null); return true;
                 case Key.G when !isList: _ = _viewModel.OpenCurrentChannelAsync(); return true;
                 case Key.Left when !arrowsBelongToControl: _ = _viewModel.SeekLargeBackwardAsync(); return true;
                 case Key.Right when !arrowsBelongToControl: _ = _viewModel.SeekLargeForwardAsync(); return true;
@@ -557,7 +604,7 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private static int? SectionNumber(Key key) => DigitValue(key) is int d and >= 1 and <= 7 ? d : null;
+    private static int? SectionNumber(Key key) => DigitValue(key) is int d and >= 1 and <= 9 ? d : null;
 
     private static int? DigitValue(Key key) => key switch
     {
@@ -582,7 +629,7 @@ public partial class MainWindow : Window
 
     private void YouTubeSubscriptionsHelp_Click(object sender, RoutedEventArgs e)
     {
-        var answer = MessageBox.Show(this, KeyboardHelp.YouTubeSubscriptionsSteps, "Get your YouTube subscriptions",
+        var answer = MessageBox.Show(this, KeyboardHelp.YouTubeSubscriptionsSteps, "Get your YouTube data",
             MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.Yes);
         if (answer != MessageBoxResult.Yes)
             return;

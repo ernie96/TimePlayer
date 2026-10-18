@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 
 namespace TimePlayer.Core.Backends.InnerTube;
@@ -70,6 +71,18 @@ internal static partial class InnerTubeJson
         FindAll(element, "continuationCommand")
             .Select(c => Str(c, "token"))
             .FirstOrDefault(t => !string.IsNullOrEmpty(t));
+
+    /// <summary>
+    /// The token for the next page of a list: the one in the list's own "continuation item" at its end.
+    /// Search pages also carry tokens on their filter chips (Videos, Shorts, Unwatched…), which load a
+    /// differently filtered list instead of more of this one.
+    /// </summary>
+    public static string? ListContinuationToken(JsonElement element) =>
+        FindAll(element, "continuationItemRenderer")
+            .Concat(FindAll(element, "continuationItemViewModel"))
+            .Select(FirstContinuationToken)
+            .FirstOrDefault(t => !string.IsNullOrEmpty(t))
+        ?? LastContinuationToken(element);
 
     public static string? LastContinuationToken(JsonElement element) =>
         FindAll(element, "continuationCommand")
@@ -244,6 +257,72 @@ internal static partial class InnerTubeJson
             UploadDateText = ExpandAge(stats.Skip(1).FirstOrDefault()),
             ThumbnailUrl = $"https://i.ytimg.com/vi/{videoId}/hqdefault.jpg"
         };
+    }
+
+    /// <summary>A playlist lockup in search results.</summary>
+    public static SearchResult? ParsePlaylistLockup(JsonElement lockup)
+    {
+        if (Str(lockup, "contentType") != "LOCKUP_CONTENT_TYPE_PLAYLIST")
+            return null;
+        var playlistId = Str(lockup, "contentId");
+        // Radio mixes (RD…) are generated per viewer and can't be browsed as a list.
+        if (string.IsNullOrWhiteSpace(playlistId) || (playlistId.StartsWith("RD", StringComparison.Ordinal) && !playlistId.StartsWith("RDCLAK", StringComparison.Ordinal)))
+            return null;
+        if (Path(lockup, "metadata", "lockupMetadataViewModel") is not { } m)
+            return null;
+
+        var firstRow = Path(m, "metadata", "contentMetadataViewModel", "metadataRows") is { ValueKind: JsonValueKind.Array } rows && rows.GetArrayLength() > 0
+            ? rows[0]
+            : (JsonElement?)null;
+        var owner = firstRow is { } row && Path(row, "metadataParts") is { ValueKind: JsonValueKind.Array } parts && parts.GetArrayLength() > 0
+            ? Str(parts[0], "text", "content")
+            : null;
+        var countText = FindAll(lockup, "thumbnailBadgeViewModel").Select(b => Str(b, "text")).FirstOrDefault(t => t is not null);
+        var count = countText is null ? null : ParseCount(countText);
+
+        return new SearchResult
+        {
+            Kind = SearchResultKind.Playlist,
+            Id = playlistId,
+            Title = Str(m, "title", "content") ?? "Untitled playlist",
+            ChannelTitle = owner is null or "Playlist" ? "YouTube" : owner,
+            ChannelId = FindAll(m, "browseId").Select(b => b.GetString()).FirstOrDefault(id => id?.StartsWith("UC", StringComparison.Ordinal) == true),
+            PlaylistVideoCount = count is { } c ? (int)Math.Min(c, int.MaxValue) : null,
+            ThumbnailUrl = null
+        };
+    }
+
+    /// <summary>A page of a playlist from browse "VL{id}" (first page) or its continuation.</summary>
+    public static YouTubePlaylistPage ParsePlaylistPage(JsonElement root, string playlistId)
+    {
+        var videos = new List<SearchResult>();
+        var seen = new HashSet<string>();
+        foreach (var lockup in FindAll(root, "lockupViewModel"))
+        {
+            if (ParseLockup(lockup) is { } video && seen.Add(video.Id))
+                videos.Add(video);
+        }
+        foreach (var renderer in FindAll(root, "playlistVideoRenderer"))
+        {
+            if (ParseVideoRenderer(renderer) is { } video && seen.Add(video.Id))
+                videos.Add(video);
+        }
+
+        var title = FindAll(root, "playlistMetadataRenderer").Select(p => Str(p, "title")).FirstOrDefault(t => t is not null)
+            ?? FindAll(root, "pageHeaderViewModel").Select(p => Str(p, "title", "dynamicTextViewModel", "text", "content")).FirstOrDefault(t => t is not null)
+            ?? string.Empty;
+        string? owner = null;
+        foreach (var header in FindAll(root, "pageHeaderViewModel"))
+        {
+            owner = FindAll(header, "avatarStackViewModel").Select(a => Str(a, "text", "content")).FirstOrDefault(t => t is not null);
+            if (owner is not null)
+                break;
+        }
+        if (owner is not null && owner.StartsWith("by ", StringComparison.OrdinalIgnoreCase))
+            owner = owner[3..].Trim();
+
+        var next = videos.Count > 0 ? ListContinuationToken(root) : null;
+        return new YouTubePlaylistPage(playlistId, title, owner, videos, next);
     }
 
     public static WatchNextInfo ParseWatchNext(JsonElement root)
