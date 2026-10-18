@@ -77,4 +77,36 @@ public class ConfigurationTests
         Assert.Equal(50.0, notifiedConfig.Playback.DefaultVolumePercent);
         Assert.Equal(50.0, service.CurrentConfig.Playback.DefaultVolumePercent);
     }
+
+    [Fact]
+    public async Task UpdateConfigAsync_PersistsAndLoadsBrailleDisplayCellCount()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"timeplayer_test_settings_{Guid.NewGuid():N}.json");
+        try
+        {
+            var options = Options.Create(new AppConfig());
+            var service1 = new ConfigurationService(options, tempFile);
+
+            var updated = service1.CurrentConfig with
+            {
+                Accessibility = service1.CurrentConfig.Accessibility with
+                {
+                    BrailleDisplayCellCount = 20,
+                    EnableBrailleProgress = true
+                }
+            };
+
+            await service1.UpdateConfigAsync(updated);
+            Assert.True(File.Exists(tempFile));
+
+            // Reload in new instance
+            var service2 = new ConfigurationService(options, tempFile);
+            Assert.Equal(20, service2.CurrentConfig.Accessibility.BrailleDisplayCellCount);
+            Assert.True(service2.CurrentConfig.Accessibility.EnableBrailleProgress);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
 }

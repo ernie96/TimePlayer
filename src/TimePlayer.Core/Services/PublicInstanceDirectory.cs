@@ -37,6 +37,7 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
         CancellationToken cancellationToken = default)
     {
         var config = _configService.CurrentConfig.Backend;
+        var seedList = GetSeedInstances(providerType, config);
 
         // 1. Check local cache if forceRefresh is false
         if (!forceRefresh)
@@ -65,11 +66,21 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
                 _ => new List<PublicInstance>()
             };
 
-            if (discovered.Count > 0)
+            var mergedDiscovered = new List<PublicInstance>(seedList);
+            foreach (var d in discovered)
             {
-                _logger.LogInformation("Discovered {Count} valid public {Provider} instances.", discovered.Count, providerType);
-                await _cache.SaveSnapshotAsync(providerType, discovered, cancellationToken);
-                return discovered;
+                if (!mergedDiscovered.Any(m => m.BaseUri == d.BaseUri))
+                {
+                    mergedDiscovered.Add(d);
+                }
+            }
+
+            if (mergedDiscovered.Count > 0)
+            {
+                _logger.LogInformation("Discovered {Count} valid public {Provider} instances ({Discovered} live, {Seeds} seeds).",
+                    mergedDiscovered.Count, providerType, discovered.Count, seedList.Count);
+                await _cache.SaveSnapshotAsync(providerType, mergedDiscovered, cancellationToken);
+                return mergedDiscovered;
             }
 
             _logger.LogWarning("Directory for {Provider} returned no valid instances.", providerType);
@@ -84,12 +95,18 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
         if (staleSnapshot != null && staleSnapshot.Instances.Count > 0)
         {
             _logger.LogWarning("Falling back to {Count} stale cached {Provider} instances.", staleSnapshot.Instances.Count, providerType);
-            return staleSnapshot.Instances;
+            var mergedStale = new List<PublicInstance>(seedList);
+            foreach (var s in staleSnapshot.Instances)
+            {
+                if (!mergedStale.Any(m => m.BaseUri == s.BaseUri))
+                    mergedStale.Add(s);
+            }
+            return mergedStale;
         }
 
         // 4. Fallback to emergency configured seed instances
         _logger.LogWarning("No directory or cache available. Falling back to configured seed instances for {Provider}.", providerType);
-        return GetSeedInstances(providerType, config);
+        return seedList;
     }
 
     public Task SaveHealthyInstancesAsync(
@@ -148,7 +165,7 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
                         BaseUri = cleanUri,
                         ProviderType = BackendProviderType.Piped,
                         IsWorking = true,
-                        HealthScore = 100.0
+                        HealthScore = 75.0
                     });
                 }
             }
@@ -267,7 +284,8 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
                     BaseUri = cleanUri,
                     ProviderType = providerType,
                     IsWorking = true,
-                    HealthScore = 80.0
+                    HealthScore = 100.0,
+                    LatencyMs = 200
                 });
             }
         }

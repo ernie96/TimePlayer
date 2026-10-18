@@ -1,10 +1,29 @@
 namespace TimePlayer.Core.Models;
 
+public enum SearchResultKind
+{
+    Video = 0,
+    /// <summary>A subscribed channel; <see cref="SearchResult.Id"/> holds the channel id.</summary>
+    Channel = 1
+}
+
 /// <summary>
 /// Represents a single YouTube search result or queue item.
 /// </summary>
 public record SearchResult
 {
+    public SearchResultKind Kind { get; init; } = SearchResultKind.Video;
+    public DateTimeOffset? PublishedAt { get; init; }
+    public bool IsShort { get; init; }
+    public bool IsLive { get; init; }
+
+    /// <summary>
+    /// Library status spoken first, e.g. "New", "Watched" or "Resume at 3 minutes 12 seconds".
+    /// </summary>
+    public string? StatusPrefix { get; init; }
+
+    public bool IsVideo => Kind == SearchResultKind.Video;
+
     public required string Id { get; init; }
     public required string Title { get; init; }
     public required string ChannelTitle { get; init; }
@@ -23,23 +42,27 @@ public record SearchResult
     {
         get
         {
-            var parts = new List<string> { Title, $"by {ChannelTitle}" };
-
-            if (Duration.HasValue)
+            if (Kind == SearchResultKind.Channel)
             {
-                var d = Duration.Value;
-                if (d.TotalHours >= 1)
-                {
-                    parts.Add($"{(int)d.TotalHours} hour{( (int)d.TotalHours == 1 ? "" : "s" )}, {d.Minutes} minute{( d.Minutes == 1 ? "" : "s" )}, {d.Seconds} second{( d.Seconds == 1 ? "" : "s" )}");
-                }
-                else if (d.TotalMinutes >= 1)
-                {
-                    parts.Add($"{d.Minutes} minute{( d.Minutes == 1 ? "" : "s" )}, {d.Seconds} second{( d.Seconds == 1 ? "" : "s" )}");
-                }
-                else
-                {
-                    parts.Add($"{d.Seconds} second{( d.Seconds == 1 ? "" : "s" )}");
-                }
+                var channelParts = new List<string> { $"Channel: {Title}" };
+                if (!string.IsNullOrWhiteSpace(StatusPrefix))
+                    channelParts.Add(StatusPrefix);
+                return string.Join(". ", channelParts);
+            }
+
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(StatusPrefix))
+                parts.Add(StatusPrefix);
+            parts.Add(Title);
+            parts.Add($"by {ChannelTitle}");
+            if (IsLive)
+                parts.Add("Live now");
+            else if (IsShort)
+                parts.Add("Short");
+
+            if (Duration.HasValue && Duration.Value > TimeSpan.Zero)
+            {
+                parts.Add(Accessibility.AccessibleTextFormatter.FormatTimeSpoken(Duration.Value));
             }
 
             if (ViewCount.HasValue)
@@ -47,7 +70,11 @@ public record SearchResult
                 parts.Add(FormatViewCount(ViewCount.Value));
             }
 
-            if (!string.IsNullOrWhiteSpace(UploadDateText))
+            if (PublishedAt.HasValue)
+            {
+                parts.Add(Accessibility.AccessibleTextFormatter.FormatAgeSpoken(PublishedAt.Value, DateTimeOffset.UtcNow));
+            }
+            else if (!string.IsNullOrWhiteSpace(UploadDateText))
             {
                 parts.Add(UploadDateText);
             }
@@ -67,4 +94,7 @@ public record SearchResult
             _ => $"{count} views"
         };
     }
+
+    public override string ToString() => AccessibleSummary;
 }
+

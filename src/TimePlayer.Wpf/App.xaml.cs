@@ -35,13 +35,22 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+
         var services = new ServiceCollection();
         ConfigureServices(services);
 
         _serviceProvider = services.BuildServiceProvider();
+
+        // Keep the NVDA braille add-on up to date, but only for users who chose it (or already have it).
+        // Everyone else is asked once, after the window opens.
+        var useBrailleAddon = _serviceProvider.GetRequiredService<IConfigurationService>().CurrentConfig.Accessibility.UseBrailleAddon;
+        if (useBrailleAddon == true || (useBrailleAddon is null && NvdaAddonInstaller.IsInstalled))
+        {
+            NvdaAddonInstaller.EnsureInstalled();
+        }
         _logger = _serviceProvider.GetRequiredService<ILogger<App>>();
 
-        _logger.LogInformation("TimePlayer application starting up.");
+        _logger.LogInformation("TimePlayer {Version} starting up ({Mode}).", AppPaths.Version, AppPaths.IsPortable ? "portable" : "installed");
 
         // Check for and update yt-dlp asynchronously at startup in background
         var ytDlpManager = _serviceProvider.GetService<IYtDlpManager>();
@@ -85,6 +94,7 @@ public partial class App : Application
             loggingBuilder.ClearProviders();
             loggingBuilder.AddConfiguration(configuration.GetSection("Logging"));
             loggingBuilder.AddConsole();
+            loggingBuilder.AddProvider(new Logging.FileLoggerProvider(AppPaths.LogsFolder));
         });
 
         // Register Core Services
@@ -105,9 +115,7 @@ public partial class App : Application
     {
         _logger?.LogError(e.Exception, "Unhandled UI dispatcher exception: {Message}", e.Exception.Message);
 
-        var accessibility = _serviceProvider?.GetService<IAccessibilityService>();
-        accessibility?.Announce("An error occurred. The application recovered.", AnnouncementPriority.High);
-
+        // The message box is read by the screen reader; an extra announcement would say it twice.
         MessageBox.Show(
             $"An unexpected error occurred:\n\n{e.Exception.Message}\n\nThe application will attempt to continue running.",
             "TimePlayer Error",
@@ -139,7 +147,20 @@ public partial class App : Application
     protected override void OnExit(ExitEventArgs e)
     {
         _logger?.LogInformation("TimePlayer application shutting down with exit code {ExitCode}.", e.ApplicationExitCode);
-        _serviceProvider?.Dispose();
+        // Several singletons (mpv engine, view model) only support async disposal, which a plain
+        // Dispose() rejects. Run it off the UI thread so awaits inside cannot deadlock, and don't
+        // let a stuck mpv keep the app open.
+        if (_serviceProvider is { } provider)
+        {
+            try
+            {
+                Task.Run(() => provider.DisposeAsync().AsTask()).Wait(TimeSpan.FromSeconds(3));
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogWarning(ex, "Error while shutting down services.");
+            }
+        }
         base.OnExit(e);
     }
 }

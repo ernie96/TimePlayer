@@ -119,21 +119,93 @@ dotnet run --project src/TimePlayer.Wpf
 ---
 
 ## Keyboard Navigation
- 
-| Key / Shortcut | Action |
-|---|---|
-| `Ctrl+E` or `Ctrl+F` | Focus search field and select all text |
-| `Enter` (in search) | Execute search or load direct YouTube URL |
-| `Enter` (in results) | Open selected video in the player dialog |
-| `Enter` (in queue) | Immediately play selected video from the queue |
-| `Delete` (in queue) | Remove selected video from the queue |
-| `Escape` | Close Settings if open, or close Video Player Dialog and return to search results |
-| `Space` or `K` | Toggle Play / Pause |
-| `Left` / `Right` | Seek backward / forward by 5 seconds |
-| `Up` / `Down` | Increase / decrease volume by 5% |
-| `M` | Toggle audio mute |
-| `Ctrl+Shift+D` | Toggle Braille progress indicator on/off (switch display to standard text/subtitles) |
-| `F2` | Open / close Settings and Diagnostics dialog |
-| `Touch Cursor Routing` | On Braille display, pressing a routing button skips to that exact point in the track |
-| `Tab` / `Shift+Tab` | Navigate logically through interactive controls |
 
+**F1 explains the keys for wherever focus is** (search box, a section's list, the player, Up next, comments, settings).
+**F6 / Shift+F6** move between the main areas: search box, section tabs and list; or player controls, side panel and top bar.
+
+### Library
+
+| Key | Action |
+|---|---|
+| `Ctrl+1` ... `Ctrl+7` | Search, Featured, What's New, Channels, History, Watch Later, Queue |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous section |
+| `Ctrl+E` | Search box (`Escape` there clears it) |
+| `Enter` | Play the video, or open the channel |
+| `Ctrl+Q` / `Ctrl+L` / `Ctrl+S` / `Ctrl+G` | Queue, Watch Later, subscribe, go to channel |
+| `Ctrl+C` | Copy a share link (`https://youtu.be/...`) |
+| `Ctrl+D` | Download: audio (MP3) or video (MP4), open the downloads folder, cancel |
+| `Delete` | Remove from History, Watch Later, Channels or the Queue |
+| `Applications` / `Shift+F10` | Every action for the item |
+| `Alt+Left`, `Backspace`, `Escape` | Back from a channel page |
+| `F5` | Refresh the section |
+| `F2` | Settings (a normal dialog; Escape closes and saves) |
+
+Lists keep loading as you reach the end: search results, channel pages and comments are not limited to the first 20.
+
+### Player
+
+| Key | Action |
+|---|---|
+| `K`, or `Space` when not on a button | Play / pause (after the end, plays again from the start) |
+| `Left` / `Right`, `Ctrl+Left` / `Ctrl+Right` | Seek 5 / 30 seconds |
+| `0` ... `9`, `Home` | Jump to 0-90%, start over |
+| `Up` / `Down`, `M` | Volume, mute |
+| `Shift+.` / `Shift+,` | Faster / slower |
+| `T`, `I`, `U` | Speak the time, what is playing, what plays next |
+| `Shift+N` / `Shift+P` | Next (queue, then Up next) / previous |
+| `Alt+U`, `Alt+C`, `Alt+D`, `Alt+Q` | Up next, Comments, Description, Queue panels |
+| `A` | Autoplay on/off (plays the first unwatched related video when the queue ends) |
+| `C` | Read captions aloud on/off (off by default) |
+| `Ctrl+S` / `Ctrl+L` / `Ctrl+G` | Subscribe, Watch Later, go to channel |
+| `Ctrl+C` / `Ctrl+Shift+C` | Copy a share link that starts at the current time / from the beginning |
+| `Ctrl+D` | Download audio or video of what is playing |
+| `Escape` | From a side panel: back to the controls; otherwise close the player |
+| `Ctrl+Shift+D` | Braille progress on/off |
+| Braille routing keys | Seek silently to that point |
+
+Comments are a tree: `Right` opens a comment's replies (one level deeper, each starting with "Reply from"), `Right` again moves into them, `Left` goes back up and closes. `Enter` also opens or closes; "More replies" loads the rest. `Ctrl+C` copies a comment.
+
+Downloads go to `Downloads\TimePlayer`. With ffmpeg installed (for example `winget install Gyan.FFmpeg`), audio is saved as MP3 and video at full quality; without it, audio is saved as M4A and video as a single MP4.
+
+### Braille
+
+On first start with NVDA installed, TimePlayer asks once whether you use a braille display. Yes installs the NVDA add-on (restart NVDA once); No turns braille progress off and is never asked again. Change it later in Settings.
+
+### What is spoken
+
+TimePlayer speaks results of what you do (a count of results, "Paused", a new position after seeking) and stays quiet
+otherwise: buffering, loading related videos and comments in the background, and caption lines are not announced
+unless you turn on "Read captions aloud" (`C`).
+
+## Library, Subscriptions and Feeds
+
+TimePlayer keeps an account-free library on your computer, in the spirit of NewPipe, stored as plain JSON
+in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlayer.exe` for portable installs):
+
+- `subscriptions.json` is written in **NewPipe's export format**, so it can be imported directly into NewPipe, Tubular or LibreTube.
+- **Import** (Channels section): the Google Takeout zip (no need to unzip), NewPipe / Tubular / LibreTube JSON, Takeout `subscriptions.csv`, OPML, FreeTube `profiles.db`. The "How to get my YouTube subscriptions" button walks through Google Takeout step by step and opens it.
+- **Export**: NewPipe JSON or OPML.
+- **What's New**: latest uploads of every subscribed channel from YouTube's public RSS feeds, newest first; uploads since your
+  last visit are spoken as "New", Shorts are marked and can be hidden, and new uploads are announced at startup.
+- **Featured**: trending videos (with Music, Gaming and Movies categories) for a configurable region, via Invidious.
+- **History** with **resume**: videos continue where you left off ("Resuming at 4 minutes 12 seconds. Press Home to start from the beginning"),
+  and lists say "Watched" or "Resume at ..." before the title.
+- **Watch Later** list and **channel pages** reachable from any video.
+
+---
+
+## Making a release
+
+```powershell
+pwsh build/package.ps1
+```
+
+This runs the tests, publishes a self-contained single-file build, and writes to `release/`:
+
+- `TimePlayer-<version>-win-x64-portable.zip`: extract and run; `portable.txt` keeps settings, library and logs in the folder.
+- `TimePlayer-<version>-Setup.exe`: per-user installer (no administrator prompt), built only when Inno Setup 6 is installed (`winget install JRSoftware.InnoSetup`).
+- `TimePlayerBraille.nvda-addon`: the NVDA braille add-on for manual installation.
+- `SHA256SUMS.txt`.
+
+mpv and yt-dlp are bundled from `%LOCALAPPDATA%\TimePlayerin` (where TimePlayer downloads them); pass `-ToolsFrom <folder>` to use others.
+The version comes from `Directory.Build.props`. `build/README.txt` is the plain-text guide shipped to users.

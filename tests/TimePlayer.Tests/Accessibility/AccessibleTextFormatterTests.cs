@@ -34,20 +34,6 @@ public class AccessibleTextFormatterTests
     }
 
     [Fact]
-    public void FormatRelativeSeekSpoken_Forward()
-    {
-        var result = AccessibleTextFormatter.FormatRelativeSeekSpoken(5, TimeSpan.FromSeconds(65));
-        Assert.Equal("Seeked forward 5 seconds to 1 minute, 5 seconds", result);
-    }
-
-    [Fact]
-    public void FormatRelativeSeekSpoken_Backward()
-    {
-        var result = AccessibleTextFormatter.FormatRelativeSeekSpoken(-5, TimeSpan.FromSeconds(20));
-        Assert.Equal("Seeked backward 5 seconds to 20 seconds", result);
-    }
-
-    [Fact]
     public void FormatVolumeSpoken_ClampsCorrectly()
     {
         Assert.Equal("Volume 80 percent", AccessibleTextFormatter.FormatVolumeSpoken(80.2));
@@ -66,13 +52,22 @@ public class AccessibleTextFormatterTests
     public void FormatSearchResultsSpoken_ZeroResults()
     {
         var speech = AccessibleTextFormatter.FormatSearchResultsSpoken(0, "lofi");
-        Assert.Equal("No results found for lofi.", speech);
+        Assert.Equal("No results for lofi.", speech);
     }
 
     [Fact]
     public void FormatSearchResultsSpoken_MultipleResults()
     {
         var speech = AccessibleTextFormatter.FormatSearchResultsSpoken(10, "lofi");
-        Assert.Equal("Found 10 results for lofi. Use arrow keys to navigate.", speech);
+        Assert.Equal("10 results.", speech);
+    }
+
+    [Theory]
+    [InlineData(240, "4 minutes")]
+    [InlineData(3605, "1 hour, 5 seconds")]
+    [InlineData(0, "0 seconds")]
+    public void FormatTimeSpoken_LeavesOutZeroParts(int seconds, string expected)
+    {
+        Assert.Equal(expected, AccessibleTextFormatter.FormatTimeSpoken(TimeSpan.FromSeconds(seconds)));
     }
 }

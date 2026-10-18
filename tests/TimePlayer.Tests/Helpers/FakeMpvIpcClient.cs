@@ -13,13 +13,14 @@ public class FakeMpvIpcClient : IMpvIpcClient
     public event EventHandler<MpvPropertyChangeEventArgs>? PropertyChanged;
     public event EventHandler? Disconnected;
 
-    public void RaiseEvent(string eventName, string? reason = null, string? error = null)
+    public void RaiseEvent(string eventName, string? reason = null, string? error = null, long? entryId = null)
     {
         EventReceived?.Invoke(this, new MpvEvent
         {
             EventName = eventName,
             Reason = reason,
-            Error = error
+            Error = error,
+            PlaylistEntryId = entryId
         });
     }
 

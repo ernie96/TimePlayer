@@ -37,6 +37,8 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
     private PlayerOptions? _currentOptions;
     private bool _isDisposed;
     private bool _isIntentionalStop;
+    private bool _isPaused;
+    private long? _currentEntryId;
 
     public PlaybackState State { get; private set; } = PlaybackState.Stopped;
     public TimeSpan CurrentTime { get; private set; } = TimeSpan.Zero;
@@ -118,6 +120,9 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         startInfo.ArgumentList.Add("--input-vo-keyboard=no");
         startInfo.ArgumentList.Add("--input-cursor=no");
         startInfo.ArgumentList.Add("--gpu-context=d3d11");
+        startInfo.ArgumentList.Add("--ytdl=yes");
+        startInfo.ArgumentList.Add("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        startInfo.ArgumentList.Add("--referrer=https://www.youtube.com/");
 
         if (_currentOptions?.HardwareDecoding ?? true)
         {
@@ -137,7 +142,7 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
 
             if (!string.IsNullOrWhiteSpace(_currentOptions.YtDlpExecutablePath) && File.Exists(_currentOptions.YtDlpExecutablePath))
             {
-                startInfo.ArgumentList.Add($"--script-opts=ytdl_hook-ytdl_path={_currentOptions.YtDlpExecutablePath}");
+                startInfo.ArgumentList.Add($"--script-opts=ytdl_hook-ytdl_path=\"{_currentOptions.YtDlpExecutablePath}\"");
             }
         }
 
@@ -171,6 +176,8 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         EnsureAlive();
 
         _logger.LogInformation("Loading media URL in mpv: {Url}", mediaUrl);
+        _isIntentionalStop = false;
+        _currentEntryId = null;
         SetState(PlaybackState.Opening);
 
         var response = await _ipcClient.SendCommandAsync(new object[] { "loadfile", mediaUrl, "replace" }, cancellationToken);
@@ -181,6 +188,11 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
             ErrorOccurred?.Invoke(this, new PlaybackErrorEventArgs(errorMsg));
             throw new InvalidOperationException(errorMsg);
         }
+
+        // mpv keeps the pause flag across files, and pauses itself at the end of a file (--keep-open),
+        // so a video loaded after another one ended would otherwise start silently paused.
+        if (_isPaused)
+            await _ipcClient.SetPropertyAsync("pause", false, cancellationToken);
 
         if (!string.IsNullOrWhiteSpace(audioTrackUrl))
         {
@@ -275,6 +287,7 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         switch (e.EventName?.ToLowerInvariant())
         {
             case "start-file":
+                _currentEntryId = e.PlaylistEntryId;
                 SetState(PlaybackState.Buffering);
                 break;
 
@@ -283,10 +296,19 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
                 break;
 
             case "end-file":
+                // "loadfile replace" ends the previous file after the new one has been requested.
+                // That end belongs to the old file and must not stop (or fail) the new one.
+                if (e.PlaylistEntryId is { } ended && _currentEntryId is { } current && ended != current)
+                    break;
+                if (_currentEntryId is null && State == PlaybackState.Opening
+                    && !string.Equals(e.Reason, "error", StringComparison.OrdinalIgnoreCase))
+                    break;
                 if (string.Equals(e.Reason, "error", StringComparison.OrdinalIgnoreCase))
                 {
                     SetState(PlaybackState.Error);
-                    var msg = $"Playback stopped due to error: {e.Error}";
+                    var msg = !string.IsNullOrWhiteSpace(e.Error)
+                        ? $"Playback stopped due to error: {e.Error}"
+                        : "Playback stopped due to media error.";
                     _logger.LogError(msg);
                     ErrorOccurred?.Invoke(this, new PlaybackErrorEventArgs(msg));
                 }
@@ -314,6 +336,7 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         switch (e.PropertyId)
         {
             case PropIdPause:
+                _isPaused = e.Value is { ValueKind: JsonValueKind.True };
                 if (e.Value.HasValue && e.Value.Value.ValueKind == JsonValueKind.True)
                 {
                     if (State == PlaybackState.Playing) SetState(PlaybackState.Paused);
@@ -358,6 +381,21 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
                 if (e.Value.HasValue && e.Value.Value.TryGetDouble(out var spd))
                 {
                     Speed = spd;
+                }
+                break;
+
+            case PropIdEofReached:
+                // With --keep-open mpv does not end the file at EOF: it holds the last frame and sets
+                // eof-reached. That is the only end-of-video signal, so queue advance depends on it.
+                if (e.Value is { ValueKind: JsonValueKind.True })
+                {
+                    if (State is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering)
+                        SetState(PlaybackState.Ended);
+                }
+                else if (State == PlaybackState.Ended && e.Value is { ValueKind: JsonValueKind.False })
+                {
+                    // Seeking back from the end resumes the file.
+                    SetState(_isPaused ? PlaybackState.Paused : PlaybackState.Playing);
                 }
                 break;
 

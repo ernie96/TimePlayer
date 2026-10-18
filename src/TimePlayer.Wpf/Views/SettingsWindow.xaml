@@ -1,0 +1,75 @@
+<Window x:Class="TimePlayer.Wpf.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Width="680" Height="640" MinWidth="520" MinHeight="420"
+        WindowStartupLocation="CenterOwner"
+        ShowInTaskbar="False"
+        ResizeMode="CanResizeWithGrip"
+        Background="#1C1C1F"
+        Foreground="#F4F4F5">
+    <Window.Resources>
+        <ResourceDictionary Source="SharedStyles.xaml"/>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,0,10,0">
+            <StackPanel>
+                <TextBlock Text="{Binding VersionText}" Foreground="#E4E4E7" FontSize="13" Margin="0,0,0,4"/>
+                <TextBlock Text="Changes apply right away and are saved when you close this window." Foreground="#A1A1AA" FontSize="13"
+                           TextWrapping="Wrap" Margin="0,0,0,8"/>
+
+                <TextBlock Text="Playback" Style="{StaticResource HeadingStyle}"/>
+                <CheckBox x:Name="FirstSetting" Content="Continue videos where I left off" IsChecked="{Binding ResumePlayback}"/>
+                <CheckBox Content="Autoplay a related video when the queue ends" IsChecked="{Binding Autoplay}"/>
+                <CheckBox Content="Use hardware video decoding (takes effect after restart)" IsChecked="{Binding EnableHardwareDecoding}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Label Content="Preferred _quality:" Target="{Binding ElementName=QualityBox}" Foreground="#E4E4E7" Padding="0,0,10,0" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="QualityBox" ItemsSource="{Binding AvailableQualities}" SelectedItem="{Binding SelectedQuality}" MinWidth="160"/>
+                </StackPanel>
+
+                <TextBlock Text="Screen reader and braille" Style="{StaticResource HeadingStyle}"/>
+                <CheckBox Content="Read captions aloud as they appear" IsChecked="{Binding SpeakCaptions}"/>
+                <CheckBox Content="Use the NVDA braille add-on (for braille displays; restart NVDA after changing)" IsChecked="{Binding UseBrailleAddon}"/>
+                <CheckBox Content="Show playback progress on the braille display" IsChecked="{Binding EnableBrailleProgress}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Label Content="Braille display _cells (used when the NVDA add-on is not running):" Target="{Binding ElementName=CellsBox}"
+                           Foreground="#E4E4E7" Padding="0,0,10,0" VerticalAlignment="Center"/>
+                    <ComboBox x:Name="CellsBox" ItemsSource="{Binding AvailableBrailleCellCounts}"
+                              SelectedItem="{Binding SelectedBrailleCellCount, Mode=TwoWay}" MinWidth="90"/>
+                </StackPanel>
+
+                <TextBlock Text="Library" Style="{StaticResource HeadingStyle}"/>
+                <CheckBox Content="Keep a watch history on this computer" IsChecked="{Binding RecordHistory}"/>
+                <CheckBox Content="Check my channels for new videos at startup" IsChecked="{Binding CheckFeedOnStartup}"/>
+                <CheckBox Content="Hide Shorts in What's New" IsChecked="{Binding HideShortsInFeed}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                    <Label Content="_Featured region, two letters such as US, ES or MX:" Target="{Binding ElementName=RegionBox}"
+                           Foreground="#E4E4E7" Padding="0,0,10,0" VerticalAlignment="Center"/>
+                    <TextBox x:Name="RegionBox" Text="{Binding FeaturedRegion, UpdateSourceTrigger=PropertyChanged}" MaxLength="2" Width="60"
+                             CharacterCasing="Upper"/>
+                </StackPanel>
+
+                <TextBlock Text="Maintenance" Style="{StaticResource HeadingStyle}"/>
+                <WrapPanel Margin="0,0,0,8">
+                    <Button Content="Check for _updates" Command="{Binding CheckForUpdatesCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                    <Button Content="Run _diagnostics" Command="{Binding RunDiagnosticsCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                    <Button Content="Play _test pattern" Click="PlayTestPattern_Click" Style="{StaticResource SmallButtonStyle}"/>
+                    <Button Content="Open _log folder" Command="{Binding OpenLogFolderCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                </WrapPanel>
+                <TextBlock Text="{Binding DependencyStatusMessage}" Foreground="#A1A1AA" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                <Label Content="Diagnostics _report:" Target="{Binding ElementName=ReportBox}" Foreground="#E4E4E7" Padding="0,0,0,4"/>
+                <TextBox x:Name="ReportBox" Text="{Binding DiagnosticsReport, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                         VerticalScrollBarVisibility="Auto" Height="150" FontFamily="Consolas" FontSize="12" Background="#141416"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <Button Grid.Row="1" Content="Close" IsCancel="True" IsDefault="True" Style="{StaticResource AccentButtonStyle}"
+                HorizontalAlignment="Right" MinWidth="100" Margin="0,14,0,0" Click="Close_Click"/>
+    </Grid>
+</Window>

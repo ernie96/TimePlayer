@@ -28,8 +28,17 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<FileInstanceCache>();
         services.TryAddSingleton<IPublicInstanceDirectory, PublicInstanceDirectory>();
         services.TryAddSingleton<IInstanceHealthService, InstanceHealthService>();
-        services.TryAddSingleton<Backends.Piped.PipedBackendProvider>();
+        services.TryAddSingleton(sp => new Backends.TubeRepair.TubeRepairBackendProvider(
+            new HttpClient(new SocketsHttpHandler
+            {
+                AllowAutoRedirect = false,
+                AutomaticDecompression = DecompressionMethods.All,
+                UseCookies = false
+            }),
+            sp.GetRequiredService<IConfigurationService>(),
+            sp.GetRequiredService<Microsoft.Extensions.Logging.ILogger<Backends.TubeRepair.TubeRepairBackendProvider>>()));
         services.TryAddSingleton<Backends.Invidious.InvidiousBackendProvider>();
+        services.TryAddSingleton<Backends.InnerTube.InnerTubeBackendProvider>();
 
         // Process Runner & Local yt-dlp Fallback Backend
         services.TryAddSingleton<Common.Process.IProcessRunner, Common.Process.DefaultProcessRunner>();
@@ -42,6 +51,12 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Playback.Mpv.MpvPlaybackEngine>();
         services.TryAddSingleton<Playback.IPlayerEngine>(sp => sp.GetRequiredService<Playback.Mpv.MpvPlaybackEngine>());
         services.TryAddSingleton<IPlaybackEngine>(sp => sp.GetRequiredService<Playback.Mpv.MpvPlaybackEngine>());
+
+        // Local library (subscriptions, history, watch later) and discovery feeds
+        services.TryAddSingleton<Library.ILibraryService, Library.LibraryService>();
+        services.TryAddSingleton<Library.IDiscoveryService, Library.DiscoveryService>();
+        services.TryAddSingleton<Library.IWatchPageService, Library.WatchPageService>();
+        services.TryAddSingleton<Library.IDownloadService, Library.DownloadService>();
 
         // High-level Playback Coordinator
         services.TryAddSingleton<Playback.PlaybackCoordinator>();

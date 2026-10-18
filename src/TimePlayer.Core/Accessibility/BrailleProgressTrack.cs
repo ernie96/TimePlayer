@@ -61,13 +61,20 @@ public sealed class BrailleProgressTrack
     /// <summary>
     /// Calculates the seek target time when a touch cursor button on cellIndex (0 to CellCount - 1) is pressed.
     /// </summary>
-    public TimeSpan CalculateSeekTime(int cellIndex, TimeSpan duration)
+    public TimeSpan CalculateSeekTime(int cellIndex, TimeSpan duration) =>
+        CalculateSeekTime(cellIndex, CellCount, duration);
+
+    /// <summary>
+    /// Seek target for a routing key on a display of <paramref name="cellCount"/> cells, which may differ
+    /// from the configured width (the NVDA add-on reports the real hardware width).
+    /// </summary>
+    public static TimeSpan CalculateSeekTime(int cellIndex, int cellCount, TimeSpan duration)
     {
-        if (duration <= TimeSpan.Zero)
+        if (duration <= TimeSpan.Zero || cellCount < 2)
             return TimeSpan.Zero;
 
-        int clamped = Math.Clamp(cellIndex, 0, CellCount - 1);
-        double fraction = (double)clamped / (CellCount - 1);
+        int clamped = Math.Clamp(cellIndex, 0, cellCount - 1);
+        double fraction = (double)clamped / (cellCount - 1);
         double targetSeconds = Math.Round(fraction * duration.TotalSeconds, 3);
         return TimeSpan.FromSeconds(targetSeconds);
     }

@@ -204,3 +204,90 @@ internal sealed class InvidiousCaption
     [JsonPropertyName("url")]
     public string? Url { get; set; }
 }
+
+internal sealed class InvidiousRecommendedResponse
+{
+    [JsonPropertyName("recommendedVideos")]
+    public List<InvidiousRecommendedVideo>? RecommendedVideos { get; set; }
+}
+
+internal sealed class InvidiousRecommendedVideo
+{
+    [JsonPropertyName("videoId")]
+    public string? VideoId { get; set; }
+
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
+
+    [JsonPropertyName("author")]
+    public string? Author { get; set; }
+
+    [JsonPropertyName("authorId")]
+    public string? AuthorId { get; set; }
+
+    [JsonPropertyName("lengthSeconds")]
+    public int? LengthSeconds { get; set; }
+
+    [JsonPropertyName("viewCountText")]
+    public string? ViewCountText { get; set; }
+
+    [JsonPropertyName("publishedText")]
+    public string? PublishedText { get; set; }
+}
+
+internal sealed class InvidiousCommentsResponse
+{
+    [JsonPropertyName("comments")]
+    public List<InvidiousComment>? Comments { get; set; }
+
+    [JsonPropertyName("continuation")]
+    public string? Continuation { get; set; }
+}
+
+internal sealed class InvidiousComment
+{
+    [JsonPropertyName("commentId")]
+    public string? CommentId { get; set; }
+
+    [JsonPropertyName("author")]
+    public string? Author { get; set; }
+
+    [JsonPropertyName("authorId")]
+    public string? AuthorId { get; set; }
+
+    [JsonPropertyName("content")]
+    public string? Content { get; set; }
+
+    [JsonPropertyName("publishedText")]
+    public string? PublishedText { get; set; }
+
+    [JsonPropertyName("likeCount")]
+    public long? LikeCount { get; set; }
+
+    [JsonPropertyName("isPinned")]
+    public bool? IsPinned { get; set; }
+
+    [JsonPropertyName("authorIsChannelOwner")]
+    public bool? AuthorIsChannelOwner { get; set; }
+
+    [JsonPropertyName("replies")]
+    public InvidiousCommentReplies? Replies { get; set; }
+}
+
+internal sealed class InvidiousCommentReplies
+{
+    [JsonPropertyName("replyCount")]
+    public int? ReplyCount { get; set; }
+
+    [JsonPropertyName("continuation")]
+    public string? Continuation { get; set; }
+}
+
+internal sealed class InvidiousChannelVideosResponse
+{
+    [JsonPropertyName("videos")]
+    public List<InvidiousSearchItem>? Videos { get; set; }
+
+    [JsonPropertyName("continuation")]
+    public string? Continuation { get; set; }
+}

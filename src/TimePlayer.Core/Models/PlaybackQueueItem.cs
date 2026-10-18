@@ -46,4 +46,6 @@ public record PlaybackQueueItem
         Duration = details.Duration,
         ThumbnailUrl = details.ThumbnailUrl
     };
+
+    public override string ToString() => AccessibleLabel;
 }

@@ -17,4 +17,10 @@ public interface IAccessibilityService
     /// <param name="message">Clear, natural speech message.</param>
     /// <param name="priority">Polite, Medium, or Assertive priority.</param>
     void Announce(string message, AnnouncementPriority priority = AnnouncementPriority.Medium);
+
+    /// <summary>
+    /// Speaks a caption line, cutting off any caption still being spoken, so speech never falls
+    /// behind the video. Implementations without interruption fall back to a low priority announcement.
+    /// </summary>
+    void AnnounceCaption(string text) => Announce(text, AnnouncementPriority.Low);
 }

@@ -57,7 +57,7 @@ public sealed class InstanceHealthService : IInstanceHealthService
 
         var stopwatch = Stopwatch.StartNew();
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(TimeSpan.FromSeconds(5)); // Health probe timeout
+        cts.CancelAfter(TimeSpan.FromSeconds(3)); // Health probe timeout
 
         try
         {
@@ -235,7 +235,8 @@ public sealed class InstanceHealthService : IInstanceHealthService
         }
 
         // Return best remaining if any succeeded, or first available
-        return availableCandidates.FirstOrDefault();
+        var selected = availableCandidates.FirstOrDefault();
+        return selected != null && _stateMap.TryGetValue(selected.BaseUri, out var selectedState) ? selectedState.Instance : selected;
     }
 
     public void RecordSuccess(PublicInstance instance, TimeSpan latency)

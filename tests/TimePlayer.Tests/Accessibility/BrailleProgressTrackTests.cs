@@ -171,6 +171,25 @@ public class BrailleProgressTrackTests
         Assert.True(isRunning || !isRunning);
     }
 
+    [Theory]
+    [InlineData(10, 20, 200, 105.263)]
+    [InlineData(0, 20, 200, 0)]
+    [InlineData(19, 20, 200, 200)]
+    [InlineData(25, 20, 200, 200)]
+    public void CalculateSeekTime_UsesReportedDisplayWidth(int cell, int cellCount, double durationSeconds, double expectedSeconds)
+    {
+        var seek = BrailleProgressTrack.CalculateSeekTime(cell, cellCount, TimeSpan.FromSeconds(durationSeconds));
+        Assert.Equal(expectedSeconds, seek.TotalSeconds, precision: 3);
+    }
+
+    [Theory]
+    [InlineData("NvdaAddon/manifest.ini", "name = timePlayerBraille")]
+    [InlineData("NvdaAddon/globalPlugins/timePlayerBraille.py", "class GlobalPlugin(globalPluginHandler.GlobalPlugin)")]
+    public void NvdaAddon_IsEmbedded(string resourceName, string expectedContent)
+    {
+        Assert.Contains(expectedContent, NvdaAddonInstaller.ReadResource(resourceName));
+    }
+
     [Fact]
     public void NvdaBrailleBridge_SendBrailleMessage_ExecutesSafely()
     {

@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Net.Http;
 using System.Text;
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -9,6 +10,7 @@ using TimePlayer.Core.Backends.YtDlp;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
+using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 
@@ -101,7 +103,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private string _statusAnnouncement = "TimePlayer ready. Focus is in the search box.";
 
     [ObservableProperty]
-    private string _activeBackendName = "Piped (Primary)";
+    private string _activeBackendName = "TubeRepair (Primary)";
 
     // Screen Reader Live Subtitles
     [ObservableProperty]
@@ -148,11 +150,25 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     [ObservableProperty]
     private int _selectedBrailleCellCount = 40;
 
+    partial void OnSelectedBrailleCellCountChanged(int value)
+    {
+        if (value < 2) return;
+        _brailleTrack = new BrailleProgressTrack(value);
+        UpdateBrailleDisplayLine();
+        _ = PersistAccessibilitySettingsAsync();
+    }
+
     [ObservableProperty]
-    private ObservableCollection<int> _availableBrailleCellCounts = new() { 14, 18, 20, 32, 40, 80 };
+    private ObservableCollection<int> _availableBrailleCellCounts = new() { 12, 14, 16, 18, 20, 24, 32, 40, 60, 70, 80, 84 };
 
     [ObservableProperty]
     private bool _enableBrailleProgress = true;
+
+    partial void OnEnableBrailleProgressChanged(bool value)
+    {
+        UpdateBrailleDisplayLine();
+        _ = PersistAccessibilitySettingsAsync();
+    }
 
     // Retry and Error State
     [ObservableProperty]
@@ -196,8 +212,19 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         IConfigurationService configService,
         IInstanceHealthService healthService,
         IPublicInstanceDirectory instanceDirectory,
+        ILibraryService library,
+        IDiscoveryService discovery,
+        IWatchPageService watchPage,
+        IDownloadService downloads,
         ILogger<MainViewModel> logger)
     {
+        _downloads = downloads ?? throw new ArgumentNullException(nameof(downloads));
+        _watchPage = watchPage ?? throw new ArgumentNullException(nameof(watchPage));
+        // Engine and coordinator events arrive on background threads; collections must change on this one.
+        _uiContext = SynchronizationContext.Current;
+        _uiThreadId = Environment.CurrentManagedThreadId;
+        _library = library ?? throw new ArgumentNullException(nameof(library));
+        _discovery = discovery ?? throw new ArgumentNullException(nameof(discovery));
         _playbackCoordinator = playbackCoordinator ?? throw new ArgumentNullException(nameof(playbackCoordinator));
         _playerEngine = playerEngine ?? throw new ArgumentNullException(nameof(playerEngine));
         _ytDlpManager = ytDlpManager ?? throw new ArgumentNullException(nameof(ytDlpManager));
@@ -211,15 +238,22 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _volumePercent = config.Playback.DefaultVolumePercent;
         _selectedQuality = config.Playback.PreferredQuality;
         _selectedBrailleCellCount = config.Accessibility.BrailleDisplayCellCount;
+        if (!_availableBrailleCellCounts.Contains(_selectedBrailleCellCount))
+        {
+            _availableBrailleCellCounts.Add(_selectedBrailleCellCount);
+        }
         _enableBrailleProgress = config.Accessibility.EnableBrailleProgress;
         _enableHardwareDecoding = config.Playback.HardwareDecoding;
         _brailleTrack = new BrailleProgressTrack(_selectedBrailleCellCount);
         _brailleDisplayLine = _brailleTrack.GenerateDisplayLine(TimeSpan.Zero, TimeSpan.Zero, false, false);
+        InitializeLibraryPreferences();
+        InitializePlayerPreferences();
+        InitializeViewState();
+        InitializeBrailleAddonPreference();
 
         // Player engine events
         _playerEngine.StateChanged += OnEngineStateChanged;
         _playerEngine.PositionChanged += OnEnginePositionChanged;
-        _playerEngine.ErrorOccurred += OnEngineErrorOccurred;
         _playerEngine.SubtitleTextChanged += OnEngineSubtitleTextChanged;
 
         // Coordinator events
@@ -229,6 +263,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_playbackCoordinator is PlaybackCoordinator concreteCoord)
         {
             concreteCoord.QueueChanged += OnCoordinatorQueueChanged;
+            concreteCoord.QueueEnded += OnCoordinatorQueueEnded;
         }
 
         // Initialize subtitle tracks list with "Off"
@@ -262,7 +297,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             await _playerEngine.InitializeAsync(windowHandle, options);
             IsEngineInitialized = true;
             PlaybackStatusText = "Engine initialized";
-            _accessibility.Announce("Playback engine initialized and ready.", AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -279,14 +313,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var query = SearchQuery?.Trim();
         if (string.IsNullOrWhiteSpace(query))
         {
-            _accessibility.Announce("Please enter a search query or YouTube link.", AnnouncementPriority.High);
+            _accessibility.Announce("Please enter a search query or YouTube link.", AnnouncementPriority.Medium);
             return;
         }
 
         // Direct YouTube URL playback check
         if (YouTubeUrl.TryParse(query, out var ytUrl))
         {
-            _accessibility.Announce($"Direct YouTube video recognized: {ytUrl.VideoId}. Opening player dialog...", AnnouncementPriority.High);
             await PlayDirectUrlAsync(ytUrl.NormalizedWatchUrl);
             return;
         }
@@ -301,22 +334,29 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         ErrorMessage = null;
         LastSearchQuery = query;
         CanRetry = false;
-        _accessibility.Announce($"Searching YouTube for {query}...", AnnouncementPriority.Medium);
+        _accessibility.Announce("Searching...", AnnouncementPriority.Medium);
 
         try
         {
             var searchResult = await _playbackCoordinator.SearchAsync(query, cancellationToken);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+
             if (searchResult.IsSuccess)
             {
+                _lastSearchResults = searchResult.Value.Items.DistinctBy(item => item.Id).ToList();
+                _sectionCts?.Cancel();
+                CurrentSection = BrowseSection.Search;
+                SyncSelectedTab(BrowseSection.Search);
+                SectionTitle = $"Search results for {query}";
                 SearchResults.Clear();
-                var seenIds = new HashSet<string>();
-                foreach (var item in searchResult.Value.Items)
+                foreach (var item in _lastSearchResults)
                 {
-                    if (seenIds.Add(item.Id))
-                    {
-                        SearchResults.Add(item);
-                    }
+                    SearchResults.Add(Decorate(item));
                 }
+                ConfigureSearchPaging();
 
                 UpdateActiveBackendName();
                 var count = SearchResults.Count;
@@ -370,7 +410,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         _searchCts?.Cancel();
         SearchQuery = string.Empty;
-        SearchResults.Clear();
+        _lastSearchResults.Clear();
+        if (CurrentSection == BrowseSection.Search)
+            SearchResults.Clear();
         SelectedSearchResult = null;
         _accessibility.Announce("Search cleared.", AnnouncementPriority.Low);
         RequestFocusSearch?.Invoke(this, EventArgs.Empty);
@@ -381,7 +423,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         ErrorMessage = null;
         CanRetry = false;
-        _accessibility.Announce("Error dismissed.", AnnouncementPriority.Low);
     }
 
     [RelayCommand]
@@ -409,13 +450,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (YouTubeUrl.TryParse(text, out var ytUrl))
         {
             SearchQuery = ytUrl.NormalizedWatchUrl;
-            _accessibility.Announce($"Pasted YouTube link. Opening video {ytUrl.VideoId}...", AnnouncementPriority.High);
+            _accessibility.Announce("Loading video...", AnnouncementPriority.Medium);
             await PlayDirectUrlAsync(ytUrl.NormalizedWatchUrl);
         }
         else
         {
             SearchQuery = text;
-            _accessibility.Announce($"Pasted text '{text}' into search box. Press Enter to search.", AnnouncementPriority.Medium);
+            _accessibility.Announce("Pasted into search box.", AnnouncementPriority.Low);
             RequestFocusSearch?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -425,6 +466,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         item ??= SelectedSearchResult;
         if (item == null) return;
+        if (item.Kind == SearchResultKind.Channel)
+        {
+            await OpenChannelAsync(item);
+            return;
+        }
+        SetCurrentLibraryVideo(item);
 
         // Cancel previous in-flight playback loading if any
         _playbackCts?.Cancel();
@@ -434,11 +481,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         CurrentVideoTitle = item.Title;
         CurrentChannelTitle = item.ChannelTitle;
+        if (item.Duration.HasValue && item.Duration.Value > TimeSpan.Zero)
+        {
+            Duration = item.Duration.Value;
+            UpdateBrailleDisplayLine();
+        }
         IsPlayerDialogOpen = true;
         LastPlayedUrlOrId = item.Id;
         CanRetry = false;
         ErrorMessage = null;
-        _accessibility.Announce($"Opening video player for: {item.Title}. Press Escape at any time to return to search results.", AnnouncementPriority.High);
+        _accessibility.Announce($"Loading {item.Title}", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
         // Add to queue if not already present
@@ -481,11 +533,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         CurrentVideoTitle = "Loading YouTube video...";
         CurrentChannelTitle = string.Empty;
+        SetCurrentLibraryVideo(YouTubeUrl.TryParse(url, out var directUrl)
+            ? new SearchResult { Id = directUrl.VideoId.Value, Title = string.Empty, ChannelTitle = string.Empty }
+            : YouTubeVideoId.TryParse(url, out var directId)
+                ? new SearchResult { Id = directId.Value, Title = string.Empty, ChannelTitle = string.Empty }
+                : null);
         IsPlayerDialogOpen = true;
         LastPlayedUrlOrId = url;
         CanRetry = false;
         ErrorMessage = null;
-        _accessibility.Announce("Opening video player dialog. Press Escape at any time to exit.", AnnouncementPriority.High);
+        _accessibility.Announce("Loading video...", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
         try
@@ -510,23 +567,48 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     [RelayCommand]
-    public void ClosePlayerDialog()
+    public async Task ClosePlayerDialogAsync()
     {
         if (!IsPlayerDialogOpen) return;
 
         IsPlayerDialogOpen = false;
-        _accessibility.Announce("Closed video player. Focus restored to search results.", AnnouncementPriority.Medium);
+        StopBrailleBlinkTimer();
+        RecordCurrentProgress(CurrentTime, flush: true);
+        _ = PersistVolumeAsync();
+
+        try
+        {
+            if (IsEngineInitialized)
+            {
+                await _playerEngine.StopAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to stop playback when closing player dialog.");
+        }
+
+        PlaybackState = PlaybackState.Stopped;
+        CurrentTime = TimeSpan.Zero;
+        UpdateBrailleDisplayLine();
+
+        RefreshLibraryStatusOfVisibleItems();
         RequestFocusResults?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void ClosePlayerDialog()
+    {
+        _ = ClosePlayerDialogAsync();
     }
 
     [RelayCommand]
     public async Task EnqueueSearchResultAsync(SearchResult? item)
     {
         item ??= SelectedSearchResult;
-        if (item == null) return;
+        if (item == null || item.Kind != SearchResultKind.Video) return;
 
         await _playbackCoordinator.EnqueueAsync(item);
-        _accessibility.Announce($"Added '{item.Title}' to playback queue.", AnnouncementPriority.Low);
+        _accessibility.Announce("Added to queue.", AnnouncementPriority.Low);
     }
 
     [RelayCommand]
@@ -537,8 +619,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         CurrentVideoTitle = item.Title;
         CurrentChannelTitle = item.ChannelTitle;
+        SetCurrentLibraryVideo(ToSearchResult(item));
         IsPlayerDialogOpen = true;
-        _accessibility.Announce($"Playing queued video: {item.Title}.", AnnouncementPriority.High);
+        _accessibility.Announce($"Loading {item.Title}", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
         await _playbackCoordinator.PlayQueueItemAsync(item.QueueItemId);
@@ -554,7 +637,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_playbackCoordinator is PlaybackCoordinator coord)
         {
             await coord.RemoveFromQueueAsync(item.QueueItemId);
-            _accessibility.Announce($"Removed '{item.Title}' from queue.", AnnouncementPriority.Low);
+            _accessibility.Announce("Removed from queue.", AnnouncementPriority.Low);
         }
     }
 
@@ -573,7 +656,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         if (!CanPlayNext) return;
 
-        _accessibility.Announce("Playing next item in queue...", AnnouncementPriority.Medium);
+        AnnounceQueueNeighbour(+1);
         await _playbackCoordinator.PlayNextAsync();
         PopulateSubtitleTracks();
     }
@@ -583,9 +666,17 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         if (!CanPlayPrevious) return;
 
-        _accessibility.Announce("Playing previous item in queue...", AnnouncementPriority.Medium);
+        AnnounceQueueNeighbour(-1);
         await _playbackCoordinator.PlayPreviousAsync();
         PopulateSubtitleTracks();
+    }
+
+    private void AnnounceQueueNeighbour(int offset)
+    {
+        var index = CurrentQueueItem is null ? -1 : PlaybackQueue.IndexOf(CurrentQueueItem);
+        var target = index + offset;
+        if (target >= 0 && target < PlaybackQueue.Count)
+            _accessibility.Announce(PlaybackQueue[target].Title, AnnouncementPriority.Medium);
     }
 
     [RelayCommand]
@@ -595,7 +686,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         try
         {
+            var wasPlaying = PlaybackState == PlaybackState.Playing;
             await _playbackCoordinator.TogglePlayPauseAsync();
+            _accessibility.Announce(wasPlaying ? "Paused" : "Playing", AnnouncementPriority.Medium);
         }
         catch (Exception ex)
         {
@@ -627,8 +720,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var step = _configService.CurrentConfig.Playback.SmallSeekSeconds;
         try
         {
+            var target = ClampToDuration(CurrentTime + TimeSpan.FromSeconds(step));
             await _playerEngine.SeekRelativeAsync(step);
-            _accessibility.Announce(AccessibleTextFormatter.FormatRelativeSeekSpoken(step, CurrentTime), AnnouncementPriority.Low);
+            CurrentTime = target;
+            UpdateBrailleDisplayLine();
+            _accessibility.Announce(AccessibleTextFormatter.FormatTimeSpoken(target), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -644,8 +740,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var step = _configService.CurrentConfig.Playback.SmallSeekSeconds;
         try
         {
+            var target = ClampToDuration(CurrentTime + TimeSpan.FromSeconds(-step));
             await _playerEngine.SeekRelativeAsync(-step);
-            _accessibility.Announce(AccessibleTextFormatter.FormatRelativeSeekSpoken(-step, CurrentTime), AnnouncementPriority.Low);
+            CurrentTime = target;
+            UpdateBrailleDisplayLine();
+            _accessibility.Announce(AccessibleTextFormatter.FormatTimeSpoken(target), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -661,8 +760,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var step = _configService.CurrentConfig.Playback.LargeSeekSeconds;
         try
         {
+            var target = ClampToDuration(CurrentTime + TimeSpan.FromSeconds(step));
             await _playerEngine.SeekRelativeAsync(step);
-            _accessibility.Announce(AccessibleTextFormatter.FormatRelativeSeekSpoken(step, CurrentTime), AnnouncementPriority.Low);
+            CurrentTime = target;
+            UpdateBrailleDisplayLine();
+            _accessibility.Announce(AccessibleTextFormatter.FormatTimeSpoken(target), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -678,13 +780,23 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var step = _configService.CurrentConfig.Playback.LargeSeekSeconds;
         try
         {
+            var target = ClampToDuration(CurrentTime + TimeSpan.FromSeconds(-step));
             await _playerEngine.SeekRelativeAsync(-step);
-            _accessibility.Announce(AccessibleTextFormatter.FormatRelativeSeekSpoken(-step, CurrentTime), AnnouncementPriority.Low);
+            CurrentTime = target;
+            UpdateBrailleDisplayLine();
+            _accessibility.Announce(AccessibleTextFormatter.FormatTimeSpoken(target), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to seek large backward.");
         }
+    }
+
+    private TimeSpan ClampToDuration(TimeSpan position)
+    {
+        var dur = Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero);
+        if (position < TimeSpan.Zero) return TimeSpan.Zero;
+        return dur > TimeSpan.Zero && position > dur ? dur : position;
     }
 
     [RelayCommand]
@@ -816,54 +928,39 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     public void OpenSettings()
     {
         IsSettingsDialogOpen = true;
-        _accessibility.Announce("Settings and Diagnostics opened. Press Escape to close.", AnnouncementPriority.Medium);
     }
 
     [RelayCommand]
     public void CloseSettings()
     {
+        // The settings window is modal; Windows returns focus to where it was when it closes.
         IsSettingsDialogOpen = false;
-        _accessibility.Announce("Settings and Diagnostics closed.", AnnouncementPriority.Low);
-        if (IsPlayerDialogOpen)
-        {
-            RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
-        }
-        else
-        {
-            RequestFocusSearch?.Invoke(this, EventArgs.Empty);
-        }
     }
 
     [RelayCommand]
     public async Task RunDiagnosticsAsync()
     {
         IsRunningDiagnostics = true;
-        _accessibility.Announce("Running diagnostics check on backend instances and dependencies...", AnnouncementPriority.Medium);
+        _accessibility.Announce("Running diagnostics...", AnnouncementPriority.Medium);
 
         var report = new StringBuilder();
         report.AppendLine("=== TimePlayer Diagnostics Report ===");
         report.AppendLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
         report.AppendLine();
 
-        // 1. Piped Instances Health
-        report.AppendLine("[1] Piped Backend Status:");
+        // 1. TubeRepair Primary Backend
+        report.AppendLine("[1] TubeRepair Primary Backend:");
         try
         {
-            var pipedInstances = await _instanceDirectory.GetInstancesAsync(BackendProviderType.Piped);
-            report.AppendLine($"  - Discovered instances: {pipedInstances.Count}");
-            var bestPiped = await _healthService.SelectBestInstanceAsync(BackendProviderType.Piped);
-            if (bestPiped != null)
-            {
-                report.AppendLine($"  - Active / Best instance: {bestPiped.BaseUri}");
-            }
-            else
-            {
-                report.AppendLine("  - Active instance: None reachable (will fallback)");
-            }
+            var trBase = _configService.CurrentConfig.Backend.TubeRepairBaseUrl;
+            report.AppendLine($"  - Server URL: {trBase}");
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            var ping = await client.GetAsync($"{trBase.TrimEnd('/')}/feeds/api/videos?q=test&max-results=1");
+            report.AppendLine($"  - Health status: {(ping.IsSuccessStatusCode ? "Reachable (HTTP " + (int)ping.StatusCode + ")" : "HTTP " + (int)ping.StatusCode)}");
         }
         catch (Exception ex)
         {
-            report.AppendLine($"  - Piped check error: {ex.Message}");
+            report.AppendLine($"  - TubeRepair check error: {ex.Message}");
         }
         report.AppendLine();
 
@@ -889,8 +986,14 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
         report.AppendLine();
 
-        // 3. Local yt-dlp Status
-        report.AppendLine("[3] Local yt-dlp Executable:");
+        // 3. InnerTube Tertiary Backend
+        report.AppendLine("[3] InnerTube Tertiary Backend:");
+        report.AppendLine($"  - Base URL: {_configService.CurrentConfig.Backend.InnerTubeBaseUrl}");
+        report.AppendLine("  - Protocol: Anonymous YouTube InnerTube API v1");
+        report.AppendLine();
+
+        // 4. Local yt-dlp Status (Final Fallback)
+        report.AppendLine("[4] Local yt-dlp Executable (Final Fallback):");
         report.AppendLine($"  - Path: {_ytDlpManager.ExecutablePath}");
         report.AppendLine($"  - Installed: {_ytDlpManager.IsInstalled}");
         if (_ytDlpManager.IsInstalled)
@@ -900,8 +1003,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
         report.AppendLine();
 
-        // 4. mpv Engine Status
-        report.AppendLine("[4] Embedded mpv Engine:");
+        // 5. Embedded mpv Engine
+        report.AppendLine("[5] Embedded mpv Engine:");
         report.AppendLine($"  - Initialized: {IsEngineInitialized}");
         report.AppendLine($"  - Engine alive: {_playerEngine.IsEngineAlive}");
         report.AppendLine($"  - Playback state: {PlaybackState}");
@@ -910,7 +1013,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         report.AppendLine("Diagnostics completed.");
         DiagnosticsReport = report.ToString();
         IsRunningDiagnostics = false;
-        _accessibility.Announce("Diagnostics check complete. Review results in the diagnostics text box.", AnnouncementPriority.High);
+        _accessibility.Announce("Diagnostics complete.", AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -927,7 +1030,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             CurrentVideoTitle = "Built-in Test Pattern (1080p 30fps Color Bars)";
             CurrentChannelTitle = "TimePlayer Built-in Diagnostics";
             IsPlayerDialogOpen = true;
-            _accessibility.Announce("Loading test pattern into player dialog...", AnnouncementPriority.High);
+            _accessibility.Announce("Loading test pattern...", AnnouncementPriority.High);
             RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
             await _playerEngine.LoadAsync("av://lavfi:testsrc=duration=600:size=1280x720:rate=30");
@@ -964,15 +1067,24 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    private readonly SynchronizationContext? _uiContext;
+    private readonly int _uiThreadId;
+
+    // Compare threads, not contexts: WPF hands out a different DispatcherSynchronizationContext
+    // instance per priority, so a context comparison is false even on the UI thread and the
+    // handlers would re-post themselves forever, starving the dispatcher.
+    private bool IsOnUiThread => _uiContext is null || Environment.CurrentManagedThreadId == _uiThreadId;
+
     private void UpdateActiveBackendName()
     {
         if (_playbackCoordinator is PlaybackCoordinator coord)
         {
             ActiveBackendName = coord.ActiveProvider switch
             {
-                BackendProviderType.Piped => "Piped (Primary API)",
-                BackendProviderType.Invidious => "Invidious (Fallback API)",
-                BackendProviderType.YtDlpLocal => "yt-dlp (Local Fallback)",
+                BackendProviderType.TubeRepair => "TubeRepair (Primary)",
+                BackendProviderType.Invidious => "Invidious",
+                BackendProviderType.InnerTube => "InnerTube",
+                BackendProviderType.YtDlpLocal => "yt-dlp (Fallback)",
                 _ => "Automatic"
             };
         }
@@ -980,6 +1092,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
     private void OnEngineStateChanged(object? sender, PlaybackStateChangedEventArgs e)
     {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnEngineStateChanged(sender, e), null);
+            return;
+        }
+
         PlaybackState = e.NewState;
         PlaybackStatusText = e.NewState.ToString();
         IsVideoActive = e.NewState is PlaybackState.Playing or PlaybackState.Paused or PlaybackState.Buffering;
@@ -994,6 +1112,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
 
         UpdateBrailleDisplayLine();
+        OnLibraryPlaybackStateChanged(e.NewState);
 
         var status = e.NewState switch
         {
@@ -1007,47 +1126,75 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         };
 
         StatusAnnouncement = status;
-        _accessibility.Announce(status, AnnouncementPriority.Medium);
+        // Nothing is spoken here: the user hears the video start, play/pause speaks from
+        // TogglePlayPauseAsync, the end from the queue/autoplay logic, and real failures from
+        // the coordinator (engine errors while it tries the next stream source are expected).
     }
 
     private void OnEnginePositionChanged(object? sender, PlaybackPositionChangedEventArgs e)
     {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnEnginePositionChanged(sender, e), null);
+            return;
+        }
+
         CurrentTime = e.Position;
         Duration = e.Duration;
         UpdateBrailleDisplayLine();
-    }
-
-    private void OnEngineErrorOccurred(object? sender, PlaybackErrorEventArgs e)
-    {
-        ErrorMessage = e.Message;
-        PlaybackStatusText = "Error";
-        CanRetry = true;
-        StatusAnnouncement = $"Player error: {e.Message}";
-        _accessibility.Announce(StatusAnnouncement, AnnouncementPriority.High);
+        OnLibraryPositionChanged(e.Position);
     }
 
     private void OnEngineSubtitleTextChanged(object? sender, string text)
     {
-        CurrentSubtitleText = text;
-        if (!string.IsNullOrWhiteSpace(text))
+        if (!IsOnUiThread)
         {
-            // Update live region announcement for screen reader users
-            _accessibility.Announce(text, AnnouncementPriority.Low);
+            _uiContext!.Post(_ => OnEngineSubtitleTextChanged(sender, text), null);
+            return;
         }
+
+        CurrentSubtitleText = text;
+        if (!SpeakCaptions || string.IsNullOrWhiteSpace(text))
+            return;
+
+        // One line of speech per caption; mpv repeats a caption when tracks or positions change.
+        var spoken = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (spoken == _lastSpokenCaption)
+            return;
+        _lastSpokenCaption = spoken;
+        // Interrupts the previous caption, so speech stays with the video instead of queueing up.
+        _accessibility.AnnounceCaption(spoken);
     }
+
+    private string? _lastSpokenCaption;
 
     private void OnCoordinatorCurrentVideoChanged(object? sender, VideoDetails? video)
     {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnCoordinatorCurrentVideoChanged(sender, video), null);
+            return;
+        }
+
         if (video != null)
         {
             CurrentVideo = video;
             CurrentVideoTitle = video.Title;
             CurrentChannelTitle = video.Channel.Name;
+            SetCurrentLibraryVideo(video.ToSearchResult());
+            if (string.IsNullOrWhiteSpace(VideoDescription) && !string.IsNullOrWhiteSpace(video.Description))
+                VideoDescription = video.Description;
         }
     }
 
     private void OnCoordinatorErrorOccurred(object? sender, PlaybackError error)
     {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnCoordinatorErrorOccurred(sender, error), null);
+            return;
+        }
+
         ErrorMessage = error.UserMessage;
         CanRetry = true;
         StatusAnnouncement = error.UserMessage;
@@ -1056,13 +1203,24 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
     private void OnCoordinatorStatusChanged(object? sender, string status)
     {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnCoordinatorStatusChanged(sender, status), null);
+            return;
+        }
+
         PlaybackStatusText = status;
         StatusAnnouncement = status;
-        _accessibility.Announce(status, AnnouncementPriority.Low);
     }
 
     private void OnCoordinatorQueueChanged(object? sender, IReadOnlyList<PlaybackQueueItem> queue)
     {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnCoordinatorQueueChanged(sender, queue), null);
+            return;
+        }
+
         PlaybackQueue.Clear();
         foreach (var item in queue)
         {
@@ -1076,6 +1234,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             {
                 CurrentVideoTitle = CurrentQueueItem.Title;
                 CurrentChannelTitle = CurrentQueueItem.ChannelTitle;
+                // Auto-advance changes the video without going through a play command.
+                if (_currentLibraryVideo?.Id != CurrentQueueItem.VideoId.Value)
+                    SetCurrentLibraryVideo(ToSearchResult(CurrentQueueItem));
             }
 
             var index = PlaybackQueue.IndexOf(CurrentQueueItem!);
@@ -1104,17 +1265,26 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     [RelayCommand]
-    public async Task BrailleTouchCursorAsync(int cellIndex)
-    {
-        if (!IsEngineInitialized || Duration <= TimeSpan.Zero) return;
+    public async Task BrailleTouchCursorAsync(int cellIndex) => await BrailleTouchCursorAsync(cellIndex, 0);
 
-        var targetTime = _brailleTrack.CalculateSeekTime(cellIndex, Duration);
+    /// <param name="cellCount">Width of the display the key was pressed on; 0 uses the configured width.</param>
+    public async Task BrailleTouchCursorAsync(int cellIndex, int cellCount)
+    {
+        if (!IsEngineInitialized) return;
+
+        var dur = Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero);
+        if (dur <= TimeSpan.Zero) return;
+
+        var targetTime = cellCount >= 2
+            ? BrailleProgressTrack.CalculateSeekTime(cellIndex, cellCount, dur)
+            : _brailleTrack.CalculateSeekTime(cellIndex, dur);
         try
         {
-            await _playerEngine.SeekAsync(targetTime);
+            // Update local time and tactile display line immediately for 0ms physical response
             CurrentTime = targetTime;
             UpdateBrailleDisplayLine();
-            _accessibility.Announce($"Braille seek to cell {cellIndex + 1} of {_brailleTrack.CellCount}, time {AccessibleTextFormatter.FormatTimeSpoken(targetTime)}", AnnouncementPriority.Low);
+
+            await _playerEngine.SeekAsync(targetTime);
         }
         catch (Exception ex)
         {
@@ -1157,6 +1327,14 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     [RelayCommand]
     public async Task SaveSettingsAsync()
     {
+        await PersistAccessibilitySettingsAsync();
+        await PersistLibraryPreferencesAsync();
+        await PersistPlayerPreferencesAsync();
+        CloseSettings();
+    }
+
+    public async Task PersistAccessibilitySettingsAsync()
+    {
         var current = _configService.CurrentConfig;
         var updated = current with
         {
@@ -1175,13 +1353,78 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         try
         {
             await _configService.UpdateConfigAsync(updated);
-            _accessibility.Announce("Settings saved successfully.", AnnouncementPriority.Medium);
-            CloseSettings();
         }
         catch (Exception ex)
         {
-            _accessibility.Announce($"Could not save settings: {ex.Message}", AnnouncementPriority.High);
+            _logger.LogWarning(ex, "Failed to persist updated settings.");
         }
+    }
+
+    public void AnnounceNvdaAddonInstalled() =>
+        _accessibility.Announce(
+            "TimePlayer braille add-on installed. Restart NVDA once to use the braille progress track and touch seeking.",
+            AnnouncementPriority.Medium);
+
+    [ObservableProperty]
+    private bool _useBrailleAddon;
+
+    private bool _applyingBrailleAddonChoice;
+
+    /// <summary>NVDA is installed and the user has never said whether they want braille support.</summary>
+    public bool ShouldAskAboutBrailleAddon =>
+        _configService.CurrentConfig.Accessibility.UseBrailleAddon is null
+        && !NvdaAddonInstaller.IsInstalled
+        && NvdaAddonInstaller.NvdaConfigDirectory is not null;
+
+    private void InitializeBrailleAddonPreference()
+    {
+        _useBrailleAddon = _configService.CurrentConfig.Accessibility.UseBrailleAddon ?? NvdaAddonInstaller.IsInstalled;
+    }
+
+    partial void OnUseBrailleAddonChanged(bool value)
+    {
+        if (!_applyingBrailleAddonChoice)
+            _ = ApplyBrailleAddonChoiceAsync(value);
+    }
+
+    /// <summary>
+    /// Saves the answer so the question is never asked again, and installs or removes the add-on.
+    /// Declining also turns the braille progress track off; it can be turned on again in Settings.
+    /// </summary>
+    public async Task ApplyBrailleAddonChoiceAsync(bool install)
+    {
+        _applyingBrailleAddonChoice = true;
+        UseBrailleAddon = install;
+        _applyingBrailleAddonChoice = false;
+
+        if (install)
+        {
+            var result = NvdaAddonInstaller.EnsureInstalled();
+            _accessibility.Announce(result switch
+            {
+                NvdaAddonInstallResult.Failed => "The braille add-on could not be installed.",
+                NvdaAddonInstallResult.NvdaNotFound => "NVDA was not found, so the braille add-on was not installed.",
+                NvdaAddonInstallResult.AlreadyCurrent => "The braille add-on is installed.",
+                _ => "Braille add-on installed. Restart NVDA once to use it."
+            }, AnnouncementPriority.Medium);
+            if (!EnableBrailleProgress)
+                EnableBrailleProgress = true;
+        }
+        else
+        {
+            bool wasInstalled = NvdaAddonInstaller.IsInstalled;
+            NvdaAddonInstaller.Uninstall();
+            if (EnableBrailleProgress)
+                EnableBrailleProgress = false;
+            if (wasInstalled)
+                _accessibility.Announce("Braille add-on removed. It stops after NVDA restarts.", AnnouncementPriority.Medium);
+        }
+
+        var current = _configService.CurrentConfig;
+        await _configService.UpdateConfigAsync(current with
+        {
+            Accessibility = current.Accessibility with { UseBrailleAddon = install, EnableBrailleProgress = EnableBrailleProgress }
+        });
     }
 
     [RelayCommand]
@@ -1194,50 +1437,68 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _accessibility.Announce(message, AnnouncementPriority.High);
     }
 
-    partial void OnSelectedBrailleCellCountChanged(int value)
-    {
-        if (value >= 2)
-        {
-            _brailleTrack = new BrailleProgressTrack(value);
-            UpdateBrailleDisplayLine();
-        }
-    }
+    public int ActiveBrailleCellIndex => _brailleTrack.CalculateCellIndex(CurrentTime, Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero));
 
-    partial void OnEnableBrailleProgressChanged(bool value)
-    {
-        if (!value)
-        {
-            StopBrailleBlinkTimer();
-            BrailleDisplayLine = string.Empty;
-            NvdaBrailleBridge.SendBrailleMessage(string.Empty);
-        }
-        else
-        {
-            UpdateBrailleDisplayLine();
-            if (PlaybackState == PlaybackState.Paused)
-            {
-                StartBrailleBlinkTimer();
-            }
-        }
-    }
+    private string _lastSentBrailleLine = string.Empty;
+    private DateTime _lastBrailleMessageSentTime = DateTime.MinValue;
 
     private void UpdateBrailleDisplayLine()
     {
-        if (!EnableBrailleProgress) return;
-
         bool isPlaying = PlaybackState is PlaybackState.Playing or PlaybackState.Buffering;
         bool isPaused = PlaybackState == PlaybackState.Paused;
+        var dur = Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero);
 
-        BrailleDisplayLine = _brailleTrack.GenerateDisplayLine(
+        if (!EnableBrailleProgress)
+        {
+            BrailleDisplayLine = string.Empty;
+            NvdaBrailleBridge.PublishProgressState("off");
+            SendLegacyBrailleLine(string.Empty);
+            return;
+        }
+
+        string newLine = _brailleTrack.GenerateDisplayLine(
             CurrentTime,
-            Duration,
+            dur,
             isPlaying,
             isPaused,
             _brailleBlinkVisible);
 
-        if (isPlaying || isPaused)
+        BrailleDisplayLine = newLine;
+
+        double fraction = dur > TimeSpan.Zero ? Math.Clamp(CurrentTime / dur, 0.0, 1.0) : 0.0;
+        NvdaBrailleBridge.PublishProgressState(isPlaying || isPaused
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{(isPlaying ? "playing" : "paused")} {fraction:F4}")
+            : "stopped");
+
+        SendLegacyBrailleLine(isPlaying || isPaused ? newLine : string.Empty);
+    }
+
+    /// <summary>
+    /// Fallback for when the NVDA add-on is missing: NVDA braille messages via the controller client.
+    /// These time out after NVDA's message timeout, hence the 400ms heartbeat.
+    /// </summary>
+    private void SendLegacyBrailleLine(string line)
+    {
+        if (NvdaAddonInstaller.IsInstalled)
+            return;
+
+        if (string.IsNullOrEmpty(line))
         {
-            NvdaBrailleBridge.SendBrailleMessage(BrailleDisplayLine);
+            if (!string.IsNullOrEmpty(_lastSentBrailleLine))
+            {
+                _lastSentBrailleLine = string.Empty;
+                _lastBrailleMessageSentTime = DateTime.MinValue;
+                NvdaBrailleBridge.SendBrailleMessage(string.Empty);
+            }
+            return;
+        }
+
+        var now = DateTime.UtcNow;
+        if (line != _lastSentBrailleLine || (now - _lastBrailleMessageSentTime) >= TimeSpan.FromMilliseconds(400))
+        {
+            _lastSentBrailleLine = line;
+            _lastBrailleMessageSentTime = now;
+            NvdaBrailleBridge.SendBrailleMessage(line);
         }
     }
 
@@ -1265,6 +1526,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _isDisposed = true;
 
         StopBrailleBlinkTimer();
+        RecordCurrentProgress(CurrentTime, flush: true);
+        _library.Flush();
+        _sectionCts?.Cancel();
 
         _searchCts?.Cancel();
         _searchCts?.Dispose();
@@ -1273,7 +1537,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         _playerEngine.StateChanged -= OnEngineStateChanged;
         _playerEngine.PositionChanged -= OnEnginePositionChanged;
-        _playerEngine.ErrorOccurred -= OnEngineErrorOccurred;
         _playerEngine.SubtitleTextChanged -= OnEngineSubtitleTextChanged;
 
         _playbackCoordinator.CurrentVideoChanged -= OnCoordinatorCurrentVideoChanged;
@@ -1282,6 +1545,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_playbackCoordinator is PlaybackCoordinator concreteCoord)
         {
             concreteCoord.QueueChanged -= OnCoordinatorQueueChanged;
+            concreteCoord.QueueEnded -= OnCoordinatorQueueEnded;
         }
 
         return ValueTask.CompletedTask;

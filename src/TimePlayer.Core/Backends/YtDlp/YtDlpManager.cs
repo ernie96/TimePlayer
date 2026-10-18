@@ -86,12 +86,33 @@ public sealed class YtDlpManager : IYtDlpManager
                 await CheckAndUpdateAsync(cancellationToken);
             }
 
+            EnsureConfigFile();
             return await GetVersionAsync(cancellationToken);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to ensure yt-dlp is installed and updated.");
             return Result<string>.Failure("YTDLP_INIT_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    private void EnsureConfigFile()
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(ExecutablePath);
+            if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
+            {
+                var confPath = Path.Combine(dir, "yt-dlp.conf");
+                if (!File.Exists(confPath))
+                {
+                    File.WriteAllText(confPath, "--extractor-args \"youtube:player_client=mweb,default\"\n");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create default yt-dlp.conf");
         }
     }
 

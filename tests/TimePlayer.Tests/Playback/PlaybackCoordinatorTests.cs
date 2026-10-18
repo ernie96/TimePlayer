@@ -2,8 +2,10 @@ using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using TimePlayer.Core.Backends.Invidious;
-using TimePlayer.Core.Backends.Piped;
+using TimePlayer.Core.Backends.InnerTube;
+using TimePlayer.Core.Backends.TubeRepair;
 using TimePlayer.Core.Backends.YtDlp;
+using TimePlayer.Core.Common.Process;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Models;
@@ -25,12 +27,12 @@ public class PlaybackCoordinatorTests
             _instances = instanceUrls.Select(u => new PublicInstance
             {
                 BaseUri = new Uri(u),
-                ProviderType = BackendProviderType.Piped
+                ProviderType = BackendProviderType.Invidious
             }).ToList();
         }
 
         public Task<InstanceHealthMeasurement> ProbeInstanceAsync(PublicInstance instance, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new InstanceHealthMeasurement { InstanceUri = instance.BaseUri, ProviderType = BackendProviderType.Piped, IsSuccessful = true });
+            Task.FromResult(new InstanceHealthMeasurement { InstanceUri = instance.BaseUri, ProviderType = BackendProviderType.Invidious, IsSuccessful = true });
 
         public Task<PublicInstance?> SelectBestInstanceAsync(BackendProviderType providerType, CancellationToken cancellationToken = default)
         {
@@ -46,12 +48,13 @@ public class PlaybackCoordinatorTests
 
     private readonly FakePlayerEngine _playerEngine = new();
     private readonly ConfigurationService _configService;
-    private readonly MockHealthService _healthService = new("https://piped.video");
+    private readonly MockHealthService _healthService = new("https://invidious.example.com");
     private readonly FakeProcessRunner _processRunner = new();
     private readonly FakeYtDlpManager _ytDlpManager = new();
 
-    private readonly PipedBackendProvider _piped;
+    private readonly TubeRepairBackendProvider _tubeRepair;
     private readonly InvidiousBackendProvider _invidious;
+    private readonly InnerTubeBackendProvider _innerTube;
     private readonly YtDlpBackendProvider _ytdlp;
 
     public PlaybackCoordinatorTests()
@@ -60,17 +63,21 @@ public class PlaybackCoordinatorTests
         var httpHandler = MockHttpMessageHandler.Status(HttpStatusCode.InternalServerError);
         var httpClient = new HttpClient(httpHandler);
 
-        _piped = new PipedBackendProvider(
+        _tubeRepair = new TubeRepairBackendProvider(
             httpClient,
-            _healthService,
             _configService,
-            NullLogger<PipedBackendProvider>.Instance);
+            NullLogger<TubeRepairBackendProvider>.Instance);
 
         _invidious = new InvidiousBackendProvider(
             httpClient,
             _healthService,
             _configService,
             NullLogger<InvidiousBackendProvider>.Instance);
+
+        _innerTube = new InnerTubeBackendProvider(
+            httpClient,
+            _configService,
+            NullLogger<InnerTubeBackendProvider>.Instance);
 
         _ytdlp = new YtDlpBackendProvider(
             _ytDlpManager,
@@ -82,8 +89,9 @@ public class PlaybackCoordinatorTests
     private PlaybackCoordinator CreateCoordinator()
     {
         return new PlaybackCoordinator(
-            _piped,
+            _tubeRepair,
             _invidious,
+            _innerTube,
             _ytdlp,
             _playerEngine,
             _configService,
@@ -191,5 +199,40 @@ public class PlaybackCoordinatorTests
 
         Assert.Equal(caption, coordinator.SelectedCaptionTrack);
         Assert.Contains("https://subtitles.vtt", _playerEngine.LoadedSubtitleUrls);
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenPublicApisFail_FallsBackToYtDlp()
+    {
+        await using var coordinator = CreateCoordinator();
+
+        _processRunner.NextResult = new ProcessExecutionResult
+        {
+            ExitCode = 0,
+            StandardOutput = "{\"_type\":\"playlist\",\"entries\":[{\"id\":\"fallbackVideoId\",\"title\":\"Fallback Title\",\"uploader\":\"Fallback Uploader\",\"duration\":180}]}",
+            StandardError = string.Empty,
+            Duration = TimeSpan.FromMilliseconds(50)
+        };
+
+        var res = await coordinator.SearchAsync("test query");
+
+        Assert.True(res.IsSuccess);
+        Assert.Equal(BackendProviderType.YtDlpLocal, coordinator.ActiveProvider);
+        Assert.Single(res.Value.Items);
+        Assert.Equal("fallbackVideoId", res.Value.Items[0].Id);
+        Assert.Equal("Fallback Title", res.Value.Items[0].Title);
+    }
+
+    [Fact]
+    public async Task SearchAsync_WhenUserCancels_ThrowsOperationCanceledException()
+    {
+        await using var coordinator = CreateCoordinator();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await coordinator.SearchAsync("test query", cts.Token);
+        });
     }
 }

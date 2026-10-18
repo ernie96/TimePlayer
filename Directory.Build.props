@@ -5,6 +5,7 @@
     <LangVersion>latest</LangVersion>
     <Authors>TimePlayer Contributors</Authors>
     <Product>TimePlayer</Product>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
+    <Copyright>TimePlayer Contributors</Copyright>
   </PropertyGroup>
 </Project>

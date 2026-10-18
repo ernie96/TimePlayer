@@ -3,11 +3,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Backends.Invidious;
-using TimePlayer.Core.Backends.Piped;
+using TimePlayer.Core.Backends.InnerTube;
+using TimePlayer.Core.Backends.TubeRepair;
 using TimePlayer.Core.Backends.YtDlp;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
+using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 using TimePlayer.Tests.Helpers;
@@ -62,10 +64,15 @@ public class MainViewModelTests
     private readonly MockHealthService _healthService = new();
     private readonly MockInstanceDirectory _instanceDirectory = new();
 
-    private readonly PipedBackendProvider _piped;
+    private readonly TubeRepairBackendProvider _tubeRepair;
     private readonly InvidiousBackendProvider _invidious;
+    private readonly InnerTubeBackendProvider _innerTube;
     private readonly YtDlpBackendProvider _ytdlp;
     private readonly PlaybackCoordinator _coordinator;
+    private readonly LibraryService _library = new(Path.Combine(Path.GetTempPath(), "timeplayer-tests", Guid.NewGuid().ToString("N")));
+    private readonly FakeDiscoveryService _discovery = new();
+    private readonly FakeWatchPageService _watchPage = new();
+    private readonly FakeDownloadService _downloads = new();
 
     public MainViewModelTests()
     {
@@ -73,13 +80,15 @@ public class MainViewModelTests
         var httpHandler = MockHttpMessageHandler.Status(HttpStatusCode.InternalServerError);
         var httpClient = new HttpClient(httpHandler);
 
-        _piped = new PipedBackendProvider(httpClient, _healthService, _configService, NullLogger<PipedBackendProvider>.Instance);
+        _tubeRepair = new TubeRepairBackendProvider(httpClient, _configService, NullLogger<TubeRepairBackendProvider>.Instance);
         _invidious = new InvidiousBackendProvider(httpClient, _healthService, _configService, NullLogger<InvidiousBackendProvider>.Instance);
+        _innerTube = new InnerTubeBackendProvider(httpClient, _configService, NullLogger<InnerTubeBackendProvider>.Instance);
         _ytdlp = new YtDlpBackendProvider(_ytDlpManager, _processRunner, _configService, NullLogger<YtDlpBackendProvider>.Instance);
 
         _coordinator = new PlaybackCoordinator(
-            _piped,
+            _tubeRepair,
             _invidious,
+            _innerTube,
             _ytdlp,
             _playerEngine,
             _configService,
@@ -96,6 +105,10 @@ public class MainViewModelTests
             _configService,
             _healthService,
             _instanceDirectory,
+            _library,
+            _discovery,
+            _watchPage,
+            _downloads,
             NullLogger<MainViewModel>.Instance);
     }
 
@@ -155,11 +168,11 @@ public class MainViewModelTests
         vm.RequestFocusResults += (s, e) => resultsFocusRequested = true;
 
         vm.IsPlayerDialogOpen = true;
-        vm.ClosePlayerDialog();
+        await vm.ClosePlayerDialogAsync();
 
         Assert.False(vm.IsPlayerDialogOpen);
         Assert.True(resultsFocusRequested);
-        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Closed video player"));
+        Assert.Equal(PlaybackState.Stopped, _playerEngine.State);
     }
 
     [Fact]
@@ -167,10 +180,38 @@ public class MainViewModelTests
     {
         await using var vm = CreateViewModel();
 
+        vm.SpeakCaptions = true;
         _playerEngine.RaiseSubtitleText("Welcome to the video screen reader caption test");
 
         Assert.Equal("Welcome to the video screen reader caption test", vm.CurrentSubtitleText);
         Assert.Contains(_accessibility.Announcements, a => a.message == "Welcome to the video screen reader caption test");
+    }
+
+    [Fact]
+    public async Task Captions_RepeatsAreSkipped_AndLinesAreJoined()
+    {
+        await using var vm = CreateViewModel();
+        vm.SpeakCaptions = true;
+
+        _playerEngine.RaiseSubtitleText("first line" + System.Environment.NewLine + "second line");
+        _playerEngine.RaiseSubtitleText("first line second line");
+        _playerEngine.RaiseSubtitleText("");
+        _playerEngine.RaiseSubtitleText("next caption");
+
+        var spoken = _accessibility.Announcements.Select(a => a.message).ToList();
+        Assert.Equal(1, spoken.Count(m => m == "first line second line"));
+        Assert.Contains("next caption", spoken);
+    }
+
+    [Fact]
+    public async Task Captions_AreNotSpokenUnlessTurnedOn()
+    {
+        await using var vm = CreateViewModel();
+
+        _playerEngine.RaiseSubtitleText("A caption line");
+
+        Assert.Equal("A caption line", vm.CurrentSubtitleText);
+        Assert.DoesNotContain(_accessibility.Announcements, a => a.message == "A caption line");
     }
 
     [Fact]
@@ -185,7 +226,7 @@ public class MainViewModelTests
         await vm.EnqueueSearchResultAsync(item2);
 
         Assert.Equal(2, vm.PlaybackQueue.Count);
-        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Added 'Song 1' to playback queue"));
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Added to queue.");
 
         // Play queued item 1
         await vm.PlayQueueItemAsync(vm.PlaybackQueue[0]);
@@ -243,8 +284,9 @@ public class MainViewModelTests
         // Run diagnostics
         await vm.RunDiagnosticsAsync();
         Assert.False(vm.IsRunningDiagnostics);
-        Assert.Contains("Piped Backend Status", vm.DiagnosticsReport);
+        Assert.Contains("TubeRepair Primary Backend", vm.DiagnosticsReport);
         Assert.Contains("Invidious Backend Status", vm.DiagnosticsReport);
+        Assert.Contains("InnerTube Tertiary Backend", vm.DiagnosticsReport);
         Assert.Contains("Local yt-dlp Executable", vm.DiagnosticsReport);
         Assert.Contains("Embedded mpv Engine", vm.DiagnosticsReport);
 
@@ -308,14 +350,38 @@ public class MainViewModelTests
         await using var vm = CreateViewModel();
         await vm.InitializePlayerEngineAsync((nint)12345);
 
+        _playerEngine.Duration = TimeSpan.FromSeconds(390);
+        _playerEngine.State = PlaybackState.Playing;
         vm.Duration = TimeSpan.FromSeconds(390);
         vm.SelectedBrailleCellCount = 40;
+        vm.PlaybackState = PlaybackState.Playing;
 
         // Touch cell 10 of 40 (0-indexed 10): 10 / 39 * 390 = 100 seconds
         await vm.BrailleTouchCursorAsync(10);
 
         Assert.Equal(TimeSpan.FromSeconds(100), vm.CurrentTime);
-        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Braille seek to cell 11 of 40"));
+        Assert.Equal(BrailleProgressTrack.LowerG, vm.BrailleDisplayLine[10]);
+
+        // Touch cell 0 (beginning)
+        await vm.BrailleTouchCursorAsync(0);
+        Assert.Equal(TimeSpan.Zero, vm.CurrentTime);
+        Assert.Equal(BrailleProgressTrack.LowerG, vm.BrailleDisplayLine[0]);
+
+        // Touch cell 39 (end)
+        await vm.BrailleTouchCursorAsync(39);
+        Assert.Equal(TimeSpan.FromSeconds(390), vm.CurrentTime);
+        Assert.Equal(BrailleProgressTrack.LowerG, vm.BrailleDisplayLine[39]);
+    }
+
+    [Fact]
+    public async Task BrailleSettings_PersistsCellCountCorrectly()
+    {
+        await using var vm = CreateViewModel();
+        vm.SelectedBrailleCellCount = 20;
+
+        await vm.SaveSettingsAsync();
+
+        Assert.Equal(20, _configService.CurrentConfig.Accessibility.BrailleDisplayCellCount);
     }
 
     [Fact]
@@ -365,5 +431,327 @@ public class MainViewModelTests
         vm.ToggleBrailleProgress();
         Assert.True(vm.EnableBrailleProgress);
         Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Braille progress track enabled"));
+    }
+
+    // --- Library & discovery ---
+
+    private static SearchResult Video(string id, string title, string channelId = "UCBR8-60-B28hp2BmDPdntcQ", DateTimeOffset? published = null) => new()
+    {
+        Id = id,
+        Title = title,
+        ChannelTitle = "YouTube",
+        ChannelId = channelId,
+        Duration = TimeSpan.FromMinutes(10),
+        PublishedAt = published
+    };
+
+    [Fact]
+    public async Task PlayingAPartlyWatchedVideo_ResumesAndSaysHowToStartOver()
+    {
+        var video = Video("jNQXAC9IVRw", "Me at the zoo");
+        _library.RecordProgress(video, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(10), flush: true);
+        await using var vm = CreateViewModel();
+
+        await vm.PlaySearchResultAsync(video);
+
+        Assert.Equal(TimeSpan.FromMinutes(4), _playerEngine.CurrentTime);
+        Assert.Contains(_accessibility.Announcements, a => a.message.StartsWith("Resumed at 4 minutes") && a.message.Contains("Home"));
+    }
+
+    [Fact]
+    public async Task ResumeSetting_Off_StartsFromTheBeginning()
+    {
+        var video = Video("jNQXAC9IVRw", "Me at the zoo");
+        _library.RecordProgress(video, TimeSpan.FromMinutes(4), TimeSpan.FromMinutes(10), flush: true);
+        await using var vm = CreateViewModel();
+        vm.ResumePlayback = false;
+
+        await vm.PlaySearchResultAsync(video);
+
+        Assert.Equal(TimeSpan.Zero, _playerEngine.CurrentTime);
+    }
+
+    [Fact]
+    public async Task WatchLater_ToggleThenDeleteFromSection()
+    {
+        await using var vm = CreateViewModel();
+        var video = Video("jNQXAC9IVRw", "Me at the zoo");
+
+        vm.ToggleWatchLaterForItem(video);
+        await vm.ShowSectionByNumberAsync(6);
+
+        Assert.Equal(BrowseSection.WatchLater, vm.CurrentSection);
+        Assert.Single(vm.SearchResults);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "1 video");
+
+        vm.RemoveSelectedItem(null);
+
+        Assert.Empty(vm.SearchResults);
+        Assert.Empty(_library.WatchLater);
+    }
+
+    [Fact]
+    public async Task ChannelRow_EnterOpensChannelUploads_AndBackRestoresSection()
+    {
+        await using var vm = CreateViewModel();
+        _library.ToggleSubscription("UCBR8-60-B28hp2BmDPdntcQ", "YouTube");
+        _discovery.Channels["UCBR8-60-B28hp2BmDPdntcQ"] = new ChannelUploads("UCBR8-60-B28hp2BmDPdntcQ", "YouTube",
+            new[] { Video("jNQXAC9IVRw", "Upload one"), Video("dQw4w9WgXcQ", "Upload two") });
+
+        await vm.ShowSectionByNumberAsync(4);
+        Assert.Equal("Channel: YouTube", vm.SearchResults.Single().AccessibleSummary);
+
+        await vm.PlaySearchResultAsync(vm.SearchResults[0]);
+
+        Assert.False(vm.IsPlayerDialogOpen);
+        Assert.Equal(BrowseSection.Channel, vm.CurrentSection);
+        Assert.Equal(2, vm.SearchResults.Count);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "2 videos, subscribed");
+
+        await vm.GoBackAsync();
+        Assert.Equal(BrowseSection.Channels, vm.CurrentSection);
+    }
+
+    [Fact]
+    public async Task WhatsNew_MarksUploadsSinceLastVisitAsNew()
+    {
+        await using var vm = CreateViewModel();
+        var lastVisit = DateTimeOffset.UtcNow.AddDays(-1);
+        _library.ToggleSubscription("UCBR8-60-B28hp2BmDPdntcQ", "YouTube");
+        _library.MarkFeedViewed(lastVisit);
+        _discovery.Channels["UCBR8-60-B28hp2BmDPdntcQ"] = new ChannelUploads("UCBR8-60-B28hp2BmDPdntcQ", "YouTube", new[]
+        {
+            Video("jNQXAC9IVRw", "Fresh", published: lastVisit.AddHours(5)),
+            Video("dQw4w9WgXcQ", "Old", published: lastVisit.AddDays(-3))
+        });
+
+        await vm.ShowSectionByNumberAsync(3);
+
+        Assert.Equal("New", vm.SearchResults[0].StatusPrefix);
+        Assert.Null(vm.SearchResults[1].StatusPrefix);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "2 videos, 1 new");
+        Assert.True(_library.FeedLastViewedUtc > lastVisit);
+    }
+
+    [Fact]
+    public async Task WhatsNew_WithoutSubscriptions_ExplainsHowToStart()
+    {
+        await using var vm = CreateViewModel();
+
+        await vm.ShowSectionByNumberAsync(3);
+
+        Assert.Empty(vm.SearchResults);
+        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("no subscriptions yet") && a.message.Contains("Control+S"));
+        Assert.Equal(0, _discovery.FeedRequests);
+    }
+
+    [Fact]
+    public async Task SubscribeFromSearchResult_UsesItsChannel()
+    {
+        await using var vm = CreateViewModel();
+
+        vm.ToggleSubscriptionForItem(Video("jNQXAC9IVRw", "Me at the zoo", channelId: "UC4QobU6STFB0P71PMvOGN5A"));
+
+        Assert.True(_library.IsSubscribed("UC4QobU6STFB0P71PMvOGN5A"));
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Subscribed to YouTube.");
+    }
+
+    // --- Up next, autoplay, comments ---
+
+    private static Comment MakeComment(string id, string text, int replies = 0) => new()
+    {
+        Id = id,
+        Author = "@someone",
+        Text = text,
+        ReplyCount = replies,
+        RepliesToken = replies > 0 ? "replies-" + id : null
+    };
+
+    [Fact]
+    public async Task PlayingAVideo_LoadsUpNextQuietly()
+    {
+        _watchPage.Related["jNQXAC9IVRw"] = new() { Video("dQw4w9WgXcQ", "Related one"), Video("9bZkp7q19f0", "Related two") };
+        await using var vm = CreateViewModel();
+
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+
+        Assert.Equal(new[] { "Related one", "Related two" }, vm.UpNext.Select(v => v.Title));
+        Assert.Equal("A description", vm.VideoDescription);
+        Assert.DoesNotContain(_accessibility.Announcements, a => a.message.Contains("Related", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task WhenTheQueueEnds_AutoplayPlaysFirstUnwatchedUpNext()
+    {
+        _watchPage.Related["jNQXAC9IVRw"] = new() { Video("dQw4w9WgXcQ", "Already seen"), Video("9bZkp7q19f0", "Fresh one") };
+        _library.RecordProgress(Video("dQw4w9WgXcQ", "Already seen"), TimeSpan.FromMinutes(10), TimeSpan.FromMinutes(10), flush: true);
+        await using var vm = CreateViewModel();
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+
+        _playerEngine.RaiseState(PlaybackState.Ended);
+
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Up next: Fresh one");
+        Assert.Contains(_playerEngine.LoadedUrls, u => u.Contains("9bZkp7q19f0"));
+    }
+
+    [Fact]
+    public async Task WhenTheQueueEnds_WithAutoplayOff_SaysVideoEnded()
+    {
+        _watchPage.Related["jNQXAC9IVRw"] = new() { Video("9bZkp7q19f0", "Fresh one") };
+        await using var vm = CreateViewModel();
+        vm.Autoplay = false;
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+        int loads = _playerEngine.LoadedUrls.Count;
+
+        _playerEngine.RaiseState(PlaybackState.Ended);
+
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Video ended.");
+        Assert.Equal(loads, _playerEngine.LoadedUrls.Count);
+    }
+
+    [Fact]
+    public async Task Comments_LoadWhenTheTabOpens_PageAtTheEnd_AndShowReplies()
+    {
+        _watchPage.CommentPages.Add(Enumerable.Range(1, 20).Select(i => MakeComment($"c{i}", $"Comment {i}", replies: i == 1 ? 2 : 0)).ToList());
+        _watchPage.CommentPages.Add(new() { MakeComment("c21", "Comment 21") });
+        _watchPage.Replies["c1"] = new() { MakeComment("r1", "Reply one"), MakeComment("r2", "Reply two") };
+        await using var vm = CreateViewModel();
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+        Assert.Equal(0, _watchPage.CommentRequests); // nothing fetched until asked
+
+        vm.SelectedPlayerPanel = PlayerPanel.Comments;
+        await Task.Yield();
+
+        Assert.Equal(20, vm.Comments.Count);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "20 comments loaded.");
+
+        vm.SelectedComment = vm.Comments[^1];   // reaching the end loads the next page
+        await Task.Yield();
+        Assert.Equal(21, vm.Comments.Count);
+
+        // A comment with replies starts collapsed, with a placeholder so it can be expanded.
+        var first = vm.Comments[0];
+        Assert.False(first.IsExpanded);
+        Assert.Equal(CommentNodeKind.Loading, Assert.Single(first.Replies).Kind);
+        Assert.Empty(vm.Comments[1].Replies);
+
+        // Right arrow in the tree sets IsExpanded: the replies load one level deeper.
+        first.IsExpanded = true;
+        await Task.Yield();
+        Assert.Equal(new[] { "Reply one", "Reply two" }, first.Replies.Select(r => r.Text));
+        Assert.All(first.Replies, r => Assert.Equal(2, r.Level));
+        Assert.StartsWith("Reply from @someone: Reply one", first.Replies[0].AccessibleName);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "2 replies");
+
+        // Enter toggles; the top level is untouched.
+        await vm.ToggleRepliesAsync(first);
+        Assert.False(first.IsExpanded);
+        Assert.Equal("Comment 2", vm.Comments[1].Text);
+    }
+
+    [Fact]
+    public async Task ShareLinks_UseYoutuBeAndTheCurrentTimeInThePlayer()
+    {
+        Assert.Equal("https://youtu.be/jNQXAC9IVRw", MainViewModel.ShareLink(Video("jNQXAC9IVRw", "x")));
+        Assert.Equal("https://youtu.be/jNQXAC9IVRw?t=65", MainViewModel.ShareLink(Video("jNQXAC9IVRw", "x"), TimeSpan.FromSeconds(65.7)));
+        Assert.Equal("https://www.youtube.com/channel/UCBR8-60-B28hp2BmDPdntcQ",
+            MainViewModel.ShareLink(new SearchResult { Kind = SearchResultKind.Channel, Id = "UCBR8-60-B28hp2BmDPdntcQ", Title = "YouTube", ChannelTitle = "YouTube" }));
+        await Task.CompletedTask;
+    }
+
+    [Fact]
+    public async Task Download_AnnouncesStartHalfwayAndDone()
+    {
+        await using var vm = CreateViewModel();
+
+        await vm.DownloadAsync(Video("jNQXAC9IVRw", "Me at the zoo"), audioOnly: true);
+
+        Assert.Equal(("jNQXAC9IVRw", true), Assert.Single(_downloads.Requests));
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Downloading audio, MP3: Me at the zoo");
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Downloaded: Me at the zoo. Saved in Downloads, TimePlayer.");
+        Assert.False(vm.HasActiveDownloads);
+    }
+
+    [Fact]
+    public async Task ChannelPage_LoadsOlderUploadsAtTheEnd()
+    {
+        await using var vm = CreateViewModel();
+        _discovery.Channels["UCBR8-60-B28hp2BmDPdntcQ"] = new ChannelUploads("UCBR8-60-B28hp2BmDPdntcQ", "YouTube",
+            new[] { Video("jNQXAC9IVRw", "Newest") });
+        _discovery.OlderUploads.AddRange(new[] { Video("jNQXAC9IVRw", "Newest"), Video("dQw4w9WgXcQ", "Older") });
+
+        await vm.OpenChannelAsync(Video("jNQXAC9IVRw", "Newest"));
+        await Task.Yield();
+
+        // A one-item first page is topped up straight away, without repeating "Newest".
+        Assert.Equal(new[] { "Newest", "Older" }, vm.SearchResults.Select(v => v.Title));
+        Assert.False(vm.CanLoadMore);
+    }
+
+    [Fact]
+    public async Task SeekForward_AnnouncesTheNewPosition()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        vm.Duration = TimeSpan.FromMinutes(10);
+        vm.CurrentTime = TimeSpan.FromSeconds(60);
+
+        await vm.SeekSmallForwardAsync();
+
+        Assert.Equal(TimeSpan.FromSeconds(65), vm.CurrentTime);
+        Assert.Equal("1 minute, 5 seconds", _accessibility.Announcements[^1].message);
+    }
+
+    [Fact]
+    public async Task ResultsList_BecomesVisibleWhenItemsArrive()
+    {
+        await using var vm = CreateViewModel();
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+        Assert.False(vm.IsResultsListVisible);
+
+        vm.ToggleWatchLaterForItem(Video("jNQXAC9IVRw", "Me at the zoo"));
+        await vm.ShowSectionByNumberAsync(6);
+
+        Assert.True(vm.IsResultsListVisible);
+        Assert.Contains(nameof(MainViewModel.IsResultsListVisible), raised);
+    }
+
+    [Fact]
+    public void EventsOnTheUiThread_RunInline_UnderARealWpfDispatcher()
+    {
+        // Regression: comparing SynchronizationContext instances made every handler think it was
+        // off the UI thread (WPF uses one context instance per priority), so they re-posted
+        // themselves forever and the window froze after the first search.
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+                SynchronizationContext.SetSynchronizationContext(new System.Windows.Threading.DispatcherSynchronizationContext(dispatcher));
+                var vm = CreateViewModel();
+                var frame = new System.Windows.Threading.DispatcherFrame();
+
+                dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Send, () =>
+                {
+                    _playerEngine.RaiseSubtitleText("caption");
+                    // Handled inline, not queued again.
+                    Assert.Equal("caption", vm.CurrentSubtitleText);
+                });
+                // Lower priority: only runs if the Send-priority work above did not loop.
+                dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () => frame.Continue = false);
+                System.Windows.Threading.Dispatcher.PushFrame(frame);
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.IsBackground = true;
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(10)), "The dispatcher never got to lower-priority work.");
+        if (failure is not null) throw failure;
     }
 }

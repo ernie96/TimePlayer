@@ -57,36 +57,7 @@ public sealed class InvidiousBackendProvider : IBackendProvider, IVideoCatalogPr
         if (responseResult.IsFailure)
             return Result<PagedResult<SearchResult>>.Failure(responseResult.Error);
 
-        var items = responseResult.Value ?? new List<InvidiousSearchItem>();
-        var results = new List<SearchResult>();
-
-        foreach (var item in items)
-        {
-            if (string.IsNullOrWhiteSpace(item.VideoId))
-                continue;
-
-            // Invidious returns type="video", "playlist", "channel"
-            if (!string.IsNullOrEmpty(item.Type) &&
-                !string.Equals(item.Type, "video", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var bestThumbnail = item.VideoThumbnails?.OrderByDescending(t => t.Width ?? 0).FirstOrDefault()?.Url;
-
-            results.Add(new SearchResult
-            {
-                Id = item.VideoId,
-                Title = item.Title ?? "Untitled Video",
-                ChannelTitle = item.Author ?? "Unknown Channel",
-                ChannelId = item.AuthorId,
-                Duration = item.LengthSeconds.HasValue ? TimeSpan.FromSeconds(item.LengthSeconds.Value) : null,
-                ViewCount = item.ViewCount,
-                UploadDateText = item.PublishedText,
-                ThumbnailUrl = bestThumbnail,
-                DescriptionSnippet = item.Description
-            });
-        }
+        var results = MapVideoItems(responseResult.Value);
 
         var hasNextPage = results.Count > 0;
         var paged = new PagedResult<SearchResult>
@@ -99,6 +70,159 @@ public sealed class InvidiousBackendProvider : IBackendProvider, IVideoCatalogPr
         };
 
         return Result<PagedResult<SearchResult>>.Success(paged);
+    }
+
+    /// <summary>Recommended videos from the watch page.</summary>
+    public async Task<Result<IReadOnlyList<SearchResult>>> GetRelatedAsync(string videoId, CancellationToken cancellationToken = default)
+    {
+        var response = await ExecuteWithRetryAsync<InvidiousRecommendedResponse>(
+            $"api/v1/videos/{Uri.EscapeDataString(videoId)}?fields=recommendedVideos", cancellationToken, videoId);
+        if (response.IsFailure)
+            return Result<IReadOnlyList<SearchResult>>.Failure(response.Error);
+
+        var related = (response.Value.RecommendedVideos ?? new())
+            .Where(v => !string.IsNullOrWhiteSpace(v.VideoId))
+            .Select(v => new SearchResult
+            {
+                Id = v.VideoId!,
+                Title = v.Title ?? "Untitled video",
+                ChannelTitle = v.Author ?? "Unknown channel",
+                ChannelId = v.AuthorId,
+                Duration = v.LengthSeconds is > 0 ? TimeSpan.FromSeconds(v.LengthSeconds.Value) : null,
+                UploadDateText = v.PublishedText
+            })
+            .ToList();
+        return Result<IReadOnlyList<SearchResult>>.Success(related);
+    }
+
+    /// <summary>A page of comments, or of replies when <paramref name="continuation"/> is a reply token.</summary>
+    public async Task<Result<CommentPage>> GetCommentsAsync(string videoId, string? continuation, bool isReplyPage, CancellationToken cancellationToken = default)
+    {
+        var path = $"api/v1/comments/{Uri.EscapeDataString(videoId)}";
+        if (!string.IsNullOrWhiteSpace(continuation))
+            path += $"?continuation={Uri.EscapeDataString(continuation)}";
+
+        var response = await ExecuteWithRetryAsync<InvidiousCommentsResponse>(path, cancellationToken, videoId);
+        if (response.IsFailure)
+            return Result<CommentPage>.Failure(response.Error);
+
+        var comments = (response.Value.Comments ?? new())
+            .Where(c => !string.IsNullOrWhiteSpace(c.Content))
+            .Select(c => new Comment
+            {
+                Id = c.CommentId ?? Guid.NewGuid().ToString("N"),
+                Author = c.Author ?? "Unknown",
+                AuthorChannelId = c.AuthorId,
+                Text = c.Content!.Trim(),
+                PublishedText = c.PublishedText,
+                LikesText = c.LikeCount is > 0 ? FormatLikes(c.LikeCount.Value) : null,
+                ReplyCount = c.Replies?.ReplyCount ?? 0,
+                RepliesToken = c.Replies?.Continuation,
+                IsPinned = c.IsPinned == true,
+                IsCreator = c.AuthorIsChannelOwner == true,
+                IsReply = isReplyPage,
+                Source = CommentSource.Invidious
+            })
+            .ToList();
+        return Result<CommentPage>.Success(new CommentPage(comments, response.Value.Continuation, CommentSource.Invidious));
+    }
+
+    private static string FormatLikes(long count) => count switch
+    {
+        1 => "1 like",
+        >= 1_000_000 => $"{count / 1_000_000.0:0.#} million likes",
+        >= 1_000 => $"{count / 1_000.0:0.#} thousand likes",
+        _ => $"{count} likes"
+    };
+
+    /// <summary>A channel's uploads, newest first, one page per call.</summary>
+    public async Task<Result<PagedResult<SearchResult>>> GetChannelVideosAsync(string channelId, string? continuation, CancellationToken cancellationToken = default)
+    {
+        var path = $"api/v1/channels/{Uri.EscapeDataString(channelId)}/videos";
+        if (!string.IsNullOrWhiteSpace(continuation))
+            path += $"?continuation={Uri.EscapeDataString(continuation)}";
+
+        var response = await ExecuteWithRetryAsync<InvidiousChannelVideosResponse>(path, cancellationToken);
+        if (response.IsFailure)
+            return Result<PagedResult<SearchResult>>.Failure(response.Error);
+
+        var items = MapVideoItems(response.Value.Videos);
+        var next = items.Count > 0 ? response.Value.Continuation : null;
+        return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
+        {
+            Items = items,
+            HasNextPage = !string.IsNullOrEmpty(next),
+            NextPageToken = next
+        });
+    }
+
+    /// <summary>Trending videos; <paramref name="type"/> is null, "music", "gaming" or "movies".</summary>
+    public async Task<Result<IReadOnlyList<SearchResult>>> GetTrendingAsync(
+        string? type,
+        string? region,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new List<string>();
+        if (!string.IsNullOrWhiteSpace(type)) query.Add($"type={Uri.EscapeDataString(type)}");
+        if (!string.IsNullOrWhiteSpace(region)) query.Add($"region={Uri.EscapeDataString(region)}");
+        var path = "api/v1/trending" + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
+        return await GetVideoListAsync(path, cancellationToken);
+    }
+
+    /// <summary>The instance's "popular" page (recent uploads popular with its users).</summary>
+    public Task<Result<IReadOnlyList<SearchResult>>> GetPopularAsync(CancellationToken cancellationToken = default) =>
+        GetVideoListAsync("api/v1/popular", cancellationToken);
+
+    private async Task<Result<IReadOnlyList<SearchResult>>> GetVideoListAsync(string path, CancellationToken cancellationToken)
+    {
+        var response = await ExecuteWithRetryAsync<List<InvidiousSearchItem>>(path, cancellationToken);
+        if (response.IsFailure)
+            return Result<IReadOnlyList<SearchResult>>.Failure(response.Error);
+
+        var results = MapVideoItems(response.Value);
+        if (results.Count == 0)
+            return Result<IReadOnlyList<SearchResult>>.Failure("EMPTY_FEED", "The featured list is empty right now.");
+        return Result<IReadOnlyList<SearchResult>>.Success(results);
+    }
+
+    private static List<SearchResult> MapVideoItems(List<InvidiousSearchItem>? items)
+    {
+        var results = new List<SearchResult>();
+        var seen = new HashSet<string>();
+        foreach (var item in items ?? new List<InvidiousSearchItem>())
+        {
+            if (string.IsNullOrWhiteSpace(item.VideoId) || !seen.Add(item.VideoId))
+                continue;
+
+            // Invidious returns type="video", "playlist", "channel", "shortVideo"
+            if (!string.IsNullOrEmpty(item.Type) &&
+                !string.Equals(item.Type, "video", StringComparison.OrdinalIgnoreCase) &&
+                !string.Equals(item.Type, "shortVideo", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var bestThumbnail = item.VideoThumbnails?.OrderByDescending(t => t.Width ?? 0).FirstOrDefault()?.Url;
+            bool isLive = item.LiveNow == true;
+
+            results.Add(new SearchResult
+            {
+                Id = item.VideoId,
+                Title = item.Title ?? "Untitled Video",
+                ChannelTitle = item.Author ?? "Unknown Channel",
+                ChannelId = item.AuthorId,
+                Duration = !isLive && item.LengthSeconds is > 0 ? TimeSpan.FromSeconds(item.LengthSeconds.Value) : null,
+                // Live streams report 0 views; leave it out rather than say "0 views".
+                ViewCount = item.ViewCount is > 0 ? item.ViewCount : null,
+                // Live streams report "0 seconds ago", which is noise for a screen reader.
+                UploadDateText = isLive ? null : item.PublishedText,
+                IsLive = isLive,
+                IsShort = string.Equals(item.Type, "shortVideo", StringComparison.OrdinalIgnoreCase),
+                ThumbnailUrl = bestThumbnail,
+                DescriptionSnippet = item.Description
+            });
+        }
+        return results;
     }
 
     public async Task<Result<VideoDetails>> GetVideoDetailsAsync(
@@ -311,8 +435,11 @@ public sealed class InvidiousBackendProvider : IBackendProvider, IVideoCatalogPr
             _logger.LogInformation("Invidious API attempt {Attempt}/{Max}: GET {Uri}", attempts, maxAttempts, requestUri);
 
             var stopwatch = Stopwatch.StartNew();
+            int timeoutSec = endpointPath.StartsWith("api/v1/search", StringComparison.OrdinalIgnoreCase)
+                ? Math.Min(7, config.RequestTimeoutSeconds)
+                : config.RequestTimeoutSeconds;
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(config.RequestTimeoutSeconds));
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
 
             try
             {

@@ -366,17 +366,37 @@ public class YtDlpBackendProviderTests
         {
             OutputDirectory = @"C:\Music",
             AudioOnly = true,
-            AudioFormat = "mp3"
+            AudioFormat = "mp3",
+            FfmpegLocation = @"C:fmpegin"
         };
 
         var result = await provider.DownloadAsync(videoId, options);
 
         Assert.True(result.IsSuccess);
+        Assert.Equal(@"C:\Music\Song.mp3", result.Value);
         var invocation = Assert.Single(_processRunner.Invocations);
         Assert.Contains("-x", invocation.Arguments);
         Assert.Contains("--audio-format", invocation.Arguments);
         Assert.Contains("mp3", invocation.Arguments);
         Assert.Contains("--audio-quality", invocation.Arguments);
+        Assert.Contains("--ffmpeg-location", invocation.Arguments);
+    }
+
+    [Fact]
+    public async Task DownloadAsync_WithoutFfmpeg_SavesAudioAndVideoWithoutConverting()
+    {
+        _processRunner.NextResult = new() { ExitCode = 0, StandardOutput = "", StandardError = "" };
+        var provider = CreateProvider();
+
+        await provider.DownloadAsync(new YouTubeVideoId("fJ9rUzIMcZQ"), new DownloadOptions { OutputDirectory = @"C:\Music", AudioOnly = true });
+        await provider.DownloadAsync(new YouTubeVideoId("fJ9rUzIMcZQ"), new DownloadOptions { OutputDirectory = @"C:\Videos" });
+
+        var audio = _processRunner.Invocations[0].Arguments;
+        Assert.DoesNotContain("-x", audio);
+        Assert.Contains("bestaudio[ext=m4a]/bestaudio", audio);
+        var video = _processRunner.Invocations[1].Arguments;
+        Assert.Contains("best[ext=mp4]/best", video);
+        Assert.DoesNotContain("--merge-output-format", video);
     }
 
     [Theory]

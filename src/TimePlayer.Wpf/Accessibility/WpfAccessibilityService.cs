@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -56,6 +57,38 @@ public sealed class WpfAccessibilityService : IAccessibilityService
                 _dispatcher.BeginInvoke(DispatcherPriority.Normal, () => UpdateLiveRegion(message));
             }
         }
+    }
+
+    private bool? _captionPathLogged;
+
+    public void AnnounceCaption(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+            return;
+
+        AnnouncementRequested?.Invoke(this, new AccessibilityAnnouncementEventArgs(text, AnnouncementPriority.Low));
+
+        // NVDA: cancel the previous caption and speak this one now.
+        bool viaNvda = NvdaBrailleBridge.SpeakInterrupting(text);
+        if (_captionPathLogged != viaNvda)
+        {
+            _captionPathLogged = viaNvda;
+            _logger.LogInformation("Captions are spoken {Path}.", viaNvda ? "through NVDA, interrupting the previous caption" : "with UI Automation notifications (most recent only)");
+        }
+        if (viaNvda)
+            return;
+
+        // Other screen readers: a notification that replaces any still-pending caption.
+        if (_liveRegionControl is null || _dispatcher is null)
+            return;
+        void Raise()
+        {
+            var peer = UIElementAutomationPeer.FromElement(_liveRegionControl)
+                       ?? UIElementAutomationPeer.CreatePeerForElement(_liveRegionControl);
+            peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.MostRecent, text, "TimePlayerCaption");
+        }
+        if (_dispatcher.CheckAccess()) Raise();
+        else _dispatcher.BeginInvoke(DispatcherPriority.Normal, Raise);
     }
 
     private void UpdateLiveRegion(string message)

@@ -3,6 +3,14 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
+    <AssemblyName>TimePlayer</AssemblyName>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- Fields behind [ObservableProperty] are set directly in the constructor on purpose, so loading
+         saved settings does not run the change handlers that save them again. -->
+    <NoWarn>$(NoWarn);MVVMTK0034</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -53,6 +53,10 @@ public record MpvEvent
     [JsonPropertyName("reason")]
     public string? Reason { get; init; }
 
+    /// <summary>Which loaded file a start-file / end-file event is about.</summary>
+    [JsonPropertyName("playlist_entry_id")]
+    public long? PlaylistEntryId { get; init; }
+
     [JsonPropertyName("error")]
     public string? Error { get; init; }
 }

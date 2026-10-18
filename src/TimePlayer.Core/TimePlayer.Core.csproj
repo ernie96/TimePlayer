@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Accessibility\NvdaAddon\manifest.ini" LogicalName="NvdaAddon/manifest.ini" />
+    <EmbeddedResource Include="Accessibility\NvdaAddon\globalPlugins\timePlayerBraille.py" LogicalName="NvdaAddon/globalPlugins/timePlayerBraille.py" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="TimePlayer.Tests" />
   </ItemGroup>
 </Project>

@@ -36,6 +36,12 @@ public record DownloadOptions
     /// Optional browser from which to load session cookies (e.g., "chrome", "firefox", "edge").
     /// </summary>
     public string? BrowserCookies { get; init; }
+
+    /// <summary>
+    /// Folder containing ffmpeg.exe. Without it, audio is saved in YouTube's own format (m4a)
+    /// and video as a single pre-merged file, because converting and merging need ffmpeg.
+    /// </summary>
+    public string? FfmpegLocation { get; init; }
 }
 
 /// <summary>

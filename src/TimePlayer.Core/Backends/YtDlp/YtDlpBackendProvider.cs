@@ -21,7 +21,7 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private static readonly Regex DestinationRegex = new(
-        @"\[(?:download|ExtractAudio)\]\s+Destination:\s+(?<dest>.+)",
+        @"\[(?:download|ExtractAudio)\]\s+Destination:\s+(?<dest>.+)|\[Merger\]\s+Merging formats into ""(?<dest>.+)""|\[download\]\s+(?<dest>.+?) has already been downloaded",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private readonly IYtDlpManager _ytDlpManager;
@@ -70,8 +70,18 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             "--no-warnings"
         };
 
+        // Pages are windows into a larger ytsearch: page 2 of 20 is items 21-40 of ytsearch40.
+        int page = int.TryParse(pageToken, out var parsedPage) && parsedPage > 1 ? parsedPage : 1;
+        int firstItem = (page - 1) * maxResults + 1;
+        int lastItem = page * maxResults;
+        if (page > 1)
+        {
+            args.Add("--playlist-items");
+            args.Add($"{firstItem}:{lastItem}");
+        }
+
         AppendCookieArgs(args);
-        args.Add($"ytsearch{maxResults}:{query}");
+        args.Add($"ytsearch{lastItem}:{query}");
 
         var timeout = TimeSpan.FromSeconds(_configService.CurrentConfig.Backend.YtDlpTimeoutSeconds);
         var options = new ProcessRunOptions { Timeout = timeout };
@@ -130,7 +140,25 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
 
             _logger.LogInformation("yt-dlp search returned {Count} results.", items.Count);
 
-            return Result<PagedResult<SearchResult>>.Success(PagedResult<SearchResult>.SinglePage(items));
+            // yt-dlp searches are slow, so stop offering more after 10 pages.
+            bool hasMore = items.Count >= maxResults && page < 10;
+            return Result<PagedResult<SearchResult>>.Success(new PagedResult<SearchResult>
+            {
+                Items = items,
+                PageIndex = page,
+                HasNextPage = hasMore,
+                NextPageToken = hasMore ? (page + 1).ToString(System.Globalization.CultureInfo.InvariantCulture) : null,
+                TotalEstimatedResults = items.Count
+            });
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogWarning("yt-dlp search timed out after configured duration.");
+            return Result<PagedResult<SearchResult>>.Failure("YTDLP_TIMEOUT", "Local search timed out. Please check your network connection.");
         }
         catch (Exception ex)
         {
@@ -382,8 +410,16 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
         args.Add("-o");
         args.Add(outputPath);
 
-        // Format selection
-        if (options.AudioOnly)
+        // Format selection. Converting to mp3 and merging separate video and audio need ffmpeg;
+        // without it, take formats that are already a single playable file.
+        bool hasFfmpeg = !string.IsNullOrWhiteSpace(options.FfmpegLocation);
+        if (hasFfmpeg)
+        {
+            args.Add("--ffmpeg-location");
+            args.Add(options.FfmpegLocation!);
+        }
+
+        if (options.AudioOnly && hasFfmpeg)
         {
             args.Add("-x");
             args.Add("--audio-format");
@@ -391,11 +427,22 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             args.Add("--audio-quality");
             args.Add("0");
         }
+        else if (options.AudioOnly)
+        {
+            args.Add("-f");
+            args.Add("bestaudio[ext=m4a]/bestaudio");
+        }
+        else if (hasFfmpeg)
+        {
+            args.Add("-f");
+            args.Add(BuildFormatSelector(options.QualityPreference));
+            args.Add("--merge-output-format");
+            args.Add("mp4");
+        }
         else
         {
             args.Add("-f");
-            var formatSelector = BuildFormatSelector(options.QualityPreference);
-            args.Add(formatSelector);
+            args.Add("best[ext=mp4]/best");
         }
 
         AppendCookieArgs(args, options.BrowserCookies);

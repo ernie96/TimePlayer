@@ -6,39 +6,38 @@ namespace TimePlayer.Core.Accessibility;
 /// </summary>
 public static class AccessibleTextFormatter
 {
+    /// <summary>"3 minutes, 12 seconds"; zero parts are left out ("4 minutes", "1 hour, 5 seconds").</summary>
     public static string FormatTimeSpoken(TimeSpan time)
     {
         if (time < TimeSpan.Zero)
             time = TimeSpan.Zero;
 
+        static string Unit(int n, string unit) => n == 1 ? $"1 {unit}" : $"{n} {unit}s";
+
+        var parts = new List<string>();
         var hours = (int)time.TotalHours;
-        var minutes = time.Minutes;
-        var seconds = time.Seconds;
-
-        if (hours > 0)
-        {
-            var hStr = hours == 1 ? "1 hour" : $"{hours} hours";
-            var mStr = minutes == 1 ? "1 minute" : $"{minutes} minutes";
-            var sStr = seconds == 1 ? "1 second" : $"{seconds} seconds";
-            return $"{hStr}, {mStr}, {sStr}";
-        }
-
-        if (minutes > 0)
-        {
-            var mStr = minutes == 1 ? "1 minute" : $"{minutes} minutes";
-            var sStr = seconds == 1 ? "1 second" : $"{seconds} seconds";
-            return $"{mStr}, {sStr}";
-        }
-
-        return seconds == 1 ? "1 second" : $"{seconds} seconds";
+        if (hours > 0) parts.Add(Unit(hours, "hour"));
+        if (time.Minutes > 0) parts.Add(Unit(time.Minutes, "minute"));
+        if (time.Seconds > 0 || parts.Count == 0) parts.Add(Unit(time.Seconds, "second"));
+        return string.Join(", ", parts);
     }
 
-    public static string FormatRelativeSeekSpoken(double deltaSeconds, TimeSpan newPosition)
+    /// <summary>"just now", "5 minutes ago", "yesterday", "3 weeks ago", ...</summary>
+    public static string FormatAgeSpoken(DateTimeOffset when, DateTimeOffset now)
     {
-        var direction = deltaSeconds >= 0 ? "forward" : "backward";
-        var absSeconds = Math.Abs((int)deltaSeconds);
-        var secStr = absSeconds == 1 ? "1 second" : $"{absSeconds} seconds";
-        return $"Seeked {direction} {secStr} to {FormatTimeSpoken(newPosition)}";
+        var age = now - when;
+        if (age < TimeSpan.FromMinutes(1))
+            return "just now";
+
+        static string Unit(int n, string unit) => n == 1 ? $"1 {unit} ago" : $"{n} {unit}s ago";
+
+        if (age < TimeSpan.FromHours(1)) return Unit((int)age.TotalMinutes, "minute");
+        if (age < TimeSpan.FromDays(1)) return Unit((int)age.TotalHours, "hour");
+        if (age < TimeSpan.FromDays(2)) return "yesterday";
+        if (age < TimeSpan.FromDays(7)) return Unit((int)age.TotalDays, "day");
+        if (age < TimeSpan.FromDays(31)) return Unit((int)(age.TotalDays / 7), "week");
+        if (age < TimeSpan.FromDays(365)) return Unit((int)(age.TotalDays / 30.4), "month");
+        return Unit((int)(age.TotalDays / 365.25), "year");
     }
 
     public static string FormatVolumeSpoken(double volumePercent)
@@ -55,9 +54,7 @@ public static class AccessibleTextFormatter
     public static string FormatSearchResultsSpoken(int count, string query)
     {
         if (count == 0)
-            return $"No results found for {query}.";
-
-        var itemStr = count == 1 ? "result" : "results";
-        return $"Found {count} {itemStr} for {query}. Use arrow keys to navigate.";
+            return $"No results for {query}.";
+        return count == 1 ? "1 result." : $"{count} results.";
     }
 }

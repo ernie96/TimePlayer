@@ -16,6 +16,12 @@ public sealed class BooleanToVisibilityInvertedConverter : IValueConverter
             return boolValue ? Visibility.Collapsed : Visibility.Visible;
         }
 
+        // Counts: hide when non-zero, so an "empty list" prompt disappears once items arrive.
+        if (value is int count)
+        {
+            return count != 0 ? Visibility.Collapsed : Visibility.Visible;
+        }
+
         return Visibility.Visible;
     }
 

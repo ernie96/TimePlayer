@@ -49,11 +49,12 @@ public sealed class MpvIpcClient : IMpvIpcClient
 
         while (stopwatch.Elapsed < timeout && !cancellationToken.IsCancellationRequested)
         {
+            // Enforce strictly local computer connection using "."
+            var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
             try
             {
-                // Enforce strictly local computer connection using "."
-                var pipe = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-                await pipe.ConnectAsync((int)Math.Min(1000, (timeout - stopwatch.Elapsed).TotalMilliseconds), cancellationToken);
+                var remainingMs = (int)Math.Clamp((timeout - stopwatch.Elapsed).TotalMilliseconds, 1, 1000);
+                await pipe.ConnectAsync(remainingMs, cancellationToken);
 
                 _pipeClient = pipe;
                 _reader = new StreamReader(pipe, Encoding.UTF8);
@@ -68,7 +69,13 @@ public sealed class MpvIpcClient : IMpvIpcClient
             catch (Exception ex) when (ex is TimeoutException or IOException)
             {
                 // Pipe may not have been created yet by mpv; wait and retry
+                await pipe.DisposeAsync();
                 await Task.Delay(delay, cancellationToken);
+            }
+            catch
+            {
+                await pipe.DisposeAsync();
+                throw;
             }
         }
 

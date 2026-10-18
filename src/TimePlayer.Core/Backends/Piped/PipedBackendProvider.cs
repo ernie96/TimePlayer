@@ -305,8 +305,11 @@ public sealed class PipedBackendProvider : IBackendProvider, IVideoCatalogProvid
             _logger.LogInformation("Piped API attempt {Attempt}/{Max}: GET {Uri}", attempts, maxAttempts, requestUri);
 
             var stopwatch = Stopwatch.StartNew();
+            int timeoutSec = endpointPath.StartsWith("search", StringComparison.OrdinalIgnoreCase) || endpointPath.StartsWith("nextpage", StringComparison.OrdinalIgnoreCase)
+                ? Math.Min(7, config.RequestTimeoutSeconds)
+                : config.RequestTimeoutSeconds;
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(config.RequestTimeoutSeconds));
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSec));
 
             try
             {

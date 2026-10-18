@@ -6,9 +6,9 @@ namespace TimePlayer.Core.Models;
 public enum BackendProviderType
 {
     /// <summary>
-    /// Piped API public instance (primary).
+    /// TubeRepair legacy YouTube-compatible API (primary).
     /// </summary>
-    Piped = 1,
+    TubeRepair = 1,
 
     /// <summary>
     /// Invidious API public instance (secondary).
@@ -16,9 +16,19 @@ public enum BackendProviderType
     Invidious = 2,
 
     /// <summary>
-    /// Local yt-dlp executable (fallback).
+    /// Anonymous YouTube InnerTube API (tertiary).
     /// </summary>
-    YtDlpLocal = 3
+    InnerTube = 3,
+
+    /// <summary>
+    /// Local bundled yt-dlp executable (final fallback).
+    /// </summary>
+    YtDlpLocal = 4,
+
+    /// <summary>
+    /// Obsolete Piped API.
+    /// </summary>
+    Piped = 99
 }
 
 /// <summary>

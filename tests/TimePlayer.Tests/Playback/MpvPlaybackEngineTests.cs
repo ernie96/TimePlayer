@@ -179,6 +179,50 @@ public class MpvPlaybackEngineTests
     }
 
     [Fact]
+    public async Task LoadingTheNextFile_IgnoresTheEndOfThePreviousOne()
+    {
+        var engine = CreateEngine();
+        await engine.InitializeAsync((nint)12345);
+        _ipcClient.RaiseEvent("start-file", entryId: 1);
+        _ipcClient.RaiseEvent("file-loaded");
+        using var yes = JsonDocument.Parse("true");
+        _ipcClient.RaisePropertyChange(1, "pause", yes.RootElement);
+        _ipcClient.RaisePropertyChange(8, "eof-reached", yes.RootElement);
+        Assert.Equal(PlaybackState.Ended, engine.State);
+
+        await engine.LoadAsync("https://example.com/next.mp4");
+        // mpv reports the old file's end only after the replacement was requested.
+        _ipcClient.RaiseEvent("end-file", reason: "stop", entryId: 1);
+        Assert.Equal(PlaybackState.Opening, engine.State);
+
+        _ipcClient.RaiseEvent("start-file", entryId: 2);
+        _ipcClient.RaiseEvent("end-file", reason: "stop", entryId: 1);
+        _ipcClient.RaiseEvent("file-loaded");
+        Assert.Equal(PlaybackState.Playing, engine.State);
+
+        // The pause left over from the end of the previous file is cleared.
+        Assert.Contains(_ipcClient.SentCommands, c => c.Count >= 3 && Equals(c[0], "set_property") && Equals(c[1], "pause") && Equals(c[2], false));
+    }
+
+    [Fact]
+    public async Task EofReached_WithKeepOpen_EndsThePlaybackAndSeekingBackResumes()
+    {
+        var engine = CreateEngine();
+        await engine.InitializeAsync((nint)12345);
+        _ipcClient.RaiseEvent("file-loaded");
+
+        // --keep-open: mpv pauses on the last frame and sets eof-reached instead of ending the file.
+        using var paused = JsonDocument.Parse("true");
+        _ipcClient.RaisePropertyChange(1, "pause", paused.RootElement);
+        _ipcClient.RaisePropertyChange(8, "eof-reached", paused.RootElement);
+        Assert.Equal(PlaybackState.Ended, engine.State);
+
+        using var notEof = JsonDocument.Parse("false");
+        _ipcClient.RaisePropertyChange(8, "eof-reached", notEof.RootElement);
+        Assert.Equal(PlaybackState.Paused, engine.State);
+    }
+
+    [Fact]
     public async Task PropertyChange_TimePosAndDuration_FiresPositionChanged()
     {
         var engine = CreateEngine();
