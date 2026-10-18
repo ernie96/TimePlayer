@@ -349,11 +349,37 @@ public sealed partial class MainViewModel
     public void ToggleSpeakCaptions()
     {
         SpeakCaptions = !SpeakCaptions;
-        string message = SpeakCaptions
-            ? (AvailableSubtitleTracks.Count > 1 ? "Captions will be read aloud." : "Captions will be read aloud when this video has them.")
-            : "Captions will not be read aloud.";
+        bool lookingUp = _playbackCoordinator is TimePlayer.Core.Playback.PlaybackCoordinator { CaptionsLookupInProgress: true };
+        string message = !SpeakCaptions ? "Captions will not be read aloud."
+            : AvailableSubtitleTracks.Count > 1 || !IsPlayerDialogOpen ? "Captions will be read aloud."
+            : lookingUp ? "Captions will be read aloud. Still looking for this video's captions."
+            : "Captions will be read aloud, but this video has no captions.";
         _accessibility.Announce(message, AnnouncementPriority.Medium);
         _ = PersistPlayerPreferencesAsync();
+    }
+
+    /// <summary>Captions found after playback started (the stream source had none).</summary>
+    private void OnCoordinatorCaptionsChanged(object? sender, EventArgs e)
+    {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnCoordinatorCaptionsChanged(sender, e), null);
+            return;
+        }
+        PopulateSubtitleTracks();
+        if (SpeakCaptions && IsPlayerDialogOpen && AvailableSubtitleTracks.Count <= 1)
+            _accessibility.Announce("This video has no captions.", AnnouncementPriority.Low);
+    }
+
+    /// <summary>
+    /// Every play command starts a fresh viewing: the resume check runs again even for the video
+    /// that was just closed, and the video being left saves where it was.
+    /// </summary>
+    private void BeginNewPlayback()
+    {
+        if (IsPlayerDialogOpen && PlaybackState is PlaybackState.Playing or PlaybackState.Paused)
+            RecordCurrentProgress(CurrentTime, flush: true);
+        _resumeHandledForId = null;
     }
 
     /// <summary>U in the player: what autoplay would play next, without moving focus.</summary>

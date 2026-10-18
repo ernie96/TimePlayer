@@ -264,6 +264,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             concreteCoord.QueueChanged += OnCoordinatorQueueChanged;
             concreteCoord.QueueEnded += OnCoordinatorQueueEnded;
+            concreteCoord.CaptionsChanged += OnCoordinatorCaptionsChanged;
         }
 
         // Initialize subtitle tracks list with "Off"
@@ -471,6 +472,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             await OpenChannelAsync(item);
             return;
         }
+        BeginNewPlayback();
         SetCurrentLibraryVideo(item);
 
         // Cancel previous in-flight playback loading if any
@@ -531,6 +533,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _playbackCts = new CancellationTokenSource();
         var token = _playbackCts.Token;
 
+        BeginNewPlayback();
         CurrentVideoTitle = "Loading YouTube video...";
         CurrentChannelTitle = string.Empty;
         SetCurrentLibraryVideo(YouTubeUrl.TryParse(url, out var directUrl)
@@ -617,6 +620,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         item ??= SelectedQueueItem;
         if (item == null) return;
 
+        BeginNewPlayback();
         CurrentVideoTitle = item.Title;
         CurrentChannelTitle = item.ChannelTitle;
         SetCurrentLibraryVideo(ToSearchResult(item));
@@ -1439,8 +1443,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
     public int ActiveBrailleCellIndex => _brailleTrack.CalculateCellIndex(CurrentTime, Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero));
 
-    private string _lastSentBrailleLine = string.Empty;
-    private DateTime _lastBrailleMessageSentTime = DateTime.MinValue;
 
     private void UpdateBrailleDisplayLine()
     {
@@ -1452,7 +1454,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             BrailleDisplayLine = string.Empty;
             NvdaBrailleBridge.PublishProgressState("off");
-            SendLegacyBrailleLine(string.Empty);
             return;
         }
 
@@ -1470,36 +1471,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{(isPlaying ? "playing" : "paused")} {fraction:F4}")
             : "stopped");
 
-        SendLegacyBrailleLine(isPlaying || isPaused ? newLine : string.Empty);
-    }
-
-    /// <summary>
-    /// Fallback for when the NVDA add-on is missing: NVDA braille messages via the controller client.
-    /// These time out after NVDA's message timeout, hence the 400ms heartbeat.
-    /// </summary>
-    private void SendLegacyBrailleLine(string line)
-    {
-        if (NvdaAddonInstaller.IsInstalled)
-            return;
-
-        if (string.IsNullOrEmpty(line))
-        {
-            if (!string.IsNullOrEmpty(_lastSentBrailleLine))
-            {
-                _lastSentBrailleLine = string.Empty;
-                _lastBrailleMessageSentTime = DateTime.MinValue;
-                NvdaBrailleBridge.SendBrailleMessage(string.Empty);
-            }
-            return;
-        }
-
-        var now = DateTime.UtcNow;
-        if (line != _lastSentBrailleLine || (now - _lastBrailleMessageSentTime) >= TimeSpan.FromMilliseconds(400))
-        {
-            _lastSentBrailleLine = line;
-            _lastBrailleMessageSentTime = now;
-            NvdaBrailleBridge.SendBrailleMessage(line);
-        }
     }
 
     private void StartBrailleBlinkTimer()
@@ -1546,6 +1517,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             concreteCoord.QueueChanged -= OnCoordinatorQueueChanged;
             concreteCoord.QueueEnded -= OnCoordinatorQueueEnded;
+            concreteCoord.CaptionsChanged -= OnCoordinatorCaptionsChanged;
         }
 
         return ValueTask.CompletedTask;

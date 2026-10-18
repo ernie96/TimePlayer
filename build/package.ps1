@@ -24,7 +24,8 @@ $version = $props.Project.PropertyGroup.Version
 Write-Host "Packaging TimePlayer $version"
 
 # Fresh staging folder; never the developer's working copy in dist\ (it holds personal settings and library).
-if (Test-Path $release) { Remove-Item $release -Recurse -Force }
+# Clear the contents rather than the folder itself, which may be open in File Explorer.
+if (Test-Path $release) { Get-ChildItem $release -Force | Remove-Item -Recurse -Force }
 New-Item -ItemType Directory -Force $staging | Out-Null
 
 # 1. Tests must pass.

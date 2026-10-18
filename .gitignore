@@ -21,3 +21,6 @@ dist/
 
 # Release packages (build/package.ps1)
 release/
+
+# Logs shared for bug reports
+*timeplayer-*.log

@@ -190,10 +190,4 @@ public class BrailleProgressTrackTests
         Assert.Contains(expectedContent, NvdaAddonInstaller.ReadResource(resourceName));
     }
 
-    [Fact]
-    public void NvdaBrailleBridge_SendBrailleMessage_ExecutesSafely()
-    {
-        bool result = NvdaBrailleBridge.SendBrailleMessage("Test");
-        Assert.True(result || !result);
-    }
 }

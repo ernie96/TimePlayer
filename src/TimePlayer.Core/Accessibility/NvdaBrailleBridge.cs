@@ -47,8 +47,6 @@ public static class NvdaBrailleBridge
     [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_testIfRunning", CallingConvention = CallingConvention.StdCall)]
     private static extern int NvdaTestIfRunning();
 
-    [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_brailleMessage", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
-    private static extern int NvdaBrailleMessage(string message);
 
     [DllImport("nvdaControllerClient64.dll", EntryPoint = "nvdaController_speakText", CharSet = CharSet.Unicode, CallingConvention = CallingConvention.StdCall)]
     private static extern int NvdaSpeakText(string text);
@@ -152,34 +150,5 @@ public static class NvdaBrailleBridge
     {
         _lastPublishedState = null;
         try { File.Delete(ProgressStateFilePath); } catch { }
-    }
-
-    /// <summary>
-    /// Sends a Braille message string directly to the NVDA Braille display.
-    /// Returns true if successfully delivered; false otherwise.
-    /// </summary>
-    public static bool SendBrailleMessage(string message)
-    {
-        if (_isAvailable == false || !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            return false;
-
-        try
-        {
-            return NvdaBrailleMessage(message ?? string.Empty) == 0;
-        }
-        catch (DllNotFoundException)
-        {
-            _isAvailable = false;
-            return false;
-        }
-        catch (EntryPointNotFoundException)
-        {
-            _isAvailable = false;
-            return false;
-        }
-        catch
-        {
-            return false;
-        }
     }
 }

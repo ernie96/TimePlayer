@@ -459,6 +459,24 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task ReplayingInTheSameSession_ResumesWhereItWasClosed()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        var video = Video("jNQXAC9IVRw", "Me at the zoo");
+
+        await vm.PlaySearchResultAsync(video);
+        await _playerEngine.SeekAsync(TimeSpan.FromMinutes(2)); // watched 2 of the fake's 3 minutes
+        await vm.ClosePlayerDialogAsync();
+        _playerEngine.CurrentTime = TimeSpan.Zero;
+
+        await vm.PlaySearchResultAsync(video);
+
+        Assert.Equal(TimeSpan.FromMinutes(2), _playerEngine.CurrentTime);
+        Assert.Contains(_accessibility.Announcements, a => a.message.StartsWith("Resumed at 2 minutes"));
+    }
+
+    [Fact]
     public async Task ResumeSetting_Off_StartsFromTheBeginning()
     {
         var video = Video("jNQXAC9IVRw", "Me at the zoo");

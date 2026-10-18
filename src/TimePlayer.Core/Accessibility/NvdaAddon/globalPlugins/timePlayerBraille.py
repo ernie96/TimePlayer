@@ -86,6 +86,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._lastCells = None
 		self._lastDisplay = None
 		self._needsRedraw = False
+		self._focusIsEditable = False
+		self._failures = 0
 		braille.decide_enabled.register(self._decideBrailleEnabled)
 		braille.pre_writeCells.register(self._onPreWriteCells)
 		self._timer = gui.NonReEntrantTimer(self._tick)
@@ -115,14 +117,32 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	# --- Polling ---
 
+	def event_gainFocus(self, obj, nextHandler):
+		try:
+			states = obj.states
+			self._focusIsEditable = controlTypes.State.EDITABLE in states and controlTypes.State.READONLY not in states
+		except Exception:
+			self._focusIsEditable = False
+		nextHandler()
+
 	def _tick(self):
 		try:
 			self._readIpc()
 			self._setOwning(self._shouldOwn())
 			if self._owning:
 				self._draw()
+			self._failures = 0
 		except Exception:
 			log.debugWarning("TimePlayer braille tick failed", exc_info=True)
+			# Never keep hammering NVDA with a failing tick: give the display back and stop.
+			self._failures += 1
+			if self._failures >= 20:
+				log.error("TimePlayer braille add-on stopped after repeated errors", exc_info=True)
+				self._timer.Stop()
+				try:
+					self._setOwning(False)
+				except Exception:
+					pass
 
 	def _readIpc(self):
 		self._hwndFile.refresh()
@@ -158,12 +178,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return False
 		if not self._isTimePlayerForeground():
 			return False
-		focus = api.getFocusObject()
-		if focus is not None:
-			states = focus.states
-			if controlTypes.State.EDITABLE in states and controlTypes.State.READONLY not in states:
-				return False
-		return True
+		# Tracked from focus events: querying the focus object here, ten times a second, would make
+		# NVDA wait on TimePlayer whenever TimePlayer is busy.
+		return not self._focusIsEditable
 
 	def _isTimePlayerForeground(self):
 		if not self._pid:

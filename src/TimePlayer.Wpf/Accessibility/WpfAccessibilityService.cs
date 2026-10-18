@@ -61,13 +61,45 @@ public sealed class WpfAccessibilityService : IAccessibilityService
 
     private bool? _captionPathLogged;
 
+    // Captions are spoken from a background worker that always takes the newest caption, so the UI
+    // thread never waits on NVDA and a slow moment never builds a backlog.
+    private string? _pendingCaption;
+    private readonly SemaphoreSlim _captionSignal = new(0);
+    private Task? _captionWorker;
+
     public void AnnounceCaption(string text)
     {
         if (string.IsNullOrWhiteSpace(text))
             return;
 
         AnnouncementRequested?.Invoke(this, new AccessibilityAnnouncementEventArgs(text, AnnouncementPriority.Low));
+        Interlocked.Exchange(ref _pendingCaption, text);
+        _captionWorker ??= Task.Run(CaptionLoopAsync);
+        if (_captionSignal.CurrentCount == 0)
+            _captionSignal.Release();
+    }
 
+    private async Task CaptionLoopAsync()
+    {
+        while (true)
+        {
+            await _captionSignal.WaitAsync();
+            var text = Interlocked.Exchange(ref _pendingCaption, null);
+            if (text is null)
+                continue;
+            try
+            {
+                SpeakCaption(text);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Could not speak a caption.");
+            }
+        }
+    }
+
+    private void SpeakCaption(string text)
+    {
         // NVDA: cancel the previous caption and speak this one now.
         bool viaNvda = NvdaBrailleBridge.SpeakInterrupting(text);
         if (_captionPathLogged != viaNvda)
@@ -81,14 +113,12 @@ public sealed class WpfAccessibilityService : IAccessibilityService
         // Other screen readers: a notification that replaces any still-pending caption.
         if (_liveRegionControl is null || _dispatcher is null)
             return;
-        void Raise()
+        _dispatcher.BeginInvoke(DispatcherPriority.Normal, () =>
         {
             var peer = UIElementAutomationPeer.FromElement(_liveRegionControl)
                        ?? UIElementAutomationPeer.CreatePeerForElement(_liveRegionControl);
             peer?.RaiseNotificationEvent(AutomationNotificationKind.Other, AutomationNotificationProcessing.MostRecent, text, "TimePlayerCaption");
-        }
-        if (_dispatcher.CheckAccess()) Raise();
-        else _dispatcher.BeginInvoke(DispatcherPriority.Normal, Raise);
+        });
     }
 
     private void UpdateLiveRegion(string message)
