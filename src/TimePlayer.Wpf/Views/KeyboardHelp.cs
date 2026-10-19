@@ -1,5 +1,7 @@
 using TimePlayer.Wpf.ViewModels;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.Views;
 
 /// <summary>
@@ -8,73 +10,73 @@ namespace TimePlayer.Wpf.Views;
 /// </summary>
 public static class KeyboardHelp
 {
-    public const string SearchBox =
-        "Type words or paste a YouTube link, then press Enter. Results open as their own page; Alt+Left goes back.\n" +
-        "Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n" +
-        "From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard.\n" +
-        "A YouTube playlist link opens the playlist.";
+    public static string SearchBox =>
+        T("Type words or paste a YouTube link, then press Enter. Results open as their own page; Alt+Left goes back.\n") +
+        T("Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n") +
+        T("From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard.\n") +
+        T("A YouTube playlist link opens the playlist.");
 
-    public const string Sections =
-        "Left and Right arrows switch sections. Tab moves through this section's buttons and list, and stays in the section.\n" +
-        "Video: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History, 8 Queue.\n" +
-        "Music: Control+1 Charts, 2 Recently played, 3 Playlists, 4 Queue. Control+M switches between Video and Music.\n" +
-        "Control+Tab goes to the next section. Slash searches. F6 moves between the search box, the sections, the list and Now playing.\n" +
+    public static string Sections =>
+        T("Left and Right arrows switch sections. Tab moves through this section's buttons and list, and stays in the section.\n") +
+        T("Video: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History, 8 Queue.\n") +
+        T("Music: Control+1 Charts, 2 Recently played, 3 Playlists, 4 Queue. Control+M switches between Video and Music.\n") +
+        T("Control+Tab goes to the next section. Slash searches. F6 moves between the search box, the sections, the list and Now playing.\n") +
         NowPlayingKeys;
 
     /// <summary>Keys that work anywhere while something plays.</summary>
-    public const string NowPlayingKeys =
-        "While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. " +
-        "In Music, Alt+P opens the player.";
+    public static string NowPlayingKeys =>
+        T("While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. ") +
+        T("In Music, Alt+P opens the player.");
 
-    public const string NowPlaying =
-        "Now playing: music keeps playing while you browse. Tab moves through Play, Previous, Next, Open player and Stop.\n" + NowPlayingKeys;
+    public static string NowPlaying =>
+        T("Now playing: music keeps playing while you browse. Tab moves through Play, Previous, Next, Open player and Stop.\n") + NowPlayingKeys;
 
-    private const string VideoListKeys =
-        "Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, " +
-        "Control+K likes, Control+P adds to a playlist, " +
-        "Control+S subscribes to the channel, Control+G opens the channel, Control+C copies a share link, " +
-        "Control+D downloads the audio or video. " +
-        "The Applications key lists every action.";
+    private static string VideoListKeys =>
+        T("Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, ") +
+        T("Control+K likes, Control+P adds to a playlist, ") +
+        T("Control+S subscribes to the channel, Control+G opens the channel, Control+C copies a share link, ") +
+        T("Control+D downloads the audio or video. ") +
+        T("The Applications key lists every action.");
 
     public static string ForList(BrowseSection section) => section switch
     {
         BrowseSection.Search =>
-            "Search results. " + VideoListKeys + "\nMore results load as you reach the end of the list. Slash searches again; Alt+Left, Backspace or Escape goes back.",
+            T("Search results. ") + VideoListKeys + T("\nMore results load as you reach the end of the list. Slash searches again; Alt+Left, Backspace or Escape goes back."),
         BrowseSection.Featured =>
-            "Featured videos. " + VideoListKeys + "\nShift+Tab reaches the Category box: Trending, Music (the top 100 music videos), Gaming, Movies (trailers), News, Sports and Live. " +
-            "Music, Gaming and Movies keep loading as you reach the end. F5 refreshes.",
+            T("Featured videos. ") + VideoListKeys + T("\nShift+Tab reaches the Category box: Trending, Music (the top 100 music videos), Gaming, Movies (trailers), News, Sports and Live. ") +
+            T("Music, Gaming and Movies keep loading as you reach the end. F5 refreshes."),
         BrowseSection.WhatsNew =>
-            "Latest videos from your channels, newest first. Videos you have not seen yet start with New.\n" + VideoListKeys + "\nF5 checks for new videos.",
+            T("Latest videos from your channels, newest first. Videos you have not seen yet start with New.\n") + VideoListKeys + T("\nF5 checks for new videos."),
         BrowseSection.Channels =>
-            "Your subscribed channels. Enter shows a channel's videos. Delete or Control+S unsubscribes.\n" +
-            "Shift+Tab reaches Import and Export, for NewPipe, LibreTube, FreeTube, Google Takeout and OPML files.",
+            T("Your subscribed channels. Enter shows a channel's videos. Delete or Control+S unsubscribes.\n") +
+            T("Shift+Tab reaches Import and Export, for NewPipe, LibreTube, FreeTube, Google Takeout and OPML files."),
         BrowseSection.History =>
-            "Videos you watched, newest first. Partly watched ones say where they will resume.\n" + VideoListKeys + "\nDelete removes one video from history.",
+            T("Videos you watched, newest first. Partly watched ones say where they will resume.\n") + VideoListKeys + T("\nDelete removes one video from history."),
         BrowseSection.WatchLater =>
-            "Videos you saved. " + VideoListKeys + "\nDelete removes a video from Watch Later.",
+            T("Videos you saved. ") + VideoListKeys + T("\nDelete removes a video from Watch Later."),
         BrowseSection.Channel =>
-            "A channel's videos, newest first. Older videos load as you reach the end.\n" + VideoListKeys + "\nAlt+Left, Backspace or Escape goes back.",
+            T("A channel's videos, newest first. Older videos load as you reach the end.\n") + VideoListKeys + T("\nAlt+Left, Backspace or Escape goes back."),
         BrowseSection.Queue => Queue,
         BrowseSection.MusicCharts =>
-            "Charts: the top 100 music videos for your region (Settings, Library). Enter plays a song; music keeps playing while you browse. " + VideoListKeys + "\n" + NowPlayingKeys,
+            T("Charts: the top 100 music videos for your region (Settings, Library). Enter plays a song; music keeps playing while you browse. ") + VideoListKeys + "\n" + NowPlayingKeys,
         BrowseSection.MusicRecent =>
-            "Songs you played in Music, newest first. " + VideoListKeys + "\nDelete removes a song from history.\n" + NowPlayingKeys,
+            T("Songs you played in Music, newest first. ") + VideoListKeys + T("\nDelete removes a song from history.\n") + NowPlayingKeys,
         BrowseSection.ForYou =>
-            "Videos picked for you from what you watch, like and subscribe to. Nothing leaves this computer.\n" + VideoListKeys +
-            "\nDelete means not interested; Shift+Delete stops recommending that channel. F5 finds new picks.",
+            T("Videos picked for you from what you watch, like and subscribe to. Nothing leaves this computer.\n") + VideoListKeys +
+            T("\nDelete means not interested; Shift+Delete stops recommending that channel. F5 finds new picks."),
         BrowseSection.Playlists =>
-            "Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete and Import from Google Takeout.\n" +
-            "Control+C copies a link to share the playlist. Delete deletes the selected playlist after asking.",
+            T("Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete and Import from Google Takeout.\n") +
+            T("Control+C copies a link to share the playlist. Delete deletes the selected playlist after asking."),
         BrowseSection.Playlist =>
-            "The videos in this playlist. " + VideoListKeys + "\n" +
-            "In your own playlists, Delete removes a video and Alt+Up or Alt+Down moves it. " +
-            "Shift+Tab reaches Play all, Shuffle, Copy link, and Save to Playlists for YouTube playlists. F5 updates a saved YouTube playlist. " +
-            "Alt+Left, Backspace or Escape goes back.",
+            T("The videos in this playlist. ") + VideoListKeys + "\n" +
+            T("In your own playlists, Delete removes a video and Alt+Up or Alt+Down moves it. ") +
+            T("Shift+Tab reaches Play all, Shuffle, Copy link, and Save to Playlists for YouTube playlists. F5 updates a saved YouTube playlist. ") +
+            T("Alt+Left, Backspace or Escape goes back."),
         _ => VideoListKeys
     };
 
-    public const string YouTubeSubscriptionsSteps =
-        """
+    public static string YouTubeSubscriptionsSteps =>
+        T("""
         Your YouTube subscriptions, playlists, liked videos and watch history can be exported from Google with Google Takeout. Steps:
 
         1. Choose Yes below to open Google Takeout in your browser, set to YouTube only. Sign in to Google if asked.
@@ -85,40 +87,42 @@ public static class KeyboardHelp
         6. Back in TimePlayer: Playlists (Control+5), Import from Google Takeout, and choose that zip. There is no need to unzip it. Channels, Import subscriptions does the same.
 
         Open Google Takeout now?
-        """;
+        """);
 
-    public const string Queue =
-        "Videos play in this order. Enter plays one now, Delete removes it. The Applications key also offers Clear queue.";
+    public static string Queue =>
+        T("Videos play in this order. Enter plays one now, Delete removes it. The Applications key also offers Clear queue.");
 
     public static string Player(double smallSeek, double largeSeek) =>
-        $"K plays or pauses (Space too, unless a button has focus). Left and Right move {Seconds(smallSeek)}, Control+Left and Right {Seconds(largeSeek)}.\n" +
-        "0 to 9 jump to 0 to 90 percent. Home starts over. Up and Down change the volume, M mutes.\n" +
-        "T says the time, I says what is playing, U says what plays next.\n" +
-        "Shift+N next video, Shift+P previous. Shift+Period faster, Shift+Comma slower.\n" +
-        $"On the Position slider, Left and Right move {Seconds(smallSeek)} and Page Up and Page Down {Seconds(largeSeek)}.\n" +
-        "Alt+U Up next, Alt+C comments, Alt+D description, Alt+Q queue. F6 moves between the controls, those panels and the top bar.\n" +
-        "A turns autoplay on or off. C turns reading captions aloud on or off.\n" +
-        "S skips the SponsorBlock segment playing now, H jumps to the video's highlight.\n" +
-        "E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n" +
-        "Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n" +
-        "Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n" +
-        "Alt+A or the Applications key opens Actions: like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more.\n" +
-        "Slash leaves the player and goes to search. Escape leaves the player: a video stops, music keeps playing.\n" +
-        "Control+M switches between Video and Music.";
+        T("K plays or pauses (Space too, unless a button has focus). Left and Right move {0}, Control+Left and Right {1}.\n", Seconds(smallSeek), Seconds(largeSeek)) +
+        T("0 to 9 jump to 0 to 90 percent. Home starts over. Up and Down change the volume, M mutes.\n") +
+        T("T says the time, I says what is playing, U says what plays next.\n") +
+        T("Shift+N next video, Shift+P previous. Shift+Period faster, Shift+Comma slower.\n") +
+        T("On the Position slider, Left and Right move {0} and Page Up and Page Down {1}.\n", Seconds(smallSeek), Seconds(largeSeek)) +
+        T("Alt+U Up next, Alt+C comments, Alt+D description, Alt+Q queue. F6 moves between the controls, those panels and the top bar.\n") +
+        T("A turns autoplay on or off. C turns reading captions aloud on or off.\n") +
+        T("S skips the SponsorBlock segment playing now, H jumps to the video's highlight.\n") +
+        T("E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n") +
+        T("Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n") +
+        T("Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n") +
+        T("Alt+A or the Applications key opens Actions: like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more.\n") +
+        T("Slash leaves the player and goes to search. Escape leaves the player: a video stops, music keeps playing.\n") +
+        T("Control+M switches between Video and Music.");
 
-    private static string Seconds(double value) => value == 1 ? "1 second" : $"{value:0.#} seconds";
+    private static string Seconds(double value) => value % 1 == 0
+        ? Plural((long)value, "{0} second", "{0} seconds")
+        : T("{0:0.#} seconds", value);
 
-    public const string UpNext =
-        "Related videos. Enter plays one now, Control+Q queues it, Control+K likes it, Control+P adds it to a playlist. With autoplay on, the first unwatched one plays when the queue ends.\n" +
-        "Escape returns to the player controls.";
+    public static string UpNext =>
+        T("Related videos. Enter plays one now, Control+Q queues it, Control+K likes it, Control+P adds it to a playlist. With autoplay on, the first unwatched one plays when the queue ends.\n") +
+        T("Escape returns to the player controls.");
 
-    public const string Comments =
-        "Comments are a tree. Each is read as: who, what they said, then when, likes and replies. More comments load as you reach the end.\n" +
-        "A comment with replies is collapsed: Right arrow opens its replies, which are one level deeper and start with \"Reply from\". " +
-        "Right again moves into them; Left goes back up to the comment, and Left on the comment closes it. Enter also opens or closes. " +
-        "\"More replies\" at the end of a reply list loads the rest with Enter.\n" +
-        "Control+C copies a comment. Escape returns to the player controls.";
+    public static string Comments =>
+        T("Comments are a tree. Each is read as: who, what they said, then when, likes and replies. More comments load as you reach the end.\n") +
+        T("A comment with replies is collapsed: Right arrow opens its replies, which are one level deeper and start with \"Reply from\". ") +
+        T("Right again moves into them; Left goes back up to the comment, and Left on the comment closes it. Enter also opens or closes. ") +
+        T("\"More replies\" at the end of a reply list loads the rest with Enter.\n") +
+        T("Control+C copies a comment. Escape returns to the player controls.");
 
-    public const string Description =
-        "The video description. Use the arrow keys to read it line by line. Escape returns to the player controls.";
+    public static string Description =>
+        T("The video description. Use the arrow keys to read it line by line. Escape returns to the player controls.");
 }

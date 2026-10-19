@@ -3,6 +3,8 @@ using System.Globalization;
 using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 /// <summary>Display-only state derived from the rest of the view model (labels, visibility, slider).</summary>
@@ -25,8 +27,8 @@ public sealed partial class MainViewModel
     }
 
     public string WindowTitle => IsPlayerDialogOpen && !string.IsNullOrWhiteSpace(CurrentVideoTitle)
-        ? $"{CurrentVideoTitle} - TimePlayer {ModeName}"
-        : $"TimePlayer {ModeName}";
+        ? T("{0} - TimePlayer {1}", CurrentVideoTitle, ModeName)
+        : T("TimePlayer {0}", ModeName);
 
     public bool IsQueueSection => CurrentSection == BrowseSection.Queue;
     public bool IsResultsListVisible => !IsQueueSection && !IsSectionEmpty;
@@ -44,8 +46,8 @@ public sealed partial class MainViewModel
         {
             int count = IsQueueSection ? PlaybackQueue.Count : SearchResults.Count;
             if (count == 0) return string.Empty;
-            var more = CanLoadMore && !IsQueueSection ? ", more load as you go" : string.Empty;
-            return $"{count} {SectionNoun(count)}{more}";
+            var more = CanLoadMore && !IsQueueSection ? T(", more load as you go") : string.Empty;
+            return SectionNoun(count) + more;
         }
     }
 
@@ -63,8 +65,8 @@ public sealed partial class MainViewModel
 
     // --- Player labels ---
 
-    public string PlayPauseButtonText => PlaybackState == PlaybackState.Playing ? "Pause" : "Play";
-    public string MuteButtonText => IsMuted ? "Unmute" : "Mute";
+    public string PlayPauseButtonText => PlaybackState == PlaybackState.Playing ? T("Pause") : T("Play");
+    public string MuteButtonText => IsMuted ? T("Unmute") : T("Mute");
     public string VideoDescriptionText
     {
         get

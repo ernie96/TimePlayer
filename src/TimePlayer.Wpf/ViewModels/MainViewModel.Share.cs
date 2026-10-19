@@ -10,6 +10,8 @@ using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 /// <summary>Downloads (audio or video) and share links.</summary>
@@ -27,8 +29,7 @@ public sealed partial class MainViewModel
     public string DownloadStatusText => ActiveDownloads switch
     {
         0 => string.Empty,
-        1 => "Downloading 1 file",
-        _ => $"Downloading {ActiveDownloads} files"
+        _ => T("Downloading {0}", Plural(ActiveDownloads, "{0} file", "{0} files"))
     };
 
     public string DownloadFolder => _downloads.DownloadFolder;
@@ -55,12 +56,12 @@ public sealed partial class MainViewModel
     {
         if (item is null || item.Kind != SearchResultKind.Video)
         {
-            _accessibility.Announce("Choose a video to download.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Choose a video to download."), AnnouncementPriority.Medium);
             return;
         }
         if (item.IsLive)
         {
-            _accessibility.Announce("Live streams cannot be downloaded.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Live streams cannot be downloaded."), AnnouncementPriority.Medium);
             return;
         }
 
@@ -68,7 +69,7 @@ public sealed partial class MainViewModel
         var format = audioOnly
             ? (_downloads.CanConvert ? "audio, MP3" : "audio, M4A")
             : "video";
-        _accessibility.Announce($"Downloading {format}: {title}", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Downloading {0}: {1}", format, title), AnnouncementPriority.Medium);
 
         ActiveDownloads++;
         int lastMilestone = 0;
@@ -78,7 +79,7 @@ public sealed partial class MainViewModel
             if (p.Percent >= 50 && lastMilestone < 50 && p.Percent < 100)
             {
                 lastMilestone = 50;
-                _accessibility.Announce($"Download halfway: {title}", AnnouncementPriority.Low);
+                _accessibility.Announce(T("Download halfway: {0}", title), AnnouncementPriority.Low);
             }
         });
 
@@ -88,21 +89,21 @@ public sealed partial class MainViewModel
             if (result.IsSuccess)
             {
                 _lastDownloadedFile = result.Value;
-                _accessibility.Announce($"Downloaded: {title}. Saved in {ShortFolderName()}.", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Downloaded: {0}. Saved in {1}.", title, ShortFolderName()), AnnouncementPriority.Medium);
             }
             else if (result.Error?.Code == "DOWNLOAD_CANCELED")
             {
-                _accessibility.Announce($"Download canceled: {title}", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Download canceled: {0}", title), AnnouncementPriority.Medium);
             }
             else
             {
-                _accessibility.Announce($"Download failed: {title}. {result.Error?.Message}", AnnouncementPriority.High);
+                _accessibility.Announce(T("Download failed: {0}. {1}", title, result.Error?.Message), AnnouncementPriority.High);
             }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Download failed for {Id}.", item.Id);
-            _accessibility.Announce($"Download failed: {title}.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Download failed: {0}.", title), AnnouncementPriority.High);
         }
         finally
         {
@@ -123,7 +124,7 @@ public sealed partial class MainViewModel
     {
         if (!HasActiveDownloads)
         {
-            _accessibility.Announce("No downloads are running.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("No downloads are running."), AnnouncementPriority.Low);
             return;
         }
         _downloadCts.Cancel();
@@ -141,7 +142,7 @@ public sealed partial class MainViewModel
             _ = _configService.UpdateConfigAsync(current with { Update = current.Update with { CheckAtStartup = value } });
     }
 
-    public string VersionText => $"TimePlayer {AppPaths.Version}" + (AppPaths.IsPortable ? ", portable" : string.Empty);
+    public string VersionText => T("TimePlayer {0}", AppPaths.Version) + (AppPaths.IsPortable ? T(", portable") : string.Empty);
 
     [RelayCommand]
     public void OpenLogFolder()
@@ -172,7 +173,7 @@ public sealed partial class MainViewModel
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Could not open the downloads folder.");
-            _accessibility.Announce($"Could not open {_downloads.DownloadFolder}.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Could not open {0}.", _downloads.DownloadFolder), AnnouncementPriority.Medium);
         }
     }
 
@@ -200,7 +201,7 @@ public sealed partial class MainViewModel
             return;
         }
         if (CopyToClipboard(ShareLink(item)))
-            _accessibility.Announce(item.Kind == SearchResultKind.Channel ? "Channel link copied." : "Share link copied.", AnnouncementPriority.Medium);
+            _accessibility.Announce(item.Kind == SearchResultKind.Channel ? T("Channel link copied.") : T("Share link copied."), AnnouncementPriority.Medium);
     }
 
     /// <summary>The open playlist's link (toolbar button on playlist pages).</summary>
@@ -218,20 +219,20 @@ public sealed partial class MainViewModel
         if (ytId is not null)
         {
             if (CopyToClipboard($"https://www.youtube.com/playlist?list={ytId}"))
-                _accessibility.Announce("Playlist link copied.", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Playlist link copied."), AnnouncementPriority.Medium);
             return;
         }
         if (playlist is null || playlist.Videos.Count == 0)
         {
-            _accessibility.Announce("This playlist is empty; there is nothing to share.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("This playlist is empty; there is nothing to share."), AnnouncementPriority.Medium);
             return;
         }
         var ids = string.Join(",", playlist.Videos.Take(50).Select(v => v.VideoId));
         if (CopyToClipboard($"https://www.youtube.com/watch_videos?video_ids={ids}"))
         {
             _accessibility.Announce(playlist.Videos.Count > 50
-                ? "Link copied with the first 50 videos; YouTube allows no more in a shared list."
-                : "Playlist link copied.", AnnouncementPriority.Medium);
+                ? T("Link copied with the first 50 videos; YouTube allows no more in a shared list.")
+                : T("Playlist link copied."), AnnouncementPriority.Medium);
         }
     }
 
@@ -244,8 +245,8 @@ public sealed partial class MainViewModel
         if (CopyToClipboard(ShareLink(video, at)))
         {
             _accessibility.Announce(at is { } t
-                ? $"Share link copied, starts at {AccessibleTextFormatter.FormatTimeSpoken(t)}."
-                : "Share link copied.", AnnouncementPriority.Medium);
+                ? T("Share link copied, starts at {0}.", AccessibleTextFormatter.FormatTimeSpoken(t))
+                : T("Share link copied."), AnnouncementPriority.Medium);
         }
     }
 
@@ -254,7 +255,7 @@ public sealed partial class MainViewModel
     {
         if (CurrentVideoForSharing() is not { } video) return;
         if (CopyToClipboard(ShareLink(video)))
-            _accessibility.Announce("Share link copied, from the beginning.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Share link copied, from the beginning."), AnnouncementPriority.Medium);
     }
 
     private bool CopyToClipboard(string text)
@@ -267,7 +268,7 @@ public sealed partial class MainViewModel
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Could not copy to the clipboard.");
-            _accessibility.Announce("Could not copy; the clipboard is busy. Try again.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Could not copy; the clipboard is busy. Try again."), AnnouncementPriority.Medium);
             return false;
         }
     }

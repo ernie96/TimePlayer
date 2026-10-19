@@ -230,7 +230,21 @@ public sealed class UpdateService : IUpdateService
         }
     }
 
-    internal static string Quote(string value) => "'" + value.Replace("'", "''") + "'";
+    /// <summary>
+    /// A PowerShell single-quoted string. PowerShell also ends such strings at the curly quotes
+    /// U+2018, U+2019, U+201A and U+201B (common in names like O’Brien), so each is doubled as well.
+    /// </summary>
+    internal static string Quote(string value)
+    {
+        var escaped = new System.Text.StringBuilder(value.Length + 8);
+        foreach (var c in value)
+        {
+            escaped.Append(c);
+            if (c is '\'' or '\u2018' or '\u2019' or '\u201A' or '\u201B')
+                escaped.Append(c);
+        }
+        return "'" + escaped + "'";
+    }
 
     /// <summary>Wait for TimePlayer to exit, run the installer silently, start TimePlayer again.</summary>
     internal static string InstallerScript(int pid, string installer, string exe) =>

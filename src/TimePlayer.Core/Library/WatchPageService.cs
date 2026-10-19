@@ -41,7 +41,12 @@ public sealed class WatchPageService : IWatchPageService
         if (innerTube.IsSuccess)
         {
             if (innerTube.Value.CommentsToken is { } token)
+            {
+                // One entry per video watched; a long session shouldn't keep them all.
+                if (_commentTokens.Count > 200)
+                    _commentTokens.Clear();
                 _commentTokens[videoId] = token;
+            }
             if (innerTube.Value.Related.Count > 0)
                 return innerTube;
         }

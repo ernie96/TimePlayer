@@ -38,11 +38,38 @@ public sealed class MpvIpcClient : IMpvIpcClient
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+    /// <summary>
+    /// After mpv restarts, the old pipe, its reader and writer and its read loop would otherwise stay
+    /// alive next to the new ones.
+    /// </summary>
+    private async Task CloseConnectionAsync()
+    {
+        var oldCts = _disposeCts;
+        var oldLoop = _readLoopTask;
+        if (oldCts is null && _pipeClient is null)
+            return;
+        try { oldCts?.Cancel(); } catch (ObjectDisposedException) { }
+        try { _writer?.Dispose(); } catch (Exception) { }
+        try { _reader?.Dispose(); } catch (Exception) { }
+        try { _pipeClient?.Dispose(); } catch (Exception) { }
+        if (oldLoop is not null)
+        {
+            try { await oldLoop.WaitAsync(TimeSpan.FromSeconds(2)); } catch (Exception) { }
+        }
+        oldCts?.Dispose();
+        _writer = null;
+        _reader = null;
+        _pipeClient = null;
+        _disposeCts = null;
+        _readLoopTask = null;
+    }
+
     public async Task ConnectAsync(string pipeName, TimeSpan timeout, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(pipeName);
 
         _logger.LogInformation("Connecting to local mpv named pipe: {Pipe}", pipeName);
+        await CloseConnectionAsync();
 
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var delay = TimeSpan.FromMilliseconds(100);

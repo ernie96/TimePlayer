@@ -15,6 +15,8 @@ using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 /// <summary>
@@ -65,7 +67,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private VideoDetails? _currentVideo;
 
     [ObservableProperty]
-    private string _currentVideoTitle = "No video loaded";
+    private string _currentVideoTitle = T("No video loaded");
 
     [ObservableProperty]
     private string _currentChannelTitle = string.Empty;
@@ -83,6 +85,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private TimeSpan _duration = TimeSpan.Zero;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(VolumeText))]
     private double _volumePercent = 80.0;
 
     [ObservableProperty]
@@ -98,7 +101,11 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private bool _isVideoActive;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ErrorBannerName))]
     private string? _errorMessage;
+
+    public string VolumeText => T("Volume {0:0}%", VolumePercent);
+    public string ErrorBannerName => T("Problem: {0}", ErrorMessage);
 
     [ObservableProperty]
     private string _statusAnnouncement = "TimePlayer ready. Focus is in the search box.";
@@ -186,7 +193,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private bool _enableHardwareDecoding = true;
 
     [ObservableProperty]
-    private string _dependencyStatusMessage = "All media components verified.";
+    private string _dependencyStatusMessage = T("All media components verified.");
 
     [ObservableProperty]
     private bool _isCheckingUpdates;
@@ -260,8 +267,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         InitializeCommunitySettings();
         InitializeStepSettings();
         InitializeSoundSettings();
-        if (MusicMode)
-            ApplyAppMode(announce: false);
+        ApplyAppMode(announce: false);
         InitializeViewState();
         InitializeBrailleAddonPreference();
         _checkForAppUpdatesAtStartup = _configService.CurrentConfig.Update.CheckAtStartup;
@@ -313,14 +319,14 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
             await _playerEngine.InitializeAsync(windowHandle, options);
             IsEngineInitialized = true;
-            PlaybackStatusText = "Engine initialized";
+            PlaybackStatusText = T("Engine initialized");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize playback engine.");
-            ErrorMessage = $"Player initialization failed: {ex.Message}";
-            PlaybackStatusText = "Engine error";
-            _accessibility.Announce("Failed to initialize video engine. Please check dependencies.", AnnouncementPriority.High);
+            ErrorMessage = T("Player initialization failed: {0}", ex.Message);
+            PlaybackStatusText = T("Engine error");
+            _accessibility.Announce(T("Failed to initialize video engine. Please check dependencies."), AnnouncementPriority.High);
         }
     }
 
@@ -330,7 +336,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var query = SearchQuery?.Trim();
         if (string.IsNullOrWhiteSpace(query))
         {
-            _accessibility.Announce("Please enter a search query or YouTube link.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Please enter a search query or YouTube link."), AnnouncementPriority.Medium);
             return;
         }
 
@@ -358,7 +364,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         ErrorMessage = null;
         LastSearchQuery = query;
         CanRetry = false;
-        _accessibility.Announce("Searching...", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Searching..."), AnnouncementPriority.Medium);
 
         try
         {
@@ -379,7 +385,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
                     PushNavigation();
                 CurrentSection = BrowseSection.Search;
                 SyncSelectedTab(BrowseSection.Search);
-                SectionTitle = $"Search results for {query}";
+                SectionTitle = T("Search results for {0}", query);
                 SearchResults.Clear();
                 foreach (var item in _lastSearchResults)
                 {
@@ -403,7 +409,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             }
             else
             {
-                ErrorMessage = $"Search failed: {searchResult.Error?.Message}";
+                ErrorMessage = T("Search failed: {0}", searchResult.Error?.Message);
                 CanRetry = true;
                 _accessibility.Announce(ErrorMessage, AnnouncementPriority.High);
             }
@@ -411,12 +417,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         catch (OperationCanceledException)
         {
             _logger.LogInformation("Search cancelled by user.");
-            _accessibility.Announce("Search cancelled.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("Search cancelled."), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error executing search for query '{Query}'", query);
-            ErrorMessage = "Failed to search YouTube. Please check network or try a direct link.";
+            ErrorMessage = T("Failed to search YouTube. Please check network or try a direct link.");
             CanRetry = true;
             _accessibility.Announce(ErrorMessage, AnnouncementPriority.High);
         }
@@ -433,7 +439,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             _searchCts?.Cancel();
             IsSearching = false;
-            _accessibility.Announce("Search cancelled.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Search cancelled."), AnnouncementPriority.Medium);
         }
     }
 
@@ -446,7 +452,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (CurrentSection == BrowseSection.Search)
             SearchResults.Clear();
         SelectedSearchResult = null;
-        _accessibility.Announce("Search cleared.", AnnouncementPriority.Low);
+        _accessibility.Announce(T("Search cleared."), AnnouncementPriority.Low);
         RequestFocusSearch?.Invoke(this, EventArgs.Empty);
     }
 
@@ -466,12 +472,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     private void ShowProblem(string what, string? reason, bool canRetry = true)
     {
         var why = string.IsNullOrWhiteSpace(reason)
-            ? "No reason was given. The log (Settings, Updates and help, Open log folder) may say more."
+            ? T("No reason was given. The log (Settings, Updates and help, Open log folder) may say more.")
             : reason.Trim();
-        ErrorMessage = $"{what}: {why}";
+        ErrorMessage = T("{0}: {1}", what, why);
         CanRetry = canRetry;
         _logger.LogWarning("Shown to the user: {Problem}", ErrorMessage);
-        _accessibility.Announce($"{ErrorMessage} F6 reaches Retry and Dismiss.", AnnouncementPriority.High);
+        _accessibility.Announce(T("{0} F6 reaches Retry and Dismiss.", ErrorMessage), AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -492,7 +498,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         if (string.IsNullOrWhiteSpace(text))
         {
-            _accessibility.Announce("Clipboard is empty or does not contain text.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Clipboard is empty or does not contain text."), AnnouncementPriority.High);
             return;
         }
 
@@ -504,13 +510,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         else if (YouTubeUrl.TryParse(text, out var ytUrl))
         {
             SearchQuery = ytUrl.NormalizedWatchUrl;
-            _accessibility.Announce("Loading video...", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Loading video..."), AnnouncementPriority.Medium);
             await PlayDirectUrlAsync(ytUrl.NormalizedWatchUrl);
         }
         else
         {
             SearchQuery = text;
-            _accessibility.Announce("Pasted into search box.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("Pasted into search box."), AnnouncementPriority.Low);
             RequestFocusSearch?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -565,7 +571,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         LastPlayedUrlOrId = item.Id;
         CanRetry = false;
         ErrorMessage = null;
-        _accessibility.Announce(MusicMode ? $"Playing {item.Title}" : $"Loading {item.Title}", AnnouncementPriority.High);
+        _accessibility.Announce(MusicMode ? T("Playing {0}", item.Title) : T("Loading {0}", item.Title), AnnouncementPriority.High);
         FocusPlayerIfShown();
 
         // The coordinator's queue, not the on-screen copy, which updates a moment later.
@@ -585,7 +591,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             var result = await _playbackCoordinator.PlayUrlOrIdAsync(item.Id, token);
             if (!result.IsSuccess)
             {
-                ShowProblem("Could not play this video", result.Error?.Message);
+                ShowProblem(T("Could not play this video"), result.Error?.Message);
             }
             else
             {
@@ -611,7 +617,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var token = _playbackCts.Token;
 
         BeginNewPlayback();
-        CurrentVideoTitle = "Loading YouTube video...";
+        CurrentVideoTitle = T("Loading YouTube video...");
         CurrentChannelTitle = string.Empty;
         SetCurrentLibraryVideo(YouTubeUrl.TryParse(url, out var directUrl)
             ? new SearchResult { Id = directUrl.VideoId.Value, Title = string.Empty, ChannelTitle = string.Empty }
@@ -622,7 +628,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         LastPlayedUrlOrId = url;
         CanRetry = false;
         ErrorMessage = null;
-        _accessibility.Announce("Loading video...", AnnouncementPriority.High);
+        _accessibility.Announce(T("Loading video..."), AnnouncementPriority.High);
         FocusPlayerIfShown();
 
         try
@@ -633,7 +639,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             var result = await _playbackCoordinator.PlayUrlOrIdAsync(url, token);
             if (!result.IsSuccess)
             {
-                ShowProblem("Could not load this video", result.Error?.Message);
+                ShowProblem(T("Could not load this video"), result.Error?.Message);
             }
             else
             {
@@ -689,7 +695,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (item == null || item.Kind != SearchResultKind.Video) return;
 
         await _playbackCoordinator.EnqueueAsync(item);
-        _accessibility.Announce("Added to queue.", AnnouncementPriority.Low);
+        _accessibility.Announce(T("Added to queue."), AnnouncementPriority.Low);
     }
 
     [RelayCommand]
@@ -703,7 +709,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         CurrentChannelTitle = item.ChannelTitle;
         SetCurrentLibraryVideo(ToSearchResult(item));
         OpenPlayerSession();
-        _accessibility.Announce($"Loading {item.Title}", AnnouncementPriority.High);
+        _accessibility.Announce(T("Loading {0}", item.Title), AnnouncementPriority.High);
         FocusPlayerIfShown();
 
         await _playbackCoordinator.PlayQueueItemAsync(item.QueueItemId);
@@ -719,7 +725,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_playbackCoordinator is PlaybackCoordinator coord)
         {
             await coord.RemoveFromQueueAsync(item.QueueItemId);
-            _accessibility.Announce("Removed from queue.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("Removed from queue."), AnnouncementPriority.Low);
         }
     }
 
@@ -729,7 +735,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_playbackCoordinator is PlaybackCoordinator coord)
         {
             await coord.ClearQueueAsync();
-            _accessibility.Announce("Playback queue cleared.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("Playback queue cleared."), AnnouncementPriority.Low);
         }
     }
 
@@ -770,7 +776,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             var wasPlaying = PlaybackState == PlaybackState.Playing;
             await _playbackCoordinator.TogglePlayPauseAsync();
-            _accessibility.Announce(wasPlaying ? "Paused" : "Playing", AnnouncementPriority.Medium);
+            _accessibility.Announce(wasPlaying ? T("Paused") : T("Playing"), AnnouncementPriority.Medium);
         }
         catch (Exception ex)
         {
@@ -786,7 +792,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         try
         {
             await _playerEngine.StopAsync();
-            _accessibility.Announce("Playback stopped.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("Playback stopped."), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -929,7 +935,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             var newMute = !IsMuted;
             await _playerEngine.SetMuteAsync(newMute);
             IsMuted = newMute;
-            _accessibility.Announce(IsMuted ? "Audio muted." : "Audio unmuted.", AnnouncementPriority.Low);
+            _accessibility.Announce(IsMuted ? T("Audio muted.") : T("Audio unmuted."), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -1001,7 +1007,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (_playbackCoordinator is PlaybackCoordinator coord)
         {
             await coord.SetCaptionTrackAsync(option.Track);
-            var label = option.Track != null ? $"Subtitles switched to {option.DisplayName}" : "Subtitles turned off";
+            var label = option.Track != null ? T("Subtitles switched to {0}", option.DisplayName) : T("Subtitles turned off");
             _accessibility.Announce(label, AnnouncementPriority.Low);
         }
     }
@@ -1023,7 +1029,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     public async Task RunDiagnosticsAsync()
     {
         IsRunningDiagnostics = true;
-        _accessibility.Announce("Running diagnostics...", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Running diagnostics..."), AnnouncementPriority.Medium);
 
         var report = new StringBuilder();
         report.AppendLine("=== TimePlayer Diagnostics Report ===");
@@ -1095,7 +1101,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         report.AppendLine("Diagnostics completed.");
         DiagnosticsReport = report.ToString();
         IsRunningDiagnostics = false;
-        _accessibility.Announce("Diagnostics complete.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Diagnostics complete."), AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -1103,16 +1109,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         if (!IsEngineInitialized)
         {
-            _accessibility.Announce("Video engine is not ready.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Video engine is not ready."), AnnouncementPriority.High);
             return;
         }
 
         try
         {
-            CurrentVideoTitle = "Built-in Test Pattern (1080p 30fps Color Bars)";
+            CurrentVideoTitle = T("Built-in Test Pattern (1080p 30fps Color Bars)");
             CurrentChannelTitle = "TimePlayer Built-in Diagnostics";
             OpenPlayerSession();
-            _accessibility.Announce("Loading test pattern...", AnnouncementPriority.High);
+            _accessibility.Announce(T("Loading test pattern..."), AnnouncementPriority.High);
             FocusPlayerIfShown();
 
             await _playerEngine.LoadAsync("av://lavfi:testsrc=duration=600:size=1280x720:rate=30");
@@ -1120,7 +1126,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load test video.");
-            ErrorMessage = $"Failed to load test video: {ex.Message}";
+            ErrorMessage = T("Failed to load test video: {0}", ex.Message);
         }
     }
 
@@ -1198,12 +1204,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         var status = e.NewState switch
         {
-            PlaybackState.Playing => "Playing",
-            PlaybackState.Paused => "Paused",
-            PlaybackState.Buffering => "Buffering...",
-            PlaybackState.Ended => "Playback ended.",
-            PlaybackState.Stopped => "Stopped",
-            PlaybackState.Error => "Playback error.",
+            PlaybackState.Playing => T("Playing"),
+            PlaybackState.Paused => T("Paused"),
+            PlaybackState.Buffering => T("Buffering..."),
+            PlaybackState.Ended => T("Playback ended."),
+            PlaybackState.Stopped => T("Stopped"),
+            PlaybackState.Error => T("Playback error."),
             _ => e.NewState.ToString()
         };
 
@@ -1278,7 +1284,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
-        ShowProblem("Playback problem", error.UserMessage);
+        ShowProblem(T("Playback problem"), error.UserMessage);
         StatusAnnouncement = ErrorMessage ?? string.Empty;
     }
 
@@ -1289,9 +1295,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             _uiContext!.Post(_ => OnCoordinatorItemSkipped(sender, e), null);
             return;
         }
-        var why = e.Reason.StartsWith("YouTube says", StringComparison.Ordinal) ? "it isn't available" : "it wouldn't play";
+        var why = e.IsUnavailable ? T("it isn't available") : T("it wouldn't play");
         if (e.WillContinue)
-            _accessibility.Announce($"Skipped {e.Item.Title}: {why}.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Skipped {0}: {1}.", e.Item.Title, why), AnnouncementPriority.Medium);
     }
 
     private void OnCoordinatorStatusChanged(object? sender, string status)
@@ -1314,10 +1320,25 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
-        PlaybackQueue.Clear();
-        foreach (var item in queue)
+        // Moving to the next song only changes a row or two; rebuilding a long queue for that is slow on
+        // older computers and makes screen readers lose their place in the list.
+        bool sameItems = PlaybackQueue.Count == queue.Count &&
+                         PlaybackQueue.Select(q => q.QueueItemId).SequenceEqual(queue.Select(q => q.QueueItemId));
+        if (sameItems)
         {
-            PlaybackQueue.Add(item);
+            for (int i = 0; i < queue.Count; i++)
+            {
+                if (!Equals(PlaybackQueue[i], queue[i]))
+                    PlaybackQueue[i] = queue[i];
+            }
+        }
+        else
+        {
+            PlaybackQueue.Clear();
+            foreach (var item in queue)
+            {
+                PlaybackQueue.Add(item);
+            }
         }
 
         if (_playbackCoordinator is PlaybackCoordinator coord)
@@ -1346,12 +1367,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         if (!string.IsNullOrWhiteSpace(LastPlayedUrlOrId))
         {
-            _accessibility.Announce("Retrying playback...", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Retrying playback..."), AnnouncementPriority.Medium);
             await PlayDirectUrlAsync(LastPlayedUrlOrId);
         }
         else if (!string.IsNullOrWhiteSpace(LastSearchQuery))
         {
-            _accessibility.Announce($"Retrying search for '{LastSearchQuery}'...", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Retrying search for '{0}'...", LastSearchQuery), AnnouncementPriority.Medium);
             SearchQuery = LastSearchQuery;
             await SearchAsync();
         }
@@ -1389,7 +1410,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     public async Task CheckForUpdatesAsync()
     {
         IsCheckingUpdates = true;
-        DependencyStatusMessage = "Checking for updates to yt-dlp and mpv...";
+        DependencyStatusMessage = T("Checking for updates to yt-dlp and mpv...");
         _accessibility.Announce(DependencyStatusMessage, AnnouncementPriority.Medium);
 
         try
@@ -1399,16 +1420,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             {
                 var verResult = await _ytDlpManager.GetVersionAsync();
                 var verStr = verResult.IsSuccess ? verResult.Value : "Current";
-                DependencyStatusMessage = $"yt-dlp is verified and up to date (version {verStr}). mpv engine is intact.";
+                DependencyStatusMessage = T("yt-dlp is verified and up to date (version {0}). mpv engine is intact.", verStr);
             }
             else
             {
-                DependencyStatusMessage = $"Update check: {updateResult.Error?.Message}";
+                DependencyStatusMessage = T("Update check: {0}", updateResult.Error?.Message);
             }
         }
         catch (Exception ex)
         {
-            DependencyStatusMessage = $"Error during update check: {ex.Message}";
+            DependencyStatusMessage = T("Error during update check: {0}", ex.Message);
         }
         finally
         {
@@ -1455,7 +1476,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
     public void AnnounceNvdaAddonInstalled() =>
         _accessibility.Announce(
-            "TimePlayer braille add-on installed. Restart NVDA once to use the braille progress track and touch seeking.",
+            T("TimePlayer braille add-on installed. Restart NVDA once to use the braille progress track and touch seeking."),
             AnnouncementPriority.Medium);
 
     [ObservableProperty]
@@ -1495,10 +1516,10 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             var result = NvdaAddonInstaller.EnsureInstalled();
             _accessibility.Announce(result switch
             {
-                NvdaAddonInstallResult.Failed => "The braille add-on could not be installed.",
-                NvdaAddonInstallResult.NvdaNotFound => "NVDA was not found, so the braille add-on was not installed.",
-                NvdaAddonInstallResult.AlreadyCurrent => "The braille add-on is installed.",
-                _ => "Braille add-on installed. Restart NVDA once to use it."
+                NvdaAddonInstallResult.Failed => T("The braille add-on could not be installed."),
+                NvdaAddonInstallResult.NvdaNotFound => T("NVDA was not found, so the braille add-on was not installed."),
+                NvdaAddonInstallResult.AlreadyCurrent => T("The braille add-on is installed."),
+                _ => T("Braille add-on installed. Restart NVDA once to use it.")
             }, AnnouncementPriority.Medium);
             if (!EnableBrailleProgress)
                 EnableBrailleProgress = true;
@@ -1510,7 +1531,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             if (EnableBrailleProgress)
                 EnableBrailleProgress = false;
             if (wasInstalled)
-                _accessibility.Announce("Braille add-on removed. It stops after NVDA restarts.", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Braille add-on removed. It stops after NVDA restarts."), AnnouncementPriority.Medium);
         }
 
         var current = _configService.CurrentConfig;
@@ -1525,8 +1546,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         EnableBrailleProgress = !EnableBrailleProgress;
         var message = EnableBrailleProgress
-            ? $"Braille progress track enabled ({SelectedBrailleCellCount} cells)."
-            : "Braille progress track disabled. Screen reader standard display active.";
+            ? T("Braille progress track enabled ({0} cells).", SelectedBrailleCellCount)
+            : T("Braille progress track disabled. Screen reader standard display active.");
         _accessibility.Announce(message, AnnouncementPriority.High);
     }
 

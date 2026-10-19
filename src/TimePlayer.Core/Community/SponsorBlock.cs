@@ -5,6 +5,8 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Configuration;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Core.Community;
 
 public enum SegmentCategory
@@ -38,16 +40,16 @@ public sealed record SkipSegment(double Start, double End, SegmentCategory Categ
     /// <summary>Spoken category name: "sponsor", "self-promotion", …</summary>
     public string Name => Category switch
     {
-        SegmentCategory.Sponsor => "sponsor",
-        SegmentCategory.SelfPromotion => "self-promotion",
-        SegmentCategory.Interaction => "reminder to like or subscribe",
-        SegmentCategory.Intro => "intro",
-        SegmentCategory.Outro => "outro",
-        SegmentCategory.Preview => "preview",
-        SegmentCategory.Filler => "filler",
-        SegmentCategory.NonMusic => "non-music part",
-        SegmentCategory.Highlight => "highlight",
-        SegmentCategory.ExclusiveAccess => "exclusive access",
+        SegmentCategory.Sponsor => T("sponsor"),
+        SegmentCategory.SelfPromotion => T("self-promotion"),
+        SegmentCategory.Interaction => T("reminder to like or subscribe"),
+        SegmentCategory.Intro => T("intro"),
+        SegmentCategory.Outro => T("outro"),
+        SegmentCategory.Preview => T("preview"),
+        SegmentCategory.Filler => T("filler"),
+        SegmentCategory.NonMusic => T("non-music part"),
+        SegmentCategory.Highlight => T("highlight"),
+        SegmentCategory.ExclusiveAccess => T("exclusive access"),
         _ => Category.ToString()
     };
 }

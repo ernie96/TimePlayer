@@ -2,13 +2,15 @@ using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Configuration;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Core.Community;
 
 /// <summary>Likes and estimated dislikes for a video.</summary>
 public sealed record VideoVotes(long Likes, long Dislikes)
 {
     /// <summary>"12,345 likes, 678 dislikes"</summary>
-    public string Spoken => $"{Likes:N0} {(Likes == 1 ? "like" : "likes")}, {Dislikes:N0} {(Dislikes == 1 ? "dislike" : "dislikes")}";
+    public string Spoken => Plural(Likes, "{0:N0} like", "{0:N0} likes") + ", " + Plural(Dislikes, "{0:N0} dislike", "{0:N0} dislikes");
 }
 
 public interface IDislikeService

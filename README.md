@@ -31,6 +31,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   They change TimePlayer's sound only. Music mode (`Ctrl+M`) turns video off and uses its own sound preset.
 - **Braille progress**: an NVDA add-on shows playback position as a "lower g" (⠶) on the braille display; the routing
   keys seek to that point and `Ctrl+Shift+D` toggles it.
+- **English, Romanian and Ukrainian**: every spoken message, screen, menu and F1 help, with each language's plural
+  forms; it follows the Windows language or Settings, Speech and braille, Language. Thanks to Stacy Carter for
+  Ukrainian support.
 - **Updates itself** from GitHub Releases, with every download checked against an Ed25519 signature.
 
 ## How it works
@@ -228,6 +231,15 @@ stream source.
   the top of the description and in the `I` summary.
 
 ---
+
+## Translating TimePlayer
+
+Text is written in English in the code and looked up through `Loc.T("...")` (and `Loc.Plural(n, "{0} video", "{0} videos")`
+for counts); XAML uses `{l:T 'text'}`. The translations live in `src/TimePlayer.Core/Localization/Romanian.Strings.cs` and
+`Ukrainian.Strings.cs`, one line per text, keyed by the English. Plural entries hold the language's forms separated by `|`
+(Romanian one|few|"de" form, Ukrainian one|few|many). Anything without a translation stays in English. The test
+`EveryTextInTheCode_HasBothTranslations` fails when new English text has no translation, and
+`EveryTranslation_KeepsItsPlaceholders_AndFormats` catches a broken `{0}`.
 
 ## Making a release
 

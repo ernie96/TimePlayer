@@ -228,7 +228,7 @@ public sealed class TubeRepairBackendProvider : IBackendProvider, IVideoCatalogP
             }
 
             var finalPlaybackUrl = !string.IsNullOrWhiteSpace(targetUrl) ? targetUrl : getUrl;
-            _logger.LogInformation("TubeRepair successfully resolved stream redirect for {Id} to {Url}.", videoId.Value, finalPlaybackUrl);
+            _logger.LogInformation("TubeRepair successfully resolved stream redirect for {Id} to {Url}.", videoId.Value, Common.LogRedaction.Url(finalPlaybackUrl));
 
             var candidate = new StreamCandidate
             {

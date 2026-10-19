@@ -36,25 +36,29 @@ public static partial class TakeoutImport
 
     public static TakeoutContents ParseZip(Stream zipStream)
     {
-        byte[] bytes;
-        using (var copy = new MemoryStream())
+        // Takeout zips can hold gigabytes of uploaded videos; read them in place, never into memory.
+        if (!zipStream.CanSeek)
         {
-            zipStream.CopyTo(copy);
-            bytes = copy.ToArray();
+            var temp = new FileStream(Path.GetTempFileName(), FileMode.Open, FileAccess.ReadWrite, FileShare.None, 81920, FileOptions.DeleteOnClose);
+            zipStream.CopyTo(temp);
+            temp.Position = 0;
+            using (temp)
+                return ParseZip(temp);
         }
 
+        var start = zipStream.Position;
         SubscriptionImportResult? subscriptions = null;
         try
         {
-            // ParseZip closes the stream it's given, so each reader gets its own.
-            subscriptions = SubscriptionFormats.ParseZip(new MemoryStream(bytes, writable: false));
+            subscriptions = SubscriptionFormats.ParseZip(zipStream);
         }
         catch (FormatException)
         {
             // No subscriptions in this zip; playlists or history may still be there.
         }
 
-        using var zip = new ZipArchive(new MemoryStream(bytes, writable: false), ZipArchiveMode.Read);
+        zipStream.Position = start;
+        using var zip = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
         var playlists = new List<TakeoutPlaylist>();
         var liked = new List<string>();
         var watchLater = new List<string>();

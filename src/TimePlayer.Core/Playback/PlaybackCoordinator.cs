@@ -8,6 +8,8 @@ using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Core.Playback;
 
 /// <summary>
@@ -61,8 +63,8 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     public const int MaxConsecutiveSkips = 3;
 
     /// <summary>Told to users when YouTube itself won't play a video.</summary>
-    public const string UnavailableMessage =
-        "YouTube says this video isn't available. It may have been removed, made private, or blocked where you are.";
+    public static string UnavailableMessage =>
+        T("YouTube says this video isn't available. It may have been removed, made private, or blocked where you are.");
 
     public bool CanLoadMoreSearchResults => _lastSearchProvider is not null && !string.IsNullOrEmpty(_nextSearchPageToken);
 
@@ -275,7 +277,8 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 
             failures++;
             bool willContinue = failures < MaxConsecutiveSkips && index + 1 < _queue.Count;
-            ItemSkipped?.Invoke(this, new QueueSkipEventArgs(item, last.Error?.Message ?? string.Empty, willContinue));
+            ItemSkipped?.Invoke(this, new QueueSkipEventArgs(item, last.Error?.Message ?? string.Empty, willContinue,
+                isUnavailable: last.Error?.Code == "VIDEO_UNAVAILABLE"));
             if (!willContinue)
                 break;
             index++;
@@ -284,14 +287,14 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         if (failures >= MaxConsecutiveSkips)
         {
             last = Result<bool>.Failure(AppError.PlaybackFailed(
-                $"{failures} videos in a row couldn't be played, so the queue stopped. {last.Error?.Message}"));
+                T("{0} videos in a row couldn't be played, so the queue stopped. {1}", failures, last.Error?.Message)));
         }
         if (raiseErrors && last.IsFailure)
         {
             ErrorOccurred?.Invoke(this, new PlaybackError
             {
                 ErrorType = PlaybackErrorType.StreamUnreachable,
-                UserMessage = last.Error?.Message ?? "This video couldn't be played."
+                UserMessage = last.Error?.Message ?? T("This video couldn't be played.")
             });
         }
         return last;
@@ -492,7 +495,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 
         // All tiers failed
         _logger.LogError("All playback tiers failed for video ID {Id}.", videoId.Value);
-        return Fail("None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later.", raiseErrors);
+        return Fail(T("None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later."), raiseErrors);
 
         Result<bool> Fail(string message, bool raise, string code = "PLAYBACK_ENGINE_ERROR")
         {
@@ -583,7 +586,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             {
                 await LoadDefaultCaptionAsync(captions, cancellationToken);
             }
-            else
+            else if (LookUpMissingCaptions)
             {
                 CaptionsLookupInProgress = true;
                 _ = FetchCaptionsInBackgroundAsync(videoId);
@@ -646,11 +649,29 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     /// <summary>True while captions are being looked up for a video whose stream came without them.</summary>
     public bool CaptionsLookupInProgress { get; private set; }
 
+    /// <summary>
+    /// Whether to ask yt-dlp for captions when a stream comes without them. Each lookup starts a
+    /// separate program, which is slow on older computers; music turns it off until captions are asked for.
+    /// </summary>
+    public bool LookUpMissingCaptions { get; set; } = true;
+
+    private string? _captionsLookedUpFor;
+
+    /// <summary>Looks up captions for the playing video now, if that hasn't been done (C pressed in Music).</summary>
+    public void LookUpCaptionsNow()
+    {
+        if (_playingVideoId is not { } id || CurrentCaptions.Count > 0 || CaptionsLookupInProgress || _captionsLookedUpFor == id)
+            return;
+        CaptionsLookupInProgress = true;
+        _ = FetchCaptionsInBackgroundAsync(new YouTubeVideoId(id));
+    }
+
     /// <summary>Raised when captions arrive after playback started.</summary>
     public event EventHandler? CaptionsChanged;
 
     private async Task FetchCaptionsInBackgroundAsync(YouTubeVideoId videoId)
     {
+        _captionsLookedUpFor = videoId.Value;
         try
         {
             var details = await _ytdlp.GetVideoDetailsAsync(videoId, CancellationToken.None);
@@ -899,12 +920,16 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 /// <summary>A queued video was skipped because it couldn't be played.</summary>
 public sealed class QueueSkipEventArgs : EventArgs
 {
-    public QueueSkipEventArgs(PlaybackQueueItem item, string reason, bool willContinue)
+    public QueueSkipEventArgs(PlaybackQueueItem item, string reason, bool willContinue, bool isUnavailable = false)
     {
         Item = item;
         Reason = reason;
         WillContinue = willContinue;
+        IsUnavailable = isUnavailable;
     }
+
+    /// <summary>YouTube itself won't play it (removed, private or blocked), rather than a source failing.</summary>
+    public bool IsUnavailable { get; }
 
     public PlaybackQueueItem Item { get; }
     public string Reason { get; }

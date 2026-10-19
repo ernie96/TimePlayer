@@ -147,6 +147,13 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         }
 
         _isIntentionalStop = false;
+        // After a crash the old process object is still held; let it go before starting another.
+        if (_process is { } oldProcess)
+        {
+            oldProcess.Exited -= OnProcessExited;
+            try { oldProcess.Dispose(); } catch (InvalidOperationException) { }
+            _process = null;
+        }
         var process = ProcessFactory(startInfo);
         process.Exited += OnProcessExited;
         _process = process;
@@ -181,7 +188,7 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         ArgumentException.ThrowIfNullOrWhiteSpace(mediaUrl);
         EnsureAlive();
 
-        _logger.LogInformation("Loading media URL in mpv: {Url}", mediaUrl);
+        _logger.LogInformation("Loading media URL in mpv: {Url}", Common.LogRedaction.Url(mediaUrl));
         _isIntentionalStop = false;
         _currentEntryId = null;
         SetState(PlaybackState.Opening);
@@ -365,6 +372,9 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         }
     }
 
+    private static readonly TimeSpan PositionReportInterval = TimeSpan.FromMilliseconds(250);
+    private readonly System.Diagnostics.Stopwatch _positionReportClock = System.Diagnostics.Stopwatch.StartNew();
+
     private void OnMpvPropertyChanged(object? sender, MpvPropertyChangeEventArgs e)
     {
         switch (e.PropertyId)
@@ -384,8 +394,16 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
             case PropIdTimePos:
                 if (e.Value.HasValue && e.Value.Value.TryGetDouble(out var seconds))
                 {
-                    CurrentTime = TimeSpan.FromSeconds(Math.Max(0, seconds));
-                    PositionChanged?.Invoke(this, new PlaybackPositionChangedEventArgs(CurrentTime, Duration));
+                    var position = TimeSpan.FromSeconds(Math.Max(0, seconds));
+                    var jumped = (position - CurrentTime).Duration() > TimeSpan.FromSeconds(1.5);
+                    CurrentTime = position;
+                    // mpv reports the position on every video frame. Four updates a second are plenty for
+                    // speech, braille and the slider, and spare slower computers; seeks are passed on at once.
+                    if (jumped || _positionReportClock.Elapsed >= PositionReportInterval)
+                    {
+                        _positionReportClock.Restart();
+                        PositionChanged?.Invoke(this, new PlaybackPositionChangedEventArgs(CurrentTime, Duration));
+                    }
                 }
                 break;
 

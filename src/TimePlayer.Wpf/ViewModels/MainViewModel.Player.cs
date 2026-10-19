@@ -7,6 +7,8 @@ using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 public enum PlayerPanel
@@ -36,7 +38,7 @@ public sealed partial class MainViewModel
     [ObservableProperty] private SearchResult? _selectedUpNext;
     [ObservableProperty] private CommentNode? _selectedComment;
     [ObservableProperty] private bool _isLoadingComments;
-    [ObservableProperty] private string _commentsStatus = "Open this tab to load comments.";
+    [ObservableProperty] private string _commentsStatus = T("Open this tab to load comments.");
     [ObservableProperty] private string _videoDescription = string.Empty;
     [ObservableProperty] private PlayerPanel _selectedPlayerPanel = PlayerPanel.UpNext;
 
@@ -48,8 +50,8 @@ public sealed partial class MainViewModel
     [NotifyPropertyChangedFor(nameof(SpeakCaptionsButtonText))]
     private bool _speakCaptions;
 
-    public string AutoplayButtonText => Autoplay ? "Autoplay: on" : "Autoplay: off";
-    public string SpeakCaptionsButtonText => SpeakCaptions ? "Read captions: on" : "Read captions: off";
+    public string AutoplayButtonText => Autoplay ? T("Autoplay: on") : T("Autoplay: off");
+    public string SpeakCaptionsButtonText => SpeakCaptions ? T("Read captions: on") : T("Read captions: off");
     public bool CanLoadMoreComments => _lastCommentPage is { NextPageToken: { Length: > 0 } };
 
     private void InitializePlayerPreferences()
@@ -83,7 +85,7 @@ public sealed partial class MainViewModel
         UpNext.Clear();
         Comments.Clear();
         VideoDescription = string.Empty;
-        CommentsStatus = "Open this tab to load comments.";
+        CommentsStatus = T("Open this tab to load comments.");
         OnPropertyChanged(nameof(CanLoadMoreComments));
 
         ResetCommunityData(videoId, _watchPageCts.Token);
@@ -142,7 +144,7 @@ public sealed partial class MainViewModel
         _commentsRequested = true;
         IsLoadingComments = true;
         if (firstPage)
-            CommentsStatus = "Loading comments...";
+            CommentsStatus = T("Loading comments...");
 
         try
         {
@@ -154,7 +156,7 @@ public sealed partial class MainViewModel
             {
                 if (firstPage)
                 {
-                    CommentsStatus = "Comments could not be loaded. They may be turned off for this video.";
+                    CommentsStatus = T("Comments could not be loaded. They may be turned off for this video.");
                     if (announce) _accessibility.Announce(CommentsStatus, AnnouncementPriority.Medium);
                 }
                 return;
@@ -175,13 +177,13 @@ public sealed partial class MainViewModel
             if (firstPage)
             {
                 SelectedComment = Comments.FirstOrDefault();
-                CommentsStatus = Comments.Count == 0 ? "No comments yet." : string.Empty;
+                CommentsStatus = Comments.Count == 0 ? T("No comments yet.") : string.Empty;
                 if (announce)
-                    _accessibility.Announce(Comments.Count == 0 ? "No comments yet." : $"{Comments.Count} comments loaded.", AnnouncementPriority.Medium);
+                    _accessibility.Announce(Comments.Count == 0 ? T("No comments yet.") : T("{0} loaded.", Plural(Comments.Count, "{0} comment", "{0} comments")), AnnouncementPriority.Medium);
             }
             else if (_speakNextCommentsLoad && added > 0)
             {
-                _accessibility.Announce($"{added} more comments.", AnnouncementPriority.Low);
+                _accessibility.Announce(T("{0} more.", Plural(added, "{0} comment", "{0} comments")), AnnouncementPriority.Low);
             }
         }
         catch (OperationCanceledException)
@@ -242,7 +244,7 @@ public sealed partial class MainViewModel
             {
                 parent.RepliesLoaded = false;
                 parent.IsExpanded = false;
-                _accessibility.Announce("Replies could not be loaded.", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Replies could not be loaded."), AnnouncementPriority.Medium);
             }
             return;
         }
@@ -254,7 +256,7 @@ public sealed partial class MainViewModel
 
         int count = result.Value.Comments.Count;
         if (pageToken is null)
-            _accessibility.Announce(count == 1 ? "1 reply" : $"{count} replies", AnnouncementPriority.Low);
+            _accessibility.Announce(Plural(count, "{0} reply", "{0} replies"), AnnouncementPriority.Low);
     }
 
     /// <summary>Enter: expands or collapses a comment, or loads the next page of replies.</summary>
@@ -277,7 +279,7 @@ public sealed partial class MainViewModel
             return;
         if (node.Replies.Count == 0)
         {
-            _accessibility.Announce("No replies.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("No replies."), AnnouncementPriority.Low);
             return;
         }
         node.IsExpanded = !node.IsExpanded;
@@ -289,7 +291,7 @@ public sealed partial class MainViewModel
         node ??= SelectedComment;
         if (node?.Comment is not { } comment || node.Kind != CommentNodeKind.Comment) return;
         if (CopyToClipboard($"{comment.Author}: {comment.Text}"))
-            _accessibility.Announce("Comment copied.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("Comment copied."), AnnouncementPriority.Low);
     }
 
     // --- Autoplay ---
@@ -311,12 +313,12 @@ public sealed partial class MainViewModel
 
         if (Autoplay && IsPlayerDialogOpen && NextAutoplayCandidate() is { } next)
         {
-            _accessibility.Announce($"Up next: {next.Title}", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Up next: {0}", next.Title), AnnouncementPriority.Medium);
             _ = ContinueWithAsync(next);
         }
         else
         {
-            _accessibility.Announce("Video ended.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Video ended."), AnnouncementPriority.Medium);
         }
     }
 
@@ -334,7 +336,7 @@ public sealed partial class MainViewModel
         }
         else
         {
-            _accessibility.Announce("Nothing up next yet.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Nothing up next yet."), AnnouncementPriority.Medium);
         }
     }
 
@@ -342,7 +344,7 @@ public sealed partial class MainViewModel
     public void ToggleAutoplay()
     {
         Autoplay = !Autoplay;
-        _accessibility.Announce(Autoplay ? "Autoplay on." : "Autoplay off.", AnnouncementPriority.Medium);
+        _accessibility.Announce(Autoplay ? T("Autoplay on.") : T("Autoplay off."), AnnouncementPriority.Medium);
         _ = PersistPlayerPreferencesAsync();
     }
 
@@ -350,11 +352,13 @@ public sealed partial class MainViewModel
     public void ToggleSpeakCaptions()
     {
         SpeakCaptions = !SpeakCaptions;
+        if (SpeakCaptions && _playbackCoordinator is TimePlayer.Core.Playback.PlaybackCoordinator captionSource)
+            captionSource.LookUpCaptionsNow();
         bool lookingUp = _playbackCoordinator is TimePlayer.Core.Playback.PlaybackCoordinator { CaptionsLookupInProgress: true };
-        string message = !SpeakCaptions ? "Captions will not be read aloud."
-            : AvailableSubtitleTracks.Count > 1 || !IsPlayerDialogOpen ? "Captions will be read aloud."
-            : lookingUp ? "Captions will be read aloud. Still looking for this video's captions."
-            : "Captions will be read aloud, but this video has no captions.";
+        string message = !SpeakCaptions ? T("Captions will not be read aloud.")
+            : AvailableSubtitleTracks.Count > 1 || !IsPlayerDialogOpen ? T("Captions will be read aloud.")
+            : lookingUp ? T("Captions will be read aloud. Still looking for this video's captions.")
+            : T("Captions will be read aloud, but this video has no captions.");
         _accessibility.Announce(message, AnnouncementPriority.Medium);
         _ = PersistPlayerPreferencesAsync();
     }
@@ -369,7 +373,7 @@ public sealed partial class MainViewModel
         }
         PopulateSubtitleTracks();
         if (SpeakCaptions && IsPlayerDialogOpen && AvailableSubtitleTracks.Count <= 1)
-            _accessibility.Announce("This video has no captions.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("This video has no captions."), AnnouncementPriority.Low);
     }
 
     /// <summary>
@@ -389,10 +393,10 @@ public sealed partial class MainViewModel
     public void AnnounceUpNext()
     {
         var next = PlaybackQueue.Count > 0 && CurrentQueueItem is { } current && PlaybackQueue.IndexOf(current) is var i && i >= 0 && i + 1 < PlaybackQueue.Count
-            ? $"Next in queue: {PlaybackQueue[i + 1].Title}"
+            ? T("Next in queue: {0}", PlaybackQueue[i + 1].Title)
             : NextAutoplayCandidate() is { } candidate
-                ? $"Up next{(Autoplay ? "" : ", autoplay off")}: {candidate.Title}, by {candidate.ChannelTitle}"
-                : "Nothing up next yet.";
+                ? (Autoplay ? T("Up next: {0}, by {1}", candidate.Title, candidate.ChannelTitle) : T("Up next, autoplay off: {0}, by {1}", candidate.Title, candidate.ChannelTitle))
+                : T("Nothing up next yet.");
         _accessibility.Announce(next, AnnouncementPriority.High);
     }
 

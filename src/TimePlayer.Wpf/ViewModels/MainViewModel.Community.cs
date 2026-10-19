@@ -7,6 +7,8 @@ using TimePlayer.Core.Community;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 /// <summary>A SponsorBlock category's row in Settings.</summary>
@@ -63,9 +65,9 @@ public sealed partial class MainViewModel
 
     public IReadOnlyList<ChoiceOption<SegmentAction>> SegmentActionChoices { get; } = new[]
     {
-        new ChoiceOption<SegmentAction>(SegmentAction.Skip, "Skip automatically"),
-        new ChoiceOption<SegmentAction>(SegmentAction.Announce, "Tell me (S skips it)"),
-        new ChoiceOption<SegmentAction>(SegmentAction.Off, "Do nothing")
+        new ChoiceOption<SegmentAction>(SegmentAction.Skip, T("Skip automatically")),
+        new ChoiceOption<SegmentAction>(SegmentAction.Announce, T("Tell me (S skips it)")),
+        new ChoiceOption<SegmentAction>(SegmentAction.Off, T("Do nothing"))
     };
 
     public IReadOnlyList<SegmentCategorySetting> SponsorBlockCategories { get; private set; } = Array.Empty<SegmentCategorySetting>();
@@ -90,14 +92,14 @@ public sealed partial class MainViewModel
         void Changed() => _ = PersistCommunitySettingsAsync();
         SponsorBlockCategories = new[]
         {
-            new SegmentCategorySetting(SegmentCategory.Sponsor, "_Sponsor (paid promotion)", sb.Sponsor, Changed),
-            new SegmentCategorySetting(SegmentCategory.SelfPromotion, "Unpaid or _self-promotion", sb.SelfPromotion, Changed),
-            new SegmentCategorySetting(SegmentCategory.Interaction, "Reminders to _like or subscribe", sb.Interaction, Changed),
-            new SegmentCategorySetting(SegmentCategory.Intro, "_Intro animation or opening", sb.Intro, Changed),
-            new SegmentCategorySetting(SegmentCategory.Outro, "_Outro and end cards", sb.Outro, Changed),
-            new SegmentCategorySetting(SegmentCategory.Preview, "_Preview or recap", sb.Preview, Changed),
-            new SegmentCategorySetting(SegmentCategory.Filler, "_Filler and tangents", sb.Filler, Changed),
-            new SegmentCategorySetting(SegmentCategory.NonMusic, "_Non-music parts of music videos", sb.NonMusic, Changed),
+            new SegmentCategorySetting(SegmentCategory.Sponsor, T("_Sponsor (paid promotion)"), sb.Sponsor, Changed),
+            new SegmentCategorySetting(SegmentCategory.SelfPromotion, T("Unpaid or _self-promotion"), sb.SelfPromotion, Changed),
+            new SegmentCategorySetting(SegmentCategory.Interaction, T("Reminders to _like or subscribe"), sb.Interaction, Changed),
+            new SegmentCategorySetting(SegmentCategory.Intro, T("_Intro animation or opening"), sb.Intro, Changed),
+            new SegmentCategorySetting(SegmentCategory.Outro, T("_Outro and end cards"), sb.Outro, Changed),
+            new SegmentCategorySetting(SegmentCategory.Preview, T("_Preview or recap"), sb.Preview, Changed),
+            new SegmentCategorySetting(SegmentCategory.Filler, T("_Filler and tangents"), sb.Filler, Changed),
+            new SegmentCategorySetting(SegmentCategory.NonMusic, T("_Non-music parts of music videos"), sb.NonMusic, Changed),
         };
         _communitySettingsLoaded = true;
     }
@@ -223,15 +225,15 @@ public sealed partial class MainViewModel
                     break;
                 case SegmentEvent.Announce announce:
                     _accessibility.Announce(
-                        $"{Capitalize(announce.Segment.Name)}, {AccessibleTextFormatter.FormatTimeSpoken(announce.Segment.Length)}. S skips it.",
+                        T("{0}, {1}. S skips it.", Capitalize(announce.Segment.Name), AccessibleTextFormatter.FormatTimeSpoken(announce.Segment.Length)),
                         AnnouncementPriority.Medium);
                     break;
                 case SegmentEvent.WholeVideo label:
-                    _accessibility.Announce($"This whole video is labeled {label.Segment.Name}.", AnnouncementPriority.Low);
+                    _accessibility.Announce(T("This whole video is labeled {0}.", label.Segment.Name), AnnouncementPriority.Low);
                     break;
                 case SegmentEvent.HighlightAvailable highlight:
                     _accessibility.Announce(
-                        $"Highlight at {AccessibleTextFormatter.FormatTimeSpoken(TimeSpan.FromSeconds(highlight.Segment.Start))}. H jumps to it.",
+                        T("Highlight at {0}. H jumps to it.", AccessibleTextFormatter.FormatTimeSpoken(TimeSpan.FromSeconds(highlight.Segment.Start))),
                         AnnouncementPriority.Low);
                     break;
             }
@@ -251,7 +253,7 @@ public sealed partial class MainViewModel
             await _playerEngine.SeekAsync(target);
             if (!automatic || AnnounceSegmentSkips)
             {
-                _accessibility.Announce($"Skipped {segment.Name}, {AccessibleTextFormatter.FormatTimeSpoken(segment.Length)}.",
+                _accessibility.Announce(T("Skipped {0}, {1}.", segment.Name, AccessibleTextFormatter.FormatTimeSpoken(segment.Length)),
                     automatic ? AnnouncementPriority.Low : AnnouncementPriority.Medium);
             }
         }
@@ -271,13 +273,13 @@ public sealed partial class MainViewModel
     {
         if (!SponsorBlockEnabled)
         {
-            _accessibility.Announce("SponsorBlock is turned off in Settings.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("SponsorBlock is turned off in Settings."), AnnouncementPriority.Medium);
             return;
         }
         if (_segments.SegmentAt(CurrentTime.TotalSeconds, SponsorBlockSettings) is { } segment)
             await SkipSegmentAsync(segment, automatic: false);
         else
-            _accessibility.Announce(_segments.Segments.Count == 0 ? "No SponsorBlock segments for this video." : "No segment playing now.", AnnouncementPriority.Medium);
+            _accessibility.Announce(_segments.Segments.Count == 0 ? T("No SponsorBlock segments for this video.") : T("No segment playing now."), AnnouncementPriority.Medium);
     }
 
     /// <summary>H in the player: jump to the highlight SponsorBlock users marked.</summary>
@@ -286,7 +288,7 @@ public sealed partial class MainViewModel
     {
         if (!SponsorBlockEnabled || _segments.Highlight is not { } highlight)
         {
-            _accessibility.Announce("This video has no highlight.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("This video has no highlight."), AnnouncementPriority.Medium);
             return;
         }
         if (!IsEngineInitialized)
@@ -295,7 +297,7 @@ public sealed partial class MainViewModel
         CurrentTime = target;
         UpdateBrailleDisplayLine();
         await _playerEngine.SeekAsync(target);
-        _accessibility.Announce($"Highlight, {AccessibleTextFormatter.FormatTimeSpoken(target)}.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Highlight, {0}.", AccessibleTextFormatter.FormatTimeSpoken(target)), AnnouncementPriority.Medium);
     }
 
     /// <summary>What SponsorBlock knows about this video, for the I key.</summary>
@@ -307,8 +309,8 @@ public sealed partial class MainViewModel
         if (skippable.Count == 0)
             return null;
         return skippable.Count == 1
-            ? $"1 SponsorBlock segment: {skippable[0].Name}"
-            : $"{skippable.Count} SponsorBlock segments";
+            ? T("1 SponsorBlock segment: {0}", skippable[0].Name)
+            : Plural(skippable.Count, "{0} SponsorBlock segment", "{0} SponsorBlock segments");
     }
 
     private static string Capitalize(string text) =>

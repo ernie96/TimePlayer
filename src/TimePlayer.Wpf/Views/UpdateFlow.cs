@@ -5,6 +5,8 @@ using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Updates;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.Views;
 
 /// <summary>
@@ -32,24 +34,24 @@ public sealed partial class UpdateFlow
     {
         if (_busy)
         {
-            if (manual) _accessibility.Announce("Already checking for updates.", AnnouncementPriority.Medium);
+            if (manual) _accessibility.Announce(T("Already checking for updates."), AnnouncementPriority.Medium);
             return;
         }
         _busy = true;
         try
         {
-            if (manual) _accessibility.Announce("Checking for TimePlayer updates...", AnnouncementPriority.Medium);
+            if (manual) _accessibility.Announce(T("Checking for TimePlayer updates..."), AnnouncementPriority.Medium);
             var check = await _updates.CheckAsync();
             if (!check.IsSuccess)
             {
                 _logger.LogWarning("Update check failed: {Error}", check.Error?.Message);
-                if (manual) _accessibility.Announce(check.Error?.Message ?? "Could not check for updates.", AnnouncementPriority.High);
+                if (manual) _accessibility.Announce(check.Error?.Message ?? T("Could not check for updates."), AnnouncementPriority.High);
                 return;
             }
 
             if (check.Value is not { } update)
             {
-                if (manual) _accessibility.Announce($"TimePlayer is up to date, version {AppPaths.Version}.", AnnouncementPriority.Medium);
+                if (manual) _accessibility.Announce(T("TimePlayer is up to date, version {0}.", AppPaths.Version), AnnouncementPriority.Medium);
                 return;
             }
 
@@ -59,11 +61,11 @@ public sealed partial class UpdateFlow
 
             var notes = PlainText(update.ReleaseNotes);
             var answer = MessageBox.Show(owner,
-                $"TimePlayer {versionText} is available. You have {AppPaths.Version}.\n\n" +
-                (notes.Length > 0 ? $"What's new:\n{notes}\n\n" : string.Empty) +
-                "Download and install it now? TimePlayer closes and opens again by itself." +
-                (manual ? string.Empty : "\n\nIf you choose No, you will not be reminded about this version. Settings has Check for updates."),
-                "TimePlayer update", MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.Yes);
+                T("TimePlayer {0} is available. You have {1}.\n\n", versionText, AppPaths.Version) +
+                (notes.Length > 0 ? T("What's new:\n{0}\n\n", notes) : string.Empty) +
+                T("Download and install it now? TimePlayer closes and opens again by itself.") +
+                (manual ? string.Empty : T("\n\nIf you choose No, you will not be reminded about this version. Settings has Check for updates.")),
+                T("TimePlayer update"), MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.Yes);
 
             if (answer != MessageBoxResult.Yes)
             {
@@ -77,7 +79,7 @@ public sealed partial class UpdateFlow
         catch (Exception ex)
         {
             _logger.LogError(ex, "Update flow failed.");
-            if (manual) _accessibility.Announce("Updating failed. The log has details.", AnnouncementPriority.High);
+            if (manual) _accessibility.Announce(T("Updating failed. The log has details."), AnnouncementPriority.High);
         }
         finally
         {
@@ -87,32 +89,32 @@ public sealed partial class UpdateFlow
 
     private async Task DownloadAndInstallAsync(Window owner, UpdateInfo update, string versionText)
     {
-        _accessibility.Announce($"Downloading TimePlayer {versionText}...", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Downloading TimePlayer {0}...", versionText), AnnouncementPriority.Medium);
         bool halfwaySaid = false;
         var progress = new Progress<double>(fraction =>
         {
             if (!halfwaySaid && fraction >= 0.5)
             {
                 halfwaySaid = true;
-                _accessibility.Announce("Update download halfway.", AnnouncementPriority.Low);
+                _accessibility.Announce(T("Update download halfway."), AnnouncementPriority.Low);
             }
         });
 
         var download = await _updates.DownloadAsync(update, progress);
         if (!download.IsSuccess)
         {
-            _accessibility.Announce(download.Error?.Message ?? "The update could not be downloaded.", AnnouncementPriority.High);
+            _accessibility.Announce(download.Error?.Message ?? T("The update could not be downloaded."), AnnouncementPriority.High);
             return;
         }
 
         var start = _updates.StartInstall(download.Value);
         if (!start.IsSuccess)
         {
-            _accessibility.Announce(start.Error?.Message ?? "The update could not be started.", AnnouncementPriority.High);
+            _accessibility.Announce(start.Error?.Message ?? T("The update could not be started."), AnnouncementPriority.High);
             return;
         }
 
-        _accessibility.Announce($"Installing TimePlayer {versionText}. It opens again in a moment.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Installing TimePlayer {0}. It opens again in a moment.", versionText), AnnouncementPriority.High);
         await Task.Delay(1500); // let the announcement be heard
         owner.Close();           // saves the resume point and history
         Application.Current.Shutdown();

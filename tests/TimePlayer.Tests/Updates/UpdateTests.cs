@@ -133,6 +133,13 @@ public class UpdateTests : IDisposable
         Assert.Null(UpdateService.PickAssets(release, new Version(1, 1, 0), InstallKind.Installer));
     }
 
+    [Theory]
+    [InlineData("O'Brien", "'O''Brien'")]
+    [InlineData("O\u2019Brien", "'O\u2019\u2019Brien'")]
+    [InlineData("a\u2018b\u201Ac\u201Bd", "'a\u2018\u2018b\u201A\u201Ac\u201B\u201Bd'")]
+    public void Quote_DoublesEveryKindOfSingleQuote(string value, string expected) =>
+        Assert.Equal(expected, UpdateService.Quote(value));
+
     [Fact]
     public void Scripts_QuotePathsForPowerShell()
     {

@@ -2,6 +2,8 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 public enum CommentNodeKind
@@ -65,8 +67,8 @@ public sealed partial class CommentNode : ObservableObject
     public string Author => Comment?.Author ?? string.Empty;
     public string Text => Kind switch
     {
-        CommentNodeKind.Loading => "Loading replies...",
-        CommentNodeKind.MoreReplies => "More replies - press Enter",
+        CommentNodeKind.Loading => T("Loading replies..."),
+        CommentNodeKind.MoreReplies => T("More replies - press Enter"),
         _ => Comment?.Text ?? string.Empty
     };
     public string? Details => Kind == CommentNodeKind.Comment
@@ -75,8 +77,8 @@ public sealed partial class CommentNode : ObservableObject
 
     public string AccessibleName => Kind switch
     {
-        CommentNodeKind.Loading => "Loading replies",
-        CommentNodeKind.MoreReplies => "More replies, press Enter to load",
+        CommentNodeKind.Loading => T("Loading replies"),
+        CommentNodeKind.MoreReplies => T("More replies, press Enter to load"),
         _ => Comment!.AccessibleSummary
     };
 

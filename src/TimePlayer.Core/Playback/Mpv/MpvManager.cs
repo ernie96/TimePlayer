@@ -13,6 +13,8 @@ namespace TimePlayer.Core.Playback.Mpv;
 /// </summary>
 public sealed class MpvManager : IMpvManager
 {
+    /// <summary>SHA-256 of that archive, as GitHub publishes it; a download that differs is refused.</summary>
+    private const string DefaultDownloadSha256 = "2821d9eef879215e99975fae9616e1777f5e3747168edd3a571c41e21b8abbbc";
     private const string DefaultDownloadUrl = "https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261017/mpv-x86_64-20261017-git-dde0671072.7z";
 
     private readonly IProcessRunner _processRunner;
@@ -91,6 +93,15 @@ public sealed class MpvManager : IMpvManager
                 response.EnsureSuccessStatusCode();
                 await using var fileStream = new FileStream(tempArchive, FileMode.Create, FileAccess.Write, FileShare.None);
                 await response.Content.CopyToAsync(fileStream, cancellationToken);
+            }
+
+            string actualSha256;
+            await using (var check = File.OpenRead(tempArchive))
+                actualSha256 = Convert.ToHexString(await System.Security.Cryptography.SHA256.HashDataAsync(check, cancellationToken)).ToLowerInvariant();
+            if (actualSha256 != DefaultDownloadSha256)
+            {
+                _logger.LogError("The mpv download failed its integrity check (got {Actual}).", actualSha256);
+                return Result<string>.Failure("MPV_INTEGRITY", "The downloaded mpv didn't match its published checksum, so it was not installed.");
             }
 
             // Extract archive using 7-Zip or system tar

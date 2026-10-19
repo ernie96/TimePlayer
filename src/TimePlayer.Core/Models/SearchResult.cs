@@ -1,3 +1,5 @@
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Core.Models;
 
 public enum SearchResultKind
@@ -38,6 +40,9 @@ public record SearchResult
     public string? ChannelId { get; init; }
     public TimeSpan? Duration { get; init; }
     public long? ViewCount { get; init; }
+
+    /// <summary>"1.2 million views", for the list row.</summary>
+    public string? ViewCountText => ViewCount is { } views ? Accessibility.AccessibleTextFormatter.FormatViewCount(views) : null;
     public string? UploadDateText { get; init; }
     public string? ThumbnailUrl { get; init; }
     public string? DescriptionSnippet { get; init; }
@@ -52,14 +57,14 @@ public record SearchResult
         {
             if (Kind == SearchResultKind.Playlist)
             {
-                var count = PlaylistVideoCount is { } n ? (n == 1 ? ", 1 video" : $", {n} videos") : string.Empty;
-                var owner = string.IsNullOrWhiteSpace(ChannelTitle) ? string.Empty : $", by {ChannelTitle}";
-                return $"Playlist: {Title}{count}{owner}";
+                var count = PlaylistVideoCount is { } n ? ", " + Plural(n, "{0} video", "{0} videos") : string.Empty;
+                var owner = string.IsNullOrWhiteSpace(ChannelTitle) ? string.Empty : ", " + T("by {0}", ChannelTitle);
+                return T("Playlist: {0}", Title) + count + owner;
             }
 
             if (Kind == SearchResultKind.Channel)
             {
-                var channelParts = new List<string> { $"Channel: {Title}" };
+                var channelParts = new List<string> { T("Channel: {0}", Title) };
                 if (!string.IsNullOrWhiteSpace(StatusPrefix))
                     channelParts.Add(StatusPrefix);
                 return string.Join(". ", channelParts);
@@ -69,11 +74,11 @@ public record SearchResult
             if (!string.IsNullOrWhiteSpace(StatusPrefix))
                 parts.Add(StatusPrefix);
             parts.Add(Title);
-            parts.Add($"by {ChannelTitle}");
+            parts.Add(T("by {0}", ChannelTitle));
             if (IsLive)
-                parts.Add("Live now");
+                parts.Add(T("Live now"));
             else if (IsShort)
-                parts.Add("Short");
+                parts.Add(T("Short"));
 
             if (Duration.HasValue && Duration.Value > TimeSpan.Zero)
             {
@@ -82,7 +87,7 @@ public record SearchResult
 
             if (ViewCount.HasValue)
             {
-                parts.Add(FormatViewCount(ViewCount.Value));
+                parts.Add(Accessibility.AccessibleTextFormatter.FormatViewCount(ViewCount.Value));
             }
 
             if (PublishedAt.HasValue)
@@ -91,24 +96,13 @@ public record SearchResult
             }
             else if (!string.IsNullOrWhiteSpace(UploadDateText))
             {
-                parts.Add(UploadDateText);
+                parts.Add(Accessibility.AccessibleTextFormatter.TranslateAge(UploadDateText) ?? UploadDateText);
             }
 
             return string.Join(". ", parts);
         }
     }
 
-    private static string FormatViewCount(long count)
-    {
-        return count switch
-        {
-            >= 1_000_000_000 => $"{count / 1_000_000_000.0:0.#} billion views",
-            >= 1_000_000 => $"{count / 1_000_000.0:0.#} million views",
-            >= 1_000 => $"{count / 1_000.0:0.#} thousand views",
-            1 => "1 view",
-            _ => $"{count} views"
-        };
-    }
 
     public override string ToString() => AccessibleSummary;
 }

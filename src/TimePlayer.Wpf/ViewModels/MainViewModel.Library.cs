@@ -9,6 +9,8 @@ using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 public enum BrowseSection
@@ -36,7 +38,7 @@ public enum BrowseSection
 
 public sealed record SectionTab(BrowseSection Section, string Header, string Shortcut)
 {
-    public string AccessibleName => $"{Header}, {Shortcut}";
+    public string AccessibleName => T("{0}, {1}", Header, Shortcut);
     public override string ToString() => Header;
 }
 
@@ -67,7 +69,8 @@ public sealed partial class MainViewModel
     /// <summary>The sections of the current mode; Video and Music each have their own.</summary>
     public ObservableCollection<SectionTab> SectionTabs { get; } = new(VideoTabs);
 
-    public IReadOnlyList<FeaturedCategory> FeaturedCategories { get; } = Enum.GetValues<FeaturedCategory>();
+    public IReadOnlyList<ChoiceOption<FeaturedCategory>> FeaturedCategories { get; } =
+        Enum.GetValues<FeaturedCategory>().Select(c => new ChoiceOption<FeaturedCategory>(c, T(c.ToString()))).ToList();
 
     [ObservableProperty]
     private SectionTab? _selectedSectionTab;
@@ -81,7 +84,7 @@ public sealed partial class MainViewModel
     private string _sectionTitle = "Featured";
 
     [ObservableProperty]
-    private string _sectionEmptyText = "Press slash to search, or Control+1 for featured videos.";
+    private string _sectionEmptyText = T("Press slash to search, or Control+1 for featured videos.");
 
     [ObservableProperty]
     private bool _isSectionLoading;
@@ -109,8 +112,8 @@ public sealed partial class MainViewModel
     public bool IsHistorySection => CurrentSection == BrowseSection.History;
     public bool IsChannelView => CurrentSection == BrowseSection.Channel;
 
-    public string SubscribeButtonText => IsCurrentChannelSubscribed ? "Unsubscribe" : "Subscribe";
-    public string WatchLaterButtonText => IsCurrentVideoInWatchLater ? "Remove from Watch Later" : "Watch Later";
+    public string SubscribeButtonText => IsCurrentChannelSubscribed ? T("Unsubscribe") : T("Subscribe");
+    public string WatchLaterButtonText => IsCurrentVideoInWatchLater ? T("Remove from Watch Later") : T("Watch Later");
 
     private void InitializeLibraryPreferences()
     {
@@ -146,6 +149,8 @@ public sealed partial class MainViewModel
     // --- Section navigation ---
 
     private bool _quietSectionLoad;
+    /// <summary>The section load in progress is the quiet startup one; any newer load speaks normally.</summary>
+    private bool _currentLoadIsQuiet;
 
     /// <summary>At startup: Featured is ready behind the search box without speaking over startup.</summary>
     public Task LoadStartSectionQuietlyAsync()
@@ -169,6 +174,8 @@ public sealed partial class MainViewModel
         _sectionCts?.Dispose();
         _sectionCts = new CancellationTokenSource();
         var token = _sectionCts.Token;
+        _currentLoadIsQuiet = _quietSectionLoad;
+        _quietSectionLoad = false;
 
         CurrentSection = section;
         SyncSelectedTab(section);
@@ -179,8 +186,8 @@ public sealed partial class MainViewModel
             switch (section)
             {
                 case BrowseSection.Search:
-                    SectionTitle = "Search results";
-                    SectionEmptyText = "No results. Press slash to search again.";
+                    SectionTitle = T("Search results");
+                    SectionEmptyText = T("No results. Press slash to search again.");
                     ShowItems(_lastSearchResults, moveFocus);
                     if (_lastSearchResults.Count > 0 && _lastSearchResults[0].Kind != SearchResultKind.Playlist)
                         ConfigureSearchPaging();
@@ -196,25 +203,25 @@ public sealed partial class MainViewModel
 
                 case BrowseSection.Channels:
                     var subs = _library.Subscriptions;
-                    SectionTitle = "Channels";
-                    SectionEmptyText = "You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files.";
+                    SectionTitle = T("Channels");
+                    SectionEmptyText = T("You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files.");
                     ShowItems(subs.Select(s => s.ToSearchResult()).ToList(), moveFocus);
                     break;
 
                 case BrowseSection.History:
-                    SectionTitle = "History";
+                    SectionTitle = T("History");
                     SectionEmptyText = RecordHistory
-                        ? "Nothing watched yet. Videos you play appear here, newest first, and continue where you left off."
-                        : "Watch history is turned off in Settings (F2).";
+                        ? T("Nothing watched yet. Videos you play appear here, newest first, and continue where you left off.")
+                        : T("Watch history is turned off in Settings (F2).");
                     var now = DateTimeOffset.UtcNow;
                     ShowItems(_library.History
-                        .Select(h => h.ToSearchResult() with { UploadDateText = $"watched {AccessibleTextFormatter.FormatAgeSpoken(h.LastWatchedUtc, now)}" })
+                        .Select(h => h.ToSearchResult() with { UploadDateText = T("watched {0}", AccessibleTextFormatter.FormatAgeSpoken(h.LastWatchedUtc, now)) })
                         .ToList(), moveFocus);
                     break;
 
                 case BrowseSection.WatchLater:
-                    SectionTitle = "Watch Later";
-                    SectionEmptyText = "Watch Later is empty. Press Control+L on any video, or in the player, to save it here.";
+                    SectionTitle = T("Watch Later");
+                    SectionEmptyText = T("Watch Later is empty. Press Control+L on any video, or in the player, to save it here.");
                     ShowItems(_library.WatchLater.Select(v => v.ToSearchResult()).ToList(), moveFocus);
                     break;
 
@@ -243,13 +250,13 @@ public sealed partial class MainViewModel
                     break;
 
                 case BrowseSection.Queue:
-                    SectionTitle = "Queue";
-                    SectionEmptyText = "The queue is empty. Press Control+Q on any video to add it; queued videos play one after another.";
+                    SectionTitle = T("Queue");
+                    SectionEmptyText = T("The queue is empty. Press Control+Q on any video to add it; queued videos play one after another.");
                     SearchResults.Clear();
                     IsSectionLoading = false;
                     _accessibility.Announce(PlaybackQueue.Count == 0
                         ? SectionEmptyText
-                        : $"{PlaybackQueue.Count} video{(PlaybackQueue.Count == 1 ? "" : "s")}", AnnouncementPriority.Medium);
+                        : Plural(PlaybackQueue.Count, "{0} video", "{0} videos"), AnnouncementPriority.Medium);
                     if (moveFocus && PlaybackQueue.Count > 0)
                         RequestFocusResults?.Invoke(this, EventArgs.Empty);
                     break;
@@ -280,14 +287,14 @@ public sealed partial class MainViewModel
         var category = SelectedFeaturedCategory;
         SectionTitle = category switch
         {
-            FeaturedCategory.Trending => "Featured",
-            FeaturedCategory.Music => "Featured: top music videos",
-            FeaturedCategory.Gaming => "Featured: gaming this week",
-            FeaturedCategory.Movies => "Featured: movie trailers this week",
-            FeaturedCategory.Live => "Featured: live now",
-            _ => $"Featured: {category}"
+            FeaturedCategory.Trending => T("Featured"),
+            FeaturedCategory.Music => T("Featured: top music videos"),
+            FeaturedCategory.Gaming => T("Featured: gaming this week"),
+            FeaturedCategory.Movies => T("Featured: movie trailers this week"),
+            FeaturedCategory.Live => T("Featured: live now"),
+            _ => T("Featured: {0}", T(category.ToString()))
         };
-        SectionEmptyText = "Featured videos could not be loaded. Press F5 to try again.";
+        SectionEmptyText = T("Featured videos could not be loaded. Press F5 to try again.");
 
         if (!forceRefresh && _featuredCache.TryGetValue(category, out var cached) && DateTimeOffset.UtcNow - cached.Fetched < FeaturedCacheLifetime)
         {
@@ -296,7 +303,7 @@ public sealed partial class MainViewModel
             return;
         }
 
-        BeginLoading("Loading...");
+        BeginLoading(T("Loading..."));
         var region = FeaturedRegion;
         var result = await _discovery.GetFeaturedAsync(category, region, null, token);
         token.ThrowIfCancellationRequested();
@@ -309,7 +316,7 @@ public sealed partial class MainViewModel
         else
         {
             ShowItems(Array.Empty<SearchResult>(), moveFocus: false);
-            _accessibility.Announce($"Featured videos are unavailable right now. {result.Error?.Message} Press F5 to retry.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Featured videos are unavailable right now. {0} Press F5 to retry.", result.Error?.Message), AnnouncementPriority.High);
         }
     }
 
@@ -338,15 +345,15 @@ public sealed partial class MainViewModel
 
     private async Task ShowWhatsNewAsync(bool moveFocus, bool forceRefresh, CancellationToken token)
     {
-        SectionTitle = "What's New";
+        SectionTitle = T("What's New");
         var subs = _library.Subscriptions;
         if (subs.Count == 0)
         {
-            SectionEmptyText = "You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions.";
+            SectionEmptyText = T("You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions.");
             ShowItems(Array.Empty<SearchResult>(), moveFocus);
             return;
         }
-        SectionEmptyText = "No recent uploads from your channels. Press F5 to refresh.";
+        SectionEmptyText = T("No recent uploads from your channels. Press F5 to refresh.");
 
         // Whatever was last seen counts as old; capture it before this visit moves it forward.
         var newSince = _library.FeedLastViewedUtc;
@@ -357,13 +364,13 @@ public sealed partial class MainViewModel
 
         if (forceRefresh || stale)
         {
-            BeginLoading($"Checking {subs.Count} channels for new videos...");
+            BeginLoading(T("Checking {0} for new videos...", Plural(subs.Count, "{0} channel", "{0} channels")));
             await RefreshFeedAsync(token);
             token.ThrowIfCancellationRequested();
             ShowFeedItems(newSince, moveFocus);
             if (_feed is { FailedChannels.Count: > 0 } f)
             {
-                _accessibility.Announce($"{f.FailedChannels.Count} channel{(f.FailedChannels.Count == 1 ? "" : "s")} could not be checked.", AnnouncementPriority.Low);
+                _accessibility.Announce(T("{0} could not be checked.", Plural(f.FailedChannels.Count, "{0} channel", "{0} channels")), AnnouncementPriority.Low);
             }
         }
 
@@ -374,7 +381,7 @@ public sealed partial class MainViewModel
     {
         var videos = FeedVideos();
         int newCount = newSince == default ? 0 : videos.Count(v => v.PublishedAt > newSince);
-        ShowItems(videos, moveFocus, extraSummary: newCount > 0 ? $"{newCount} new" : null, newSince: newSince);
+        ShowItems(videos, moveFocus, extraSummary: newCount > 0 ? T("{0} new", newCount) : null, newSince: newSince);
     }
 
     private List<SearchResult> FeedVideos() =>
@@ -412,7 +419,7 @@ public sealed partial class MainViewModel
             if (newCount > 0)
             {
                 _accessibility.Announce(
-                    $"{newCount} new video{(newCount == 1 ? "" : "s")} from your channels. Press Control+3 for What's New.",
+                    T("{0} from your channels. Press Control+3 for What's New.", Plural(newCount, "{0} new video", "{0} new videos")),
                     AnnouncementPriority.Low);
             }
         }
@@ -428,23 +435,23 @@ public sealed partial class MainViewModel
         if (channelId is null)
             return;
 
-        SectionTitle = $"{_currentChannelName}: latest uploads";
-        SectionEmptyText = "This channel's uploads could not be loaded. Press F5 to try again, or Alt+Left to go back.";
-        BeginLoading("Loading...");
+        SectionTitle = T("{0}: latest uploads", _currentChannelName);
+        SectionEmptyText = T("This channel's uploads could not be loaded. Press F5 to try again, or Alt+Left to go back.");
+        BeginLoading(T("Loading..."));
 
         var result = await _discovery.GetChannelUploadsAsync(channelId, token);
         token.ThrowIfCancellationRequested();
         if (result.IsSuccess)
         {
             _currentChannelName = result.Value.ChannelName;
-            SectionTitle = $"{_currentChannelName}: latest uploads";
-            ShowItems(result.Value.Videos, moveFocus, extraSummary: _library.IsSubscribed(channelId) ? "subscribed" : null);
+            SectionTitle = T("{0}: latest uploads", _currentChannelName);
+            ShowItems(result.Value.Videos, moveFocus, extraSummary: _library.IsSubscribed(channelId) ? T("subscribed") : null);
             ConfigureChannelPaging(channelId);
         }
         else
         {
             ShowItems(Array.Empty<SearchResult>(), moveFocus: false);
-            _accessibility.Announce($"Could not load the channel. {result.Error?.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not load the channel. {0}", result.Error?.Message), AnnouncementPriority.High);
         }
     }
 
@@ -548,7 +555,7 @@ public sealed partial class MainViewModel
                 {
                     // Speak only if the user is sitting on the last item waiting for this.
                     if (_speakNextLoadMore)
-                        _accessibility.Announce(fresh.Count > 0 ? $"{fresh.Count} more." : "End of list.", AnnouncementPriority.Low);
+                        _accessibility.Announce(fresh.Count > 0 ? T("{0} more.", fresh.Count) : T("End of list."), AnnouncementPriority.Low);
                     return;
                 }
             }
@@ -591,11 +598,11 @@ public sealed partial class MainViewModel
         }
         else
         {
-            var noun = $"{count} {SectionNoun(count)}";
+            var noun = SectionNoun(count);
             spoken = string.Join(", ", new[] { noun, extraSummary }.Where(s => !string.IsNullOrWhiteSpace(s)));
         }
-        if (_quietSectionLoad)
-            _quietSectionLoad = false; // loading at startup: the user didn't ask, so nothing is spoken
+        if (_currentLoadIsQuiet)
+            _currentLoadIsQuiet = false; // loading at startup: the user didn't ask, so nothing is spoken
         else
             _accessibility.Announce(spoken, AnnouncementPriority.Medium);
 
@@ -603,17 +610,14 @@ public sealed partial class MainViewModel
             RequestFocusResults?.Invoke(this, EventArgs.Empty);
     }
 
-    private string SectionNoun(int count)
+    /// <summary>"3 videos", "1 channel", "5 playlists" for the current section, in the user's language.</summary>
+    private string SectionNoun(int count) => CurrentSection switch
     {
-        var noun = CurrentSection switch
-        {
-            BrowseSection.Channels => "channel",
-            BrowseSection.Playlists => "playlist",
-            BrowseSection.Search when SearchResults.FirstOrDefault()?.Kind == SearchResultKind.Playlist => "playlist",
-            _ => "video"
-        };
-        return count == 1 ? noun : noun + "s";
-    }
+        BrowseSection.Channels => Plural(count, "{0} channel", "{0} channels"),
+        BrowseSection.Playlists => Plural(count, "{0} playlist", "{0} playlists"),
+        BrowseSection.Search when SearchResults.FirstOrDefault()?.Kind == SearchResultKind.Playlist => Plural(count, "{0} playlist", "{0} playlists"),
+        _ => Plural(count, "{0} video", "{0} videos")
+    };
 
     /// <summary>Adds the spoken library status: New, Watched, Resume at ...</summary>
     private SearchResult Decorate(SearchResult item, DateTimeOffset? newSince = null)
@@ -624,13 +628,13 @@ public sealed partial class MainViewModel
         string? status = null;
         if (newSince is { } since && since != default && item.PublishedAt > since)
         {
-            status = "New";
+            status = T("New");
         }
         else if (RecordHistory && _library.GetHistory(item.Id) is { } watched)
         {
             status = watched.ResumePosition is { } resume
-                ? $"Resume at {AccessibleTextFormatter.FormatTimeSpoken(resume)}"
-                : "Watched";
+                ? T("Resume at {0}", AccessibleTextFormatter.FormatTimeSpoken(resume))
+                : T("Watched");
         }
         return item with { StatusPrefix = status };
     }
@@ -646,7 +650,7 @@ public sealed partial class MainViewModel
             await LeavePlayerViewAsync();
         if (item is null || string.IsNullOrWhiteSpace(channelId))
         {
-            _accessibility.Announce("The channel for this video is not known yet. Play the video, then press Control+G in the player.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("The channel for this video is not known yet. Play the video, then press Control+G in the player."), AnnouncementPriority.Medium);
             return;
         }
 
@@ -666,12 +670,12 @@ public sealed partial class MainViewModel
         var channelName = item.Kind == SearchResultKind.Channel ? item.Title : item.ChannelTitle;
         if (string.IsNullOrWhiteSpace(channelId))
         {
-            _accessibility.Announce("The channel for this video is not known yet. Play the video, then press Control+S in the player.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("The channel for this video is not known yet. Play the video, then press Control+S in the player."), AnnouncementPriority.Medium);
             return;
         }
 
         bool subscribed = _library.ToggleSubscription(channelId, channelName);
-        _accessibility.Announce(subscribed ? $"Subscribed to {channelName}." : $"Unsubscribed from {channelName}.", AnnouncementPriority.High);
+        _accessibility.Announce(subscribed ? T("Subscribed to {0}.", channelName) : T("Unsubscribed from {0}.", channelName), AnnouncementPriority.High);
 
         // In Channels, keep the row so Control+S again undoes the change.
         if (CurrentSection == BrowseSection.Channels)
@@ -686,7 +690,7 @@ public sealed partial class MainViewModel
         if (item is null || item.Kind != SearchResultKind.Video) return;
 
         bool saved = _library.ToggleWatchLater(item);
-        _accessibility.Announce(saved ? $"Saved to Watch Later: {item.Title}." : $"Removed from Watch Later: {item.Title}.", AnnouncementPriority.High);
+        _accessibility.Announce(saved ? T("Saved to Watch Later: {0}.", item.Title) : T("Removed from Watch Later: {0}.", item.Title), AnnouncementPriority.High);
         if (!saved && CurrentSection == BrowseSection.WatchLater)
             RemoveItemKeepingPosition(item);
         UpdateCurrentVideoLibraryState();
@@ -703,15 +707,15 @@ public sealed partial class MainViewModel
             case BrowseSection.History:
             case BrowseSection.MusicRecent:
                 _library.RemoveFromHistory(item.Id);
-                _accessibility.Announce($"Removed from history: {item.Title}.", AnnouncementPriority.High);
+                _accessibility.Announce(T("Removed from history: {0}.", item.Title), AnnouncementPriority.High);
                 break;
             case BrowseSection.WatchLater:
                 _library.RemoveFromWatchLater(item.Id);
-                _accessibility.Announce($"Removed from Watch Later: {item.Title}.", AnnouncementPriority.High);
+                _accessibility.Announce(T("Removed from Watch Later: {0}.", item.Title), AnnouncementPriority.High);
                 break;
             case BrowseSection.Channels:
                 _library.Unsubscribe(item.Id);
-                _accessibility.Announce($"Unsubscribed from {item.Title}.", AnnouncementPriority.High);
+                _accessibility.Announce(T("Unsubscribed from {0}.", item.Title), AnnouncementPriority.High);
                 break;
             case BrowseSection.ForYou:
                 NotInterested(item);
@@ -724,10 +728,10 @@ public sealed partial class MainViewModel
                     _library.ToggleLike(item);
                 else
                     _library.RemoveFromPlaylist(playlistId, item.Id);
-                _accessibility.Announce($"Removed {item.Title}.", AnnouncementPriority.High);
+                _accessibility.Announce(T("Removed {0}.", item.Title), AnnouncementPriority.High);
                 break;
             default:
-                _accessibility.Announce("Delete removes items from History, Watch Later, Channels, For You and your playlists.", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Delete removes items from History, Watch Later, Channels, For You and your playlists."), AnnouncementPriority.Medium);
                 return;
         }
         RemoveItemKeepingPosition(item);
@@ -737,7 +741,7 @@ public sealed partial class MainViewModel
     public void ClearHistory()
     {
         _library.ClearHistory();
-        _accessibility.Announce("Watch history cleared.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Watch history cleared."), AnnouncementPriority.High);
         if (CurrentSection == BrowseSection.History)
             _ = ShowSectionAsync(BrowseSection.History, moveFocus: false);
     }
@@ -780,7 +784,7 @@ public sealed partial class MainViewModel
         SearchResults.RemoveAt(index);
         if (SearchResults.Count == 0)
         {
-            _accessibility.Announce($"{SectionTitle} is now empty.", AnnouncementPriority.Low);
+            _accessibility.Announce(T("{0} is now empty.", SectionTitle), AnnouncementPriority.Low);
             return;
         }
         SelectedSearchResult = SearchResults[Math.Min(index, SearchResults.Count - 1)];
@@ -802,10 +806,10 @@ public sealed partial class MainViewModel
             var parsed = SubscriptionFormats.Parse(File.ReadAllText(path));
             int added = _library.ImportSubscriptions(parsed.Channels);
             int already = parsed.Channels.Count - added;
-            var message = $"Imported {added} channel{(added == 1 ? "" : "s")} from {parsed.FormatName}.";
-            if (already > 0) message += $" {already} already subscribed.";
-            if (parsed.SkippedEntries > 0) message += $" {parsed.SkippedEntries} entries were not YouTube channels and were skipped.";
-            if (added > 0) message += " Press Control+3 to see their latest videos.";
+            var message = T("Imported {0} from {1}.", Plural(added, "{0} channel", "{0} channels"), parsed.FormatName);
+            if (already > 0) message += T(" {0} already subscribed.", already);
+            if (parsed.SkippedEntries > 0) message += T(" {0} entries were not YouTube channels and were skipped.", parsed.SkippedEntries);
+            if (added > 0) message += T(" Press Control+3 to see their latest videos.");
             _accessibility.Announce(message, AnnouncementPriority.High);
             if (added > 0)
                 _feed = null; // new channels: next visit to What's New refreshes
@@ -814,7 +818,7 @@ public sealed partial class MainViewModel
         }
         catch (Exception ex) when (ex is IOException or FormatException or System.Text.Json.JsonException or System.Xml.XmlException or UnauthorizedAccessException or InvalidDataException)
         {
-            _accessibility.Announce($"Could not import subscriptions: {ex.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not import subscriptions: {0}", ex.Message), AnnouncementPriority.High);
         }
     }
 
@@ -827,11 +831,11 @@ public sealed partial class MainViewModel
                 ? SubscriptionFormats.ToOpml(subs)
                 : SubscriptionFormats.ToNewPipeJson(subs);
             File.WriteAllText(path, content);
-            _accessibility.Announce($"Exported {subs.Count} channels to {Path.GetFileName(path)}.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Exported {0} to {1}.", Plural(subs.Count, "{0} channel", "{0} channels"), Path.GetFileName(path)), AnnouncementPriority.High);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            _accessibility.Announce($"Could not export subscriptions: {ex.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not export subscriptions: {0}", ex.Message), AnnouncementPriority.High);
         }
     }
 
@@ -865,12 +869,12 @@ public sealed partial class MainViewModel
         var channelName = CurrentVideo?.Channel.Name ?? _currentLibraryVideo?.ChannelTitle ?? CurrentChannelTitle;
         if (string.IsNullOrWhiteSpace(channelId))
         {
-            _accessibility.Announce("The channel is not known yet; try again once the video is playing.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("The channel is not known yet; try again once the video is playing."), AnnouncementPriority.Medium);
             return;
         }
         bool subscribed = _library.ToggleSubscription(channelId, channelName);
         UpdateCurrentVideoLibraryState();
-        _accessibility.Announce(subscribed ? $"Subscribed to {channelName}." : $"Unsubscribed from {channelName}.", AnnouncementPriority.High);
+        _accessibility.Announce(subscribed ? T("Subscribed to {0}.", channelName) : T("Unsubscribed from {0}.", channelName), AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -878,12 +882,12 @@ public sealed partial class MainViewModel
     {
         if (_currentLibraryVideo is null)
         {
-            _accessibility.Announce("No video is loaded.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("No video is loaded."), AnnouncementPriority.Medium);
             return;
         }
         bool saved = _library.ToggleWatchLater(_currentLibraryVideo);
         UpdateCurrentVideoLibraryState();
-        _accessibility.Announce(saved ? "Saved to Watch Later." : "Removed from Watch Later.", AnnouncementPriority.High);
+        _accessibility.Announce(saved ? T("Saved to Watch Later.") : T("Removed from Watch Later."), AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -892,7 +896,7 @@ public sealed partial class MainViewModel
         var video = CurrentVideo?.ToSearchResult() ?? _currentLibraryVideo;
         if (video is null || string.IsNullOrWhiteSpace(video.ChannelId))
         {
-            _accessibility.Announce("The channel is not known yet; try again once the video is playing.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("The channel is not known yet; try again once the video is playing."), AnnouncementPriority.Medium);
             return;
         }
         await LeavePlayerViewAsync();
@@ -905,14 +909,14 @@ public sealed partial class MainViewModel
         var dur = Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero);
         if (dur <= TimeSpan.Zero)
         {
-            _accessibility.Announce($"{AccessibleTextFormatter.FormatTimeSpoken(CurrentTime)} elapsed.", AnnouncementPriority.High);
+            _accessibility.Announce(T("{0} elapsed.", AccessibleTextFormatter.FormatTimeSpoken(CurrentTime)), AnnouncementPriority.High);
             return;
         }
         var remaining = dur - CurrentTime;
         int percent = (int)Math.Round(CurrentTime / dur * 100);
         _accessibility.Announce(
-            $"{AccessibleTextFormatter.FormatTimeSpoken(CurrentTime)} of {AccessibleTextFormatter.FormatTimeSpoken(dur)}. " +
-            $"{AccessibleTextFormatter.FormatTimeSpoken(remaining)} remaining. {percent} percent.",
+            T("{0} of {1}. ", AccessibleTextFormatter.FormatTimeSpoken(CurrentTime), AccessibleTextFormatter.FormatTimeSpoken(dur)) +
+            T("{0} remaining. {1} percent.", AccessibleTextFormatter.FormatTimeSpoken(remaining), percent),
             AnnouncementPriority.High);
     }
 
@@ -921,19 +925,19 @@ public sealed partial class MainViewModel
     {
         var parts = new List<string> { CurrentVideoTitle };
         if (!string.IsNullOrWhiteSpace(CurrentChannelTitle))
-            parts.Add($"by {CurrentChannelTitle}{(IsCurrentChannelSubscribed ? ", subscribed" : "")}");
+            parts.Add(T("by {0}", CurrentChannelTitle) + (IsCurrentChannelSubscribed ? T(", subscribed") : ""));
         if (CurrentVideo?.UploadDate is { } uploaded)
-            parts.Add($"uploaded {AccessibleTextFormatter.FormatAgeSpoken(uploaded, DateTimeOffset.UtcNow)}");
+            parts.Add(T("uploaded {0}", AccessibleTextFormatter.FormatAgeSpoken(uploaded, DateTimeOffset.UtcNow)));
         if (CurrentVideo?.ViewCount is { } views)
-            parts.Add($"{views:N0} views");
+            parts.Add(T("{0:N0} views", views));
         if (CurrentVotes is { } votes)
             parts.Add(votes.Spoken);
         if (SegmentSummary() is { } segments)
             parts.Add(segments);
         if (IsCurrentVideoLiked)
-            parts.Add("liked");
+            parts.Add(T("liked"));
         if (IsCurrentVideoInWatchLater)
-            parts.Add("in Watch Later");
+            parts.Add(T("in Watch Later"));
         _accessibility.Announce(string.Join(". ", parts) + ".", AnnouncementPriority.High);
     }
 
@@ -946,7 +950,7 @@ public sealed partial class MainViewModel
         CurrentTime = target;
         UpdateBrailleDisplayLine();
         await _playerEngine.SeekAsync(target);
-        _accessibility.Announce($"{tenths * 10} percent, {AccessibleTextFormatter.FormatTimeSpoken(target)}.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("{0} percent, {1}.", tenths * 10, AccessibleTextFormatter.FormatTimeSpoken(target)), AnnouncementPriority.Medium);
     }
 
     [RelayCommand]
@@ -956,7 +960,7 @@ public sealed partial class MainViewModel
         CurrentTime = TimeSpan.Zero;
         UpdateBrailleDisplayLine();
         await _playerEngine.SeekAsync(TimeSpan.Zero);
-        _accessibility.Announce("From the beginning.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("From the beginning."), AnnouncementPriority.Medium);
     }
 
     // --- History & resume hooks (called from the engine event handlers) ---
@@ -985,7 +989,7 @@ public sealed partial class MainViewModel
             UpdateBrailleDisplayLine();
             await _playerEngine.SeekAsync(position);
             _accessibility.Announce(
-                $"Resumed at {AccessibleTextFormatter.FormatTimeSpoken(position)}. Home starts over.",
+                T("Resumed at {0}. Home starts over.", AccessibleTextFormatter.FormatTimeSpoken(position)),
                 AnnouncementPriority.Medium);
         }
         catch (Exception ex)

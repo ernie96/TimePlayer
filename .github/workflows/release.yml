@@ -15,6 +15,7 @@ jobs:
     env:
       # The same mpv build TimePlayer downloads itself (MpvManager.DefaultDownloadUrl).
       MPV_URL: https://github.com/shinchiro/mpv-winbuild-cmake/releases/download/20261017/mpv-x86_64-20261017-git-dde0671072.7z
+      MPV_SHA256: 2821D9EEF879215E99975FAE9616E1777F5E3747168EDD3A571C41E21B8ABBBC
     steps:
       - uses: actions/checkout@v5
 
@@ -35,6 +36,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force tools\mpv | Out-Null
           Invoke-WebRequest $env:MPV_URL -OutFile mpv.7z
+          if ((Get-FileHash mpv.7z -Algorithm SHA256).Hash -ne $env:MPV_SHA256) { throw 'mpv.7z does not match its pinned SHA-256.' }
           7z x mpv.7z -otools\mpv -y | Out-Null
           if (-not (Test-Path tools\mpv\mpv.exe)) { throw 'mpv.exe not found in the mpv archive.' }
           Invoke-WebRequest https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe -OutFile tools\yt-dlp.exe

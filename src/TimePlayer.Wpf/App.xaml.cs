@@ -12,6 +12,8 @@ using TimePlayer.Wpf.Accessibility;
 using TimePlayer.Wpf.ViewModels;
 using TimePlayer.Wpf.Views;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf;
 
 /// <summary>
@@ -45,6 +47,13 @@ public partial class App : Application
         ConfigureServices(services);
 
         _serviceProvider = services.BuildServiceProvider();
+
+        // The language is fixed for the session: windows read their text once, when they open.
+        var language = _serviceProvider.GetRequiredService<IConfigurationService>().CurrentConfig.Language;
+        TimePlayer.Core.Localization.Loc.Use(language);
+        // UI culture only (it steers which caption language is picked first); formatting stays as it is.
+        System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = TimePlayer.Core.Localization.Loc.Culture;
+        System.Threading.Thread.CurrentThread.CurrentUICulture = TimePlayer.Core.Localization.Loc.Culture;
 
         // Keep the NVDA braille add-on up to date, but only for users who chose it (or already have it).
         // Everyone else is asked once, after the window opens.
@@ -122,8 +131,8 @@ public partial class App : Application
 
         // The message box is read by the screen reader; an extra announcement would say it twice.
         MessageBox.Show(
-            $"An unexpected error occurred:\n\n{e.Exception.Message}\n\nThe application will attempt to continue running.",
-            "TimePlayer Error",
+            T("An unexpected error occurred:\n\n{0}\n\nThe application will attempt to continue running.", e.Exception.Message),
+            T("TimePlayer Error"),
             MessageBoxButton.OK,
             MessageBoxImage.Warning);
 

@@ -3,6 +3,17 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.7.0
+
+- TimePlayer speaks Romanian and Ukrainian. Choose the language in Settings, Speech and braille (it follows Windows by default); it applies after a restart. Everything is translated: what TimePlayer says, the screens, the menus and F1 help, with the right word forms for counts ("1 videoclip, 25 de videoclipuri", "1 канал, 3 канали, 5 каналів").
+- Thank you to Stacy Carter for Ukrainian support.
+- Faster on older computers: the player's position is passed on four times a second instead of on every video frame, long queues update only the rows that change, lists reuse their rows while scrolling, and Music no longer starts a separate caption lookup for every song.
+- Importing a large Google Takeout zip (with uploaded videos) no longer loads the whole file into memory.
+- Safer updates: the update helper now handles curly apostrophes in Windows user names (such as O’Brien) correctly, and the bundled player (mpv) is checked against its published checksum when downloaded.
+- Logs no longer record full video stream addresses, which can contain your internet address. Logs are often shared when reporting problems.
+- Fixed a memory leak when the player restarts after a crash.
+- Fixed: the first section's announcement could be silenced if you switched sections while Featured was still loading at startup.
+
 ## 1.6.0
 
 - Music is now its own mode: Control+M switches the whole app between Video and Music. Music has its own sections: Control+1 Charts, 2 Recently played, 3 Playlists and 4 Queue.

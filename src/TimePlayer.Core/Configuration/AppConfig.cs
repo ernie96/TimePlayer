@@ -7,6 +7,9 @@ namespace TimePlayer.Core.Configuration;
 /// </summary>
 public record AppConfig
 {
+    /// <summary>"" follows Windows; otherwise "en", "ro" or "uk". Takes effect at the next start.</summary>
+    public string Language { get; init; } = string.Empty;
+
     public PlaybackConfig Playback { get; init; } = new();
     public BackendConfig Backend { get; init; } = new();
     public AccessibilityConfig Accessibility { get; init; } = new();

@@ -59,7 +59,7 @@ public static partial class SubscriptionFormats
     /// </summary>
     public static SubscriptionImportResult ParseZip(Stream zipStream)
     {
-        using var zip = new ZipArchive(zipStream, ZipArchiveMode.Read);
+        using var zip = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
         SubscriptionImportResult? best = null;
         foreach (var entry in zip.Entries)
         {

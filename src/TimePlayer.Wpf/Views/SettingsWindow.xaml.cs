@@ -2,6 +2,8 @@ using System.Windows;
 using System.Windows.Input;
 using TimePlayer.Wpf.ViewModels;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.Views;
 
 /// <summary>
@@ -35,12 +37,12 @@ public partial class SettingsWindow : Window
         if (e.Key == Key.F1)
         {
             MessageBox.Show(this,
-                "Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. " +
-                "Control+Tab and Control+Shift+Tab move between pages; on the page names, Left and Right do too.\n" +
-                "Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. " +
-                "Alt plus the underlined letter jumps to a setting on the current page.\n" +
-                "Escape closes and saves.",
-                "Help: Settings", MessageBoxButton.OK, MessageBoxImage.Information);
+                T("Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. ") +
+                T("Control+Tab and Control+Shift+Tab move between pages; on the page names, Left and Right do too.\n") +
+                T("Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. ") +
+                T("Alt plus the underlined letter jumps to a setting on the current page.\n") +
+                T("Escape closes and saves."),
+                T("Help: Settings"), MessageBoxButton.OK, MessageBoxImage.Information);
             e.Handled = true;
         }
     }

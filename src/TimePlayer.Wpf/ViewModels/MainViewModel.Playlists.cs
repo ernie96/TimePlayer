@@ -7,6 +7,8 @@ using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 public enum SearchKind
@@ -45,7 +47,8 @@ public sealed partial class MainViewModel
     /// <summary>Set by the window: asks for a name (title, prompt, initial text); null when cancelled.</summary>
     public Func<string, string, string, string?>? AskForText { get; set; }
 
-    public IReadOnlyList<SearchKind> SearchKinds { get; } = Enum.GetValues<SearchKind>();
+    public IReadOnlyList<ChoiceOption<SearchKind>> SearchKinds { get; } =
+        Enum.GetValues<SearchKind>().Select(k => new ChoiceOption<SearchKind>(k, T(k.ToString()))).ToList();
 
     [ObservableProperty]
     private SearchKind _selectedSearchKind = SearchKind.Videos;
@@ -57,7 +60,7 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     private bool _isImporting;
 
-    public string LikeButtonText => IsCurrentVideoLiked ? "Unlike" : "Like";
+    public string LikeButtonText => IsCurrentVideoLiked ? T("Unlike") : T("Like");
 
     public bool IsForYouSection => CurrentSection == BrowseSection.ForYou;
     public bool IsPlaylistsSection => CurrentSection == BrowseSection.Playlists;
@@ -85,7 +88,7 @@ public sealed partial class MainViewModel
 
     partial void OnSelectedSearchKindChanged(SearchKind value)
     {
-        _accessibility.Announce(value == SearchKind.Playlists ? "Searching for playlists." : "Searching for videos.", AnnouncementPriority.Low);
+        _accessibility.Announce(value == SearchKind.Playlists ? T("Searching for playlists.") : T("Searching for videos."), AnnouncementPriority.Low);
         if (!string.IsNullOrWhiteSpace(SearchQuery) && CurrentSection == BrowseSection.Search && _lastSearchResults.Count > 0)
             _ = SearchAsync();
     }
@@ -151,16 +154,16 @@ public sealed partial class MainViewModel
 
     private async Task ShowForYouAsync(bool moveFocus, bool forceRefresh, CancellationToken token)
     {
-        SectionTitle = "For You";
-        SectionEmptyText = "No recommendations yet. Press F5 to try again.";
+        SectionTitle = T("For You");
+        SectionEmptyText = T("No recommendations yet. Press F5 to try again.");
         var options = new RecommendationOptions(FeaturedRegion, HideShortsInFeed, forceRefresh);
 
         if (forceRefresh || !_recommendations.IsCacheFresh)
-            BeginLoading("Finding videos for you...");
+            BeginLoading(T("Finding videos for you..."));
         var result = await Task.Run(() => _recommendations.GetAsync(options, null, token), token);
         token.ThrowIfCancellationRequested();
         ShowItems(result.Videos, moveFocus,
-            extraSummary: result.IsPersonal ? null : "trending for now. Watch, like or subscribe and For You learns what you enjoy");
+            extraSummary: result.IsPersonal ? null : T("trending for now. Watch, like or subscribe and For You learns what you enjoy"));
     }
 
     [RelayCommand]
@@ -170,7 +173,7 @@ public sealed partial class MainViewModel
         if (item is null || !item.IsVideo) return;
         _library.HideVideo(item.Id);
         _recommendations.Forget(v => v.Id == item.Id);
-        _accessibility.Announce("Not interested. It won't be recommended again.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Not interested. It won't be recommended again."), AnnouncementPriority.High);
         if (CurrentSection == BrowseSection.ForYou)
             RemoveItemKeepingPosition(item);
     }
@@ -186,7 +189,7 @@ public sealed partial class MainViewModel
             return;
         _library.BlockChannel(channelId, channelName);
         _recommendations.Forget(v => v.ChannelId == channelId || string.Equals(v.ChannelTitle, channelName, StringComparison.OrdinalIgnoreCase));
-        _accessibility.Announce($"{channelName} won't be recommended again.", AnnouncementPriority.High);
+        _accessibility.Announce(T("{0} won't be recommended again.", channelName), AnnouncementPriority.High);
         if (CurrentSection == BrowseSection.ForYou)
         {
             var index = SelectedSearchResult is null ? 0 : SearchResults.IndexOf(SelectedSearchResult);
@@ -208,7 +211,7 @@ public sealed partial class MainViewModel
         item ??= SelectedSearchResult;
         if (item is null || !item.IsVideo) return;
         bool liked = _library.ToggleLike(item);
-        _accessibility.Announce(liked ? $"Liked {item.Title}." : $"Removed like from {item.Title}.", AnnouncementPriority.High);
+        _accessibility.Announce(liked ? T("Liked {0}.", item.Title) : T("Removed like from {0}.", item.Title), AnnouncementPriority.High);
         if (!liked && CurrentSection == BrowseSection.Playlist && _openLibraryPlaylistId == LibraryService.LikedPlaylistId)
             RemoveItemKeepingPosition(item);
         UpdateCurrentVideoLibraryState();
@@ -220,12 +223,12 @@ public sealed partial class MainViewModel
         var video = CurrentLibraryVideoForActions();
         if (video is null)
         {
-            _accessibility.Announce("No video is loaded.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("No video is loaded."), AnnouncementPriority.Medium);
             return;
         }
         bool liked = _library.ToggleLike(video);
         UpdateCurrentVideoLibraryState();
-        _accessibility.Announce(liked ? "Liked." : "Like removed.", AnnouncementPriority.High);
+        _accessibility.Announce(liked ? T("Liked.") : T("Like removed."), AnnouncementPriority.High);
     }
 
     /// <summary>The playing video with the best details known (title and channel once loaded).</summary>
@@ -238,8 +241,8 @@ public sealed partial class MainViewModel
 
     private void ShowPlaylists(bool moveFocus)
     {
-        SectionTitle = "Playlists";
-        SectionEmptyText = "No playlists yet.";
+        SectionTitle = T("Playlists");
+        SectionEmptyText = T("No playlists yet.");
         var playlists = _library.Playlists.ToList();
         if (playlists.All(p => p.Kind != PlaylistKind.Liked))
             playlists.Insert(0, _library.GetPlaylist(LibraryService.LikedPlaylistId)!);
@@ -256,7 +259,7 @@ public sealed partial class MainViewModel
             return;
         if (item is null && CurrentLibraryVideoForActions() is null)
         {
-            _accessibility.Announce("No video is loaded.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("No video is loaded."), AnnouncementPriority.Medium);
             return;
         }
         RequestAddToPlaylistMenu?.Invoke(this, item);
@@ -268,11 +271,11 @@ public sealed partial class MainViewModel
     [RelayCommand]
     public void CreatePlaylist()
     {
-        var name = AskForText?.Invoke("New playlist", "Playlist name:", string.Empty);
+        var name = AskForText?.Invoke(T("New playlist"), T("Playlist name:"), string.Empty);
         if (string.IsNullOrWhiteSpace(name))
             return;
         var playlist = _library.CreatePlaylist(name);
-        _accessibility.Announce($"Created playlist {playlist.Name}.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Created playlist {0}.", playlist.Name), AnnouncementPriority.High);
         if (CurrentSection == BrowseSection.Playlists)
         {
             ShowPlaylists(moveFocus: false);
@@ -290,16 +293,16 @@ public sealed partial class MainViewModel
         string name;
         if (playlistId is null)
         {
-            var newName = AskForText?.Invoke("New playlist", "Playlist name:", string.Empty);
+            var newName = AskForText?.Invoke(T("New playlist"), T("Playlist name:"), string.Empty);
             if (string.IsNullOrWhiteSpace(newName))
                 return;
             var created = _library.CreatePlaylist(newName, new[] { item });
-            _accessibility.Announce($"Created {created.Name} with {item.Title}.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Created {0} with {1}.", created.Name, item.Title), AnnouncementPriority.High);
             return;
         }
         name = _library.GetPlaylist(playlistId)?.Name ?? "playlist";
         bool added = _library.AddToPlaylist(playlistId, item);
-        _accessibility.Announce(added ? $"Added to {name}." : $"Already in {name}.", AnnouncementPriority.High);
+        _accessibility.Announce(added ? T("Added to {0}.", name) : T("Already in {0}.", name), AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -310,14 +313,14 @@ public sealed partial class MainViewModel
             : _openLibraryPlaylistId;
         if (id is null || id == LibraryService.LikedPlaylistId || _library.GetPlaylist(id) is not { } playlist)
         {
-            _accessibility.Announce("Liked videos can't be renamed.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Liked videos can't be renamed."), AnnouncementPriority.Medium);
             return;
         }
-        var name = AskForText?.Invoke("Rename playlist", "New name:", playlist.Name);
+        var name = AskForText?.Invoke(T("Rename playlist"), T("New name:"), playlist.Name);
         if (string.IsNullOrWhiteSpace(name) || name.Trim() == playlist.Name)
             return;
         _library.RenamePlaylist(id, name);
-        _accessibility.Announce($"Renamed to {name.Trim()}.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Renamed to {0}.", name.Trim()), AnnouncementPriority.High);
         if (CurrentSection == BrowseSection.Playlist)
         {
             _openPlaylistTitle = name.Trim();
@@ -342,16 +345,16 @@ public sealed partial class MainViewModel
             return;
         if (playlist.Kind == PlaylistKind.Liked)
         {
-            _accessibility.Announce("Liked videos can't be deleted. Remove videos with Delete instead.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Liked videos can't be deleted. Remove videos with Delete instead."), AnnouncementPriority.Medium);
             return;
         }
         var what = playlist.Kind == PlaylistKind.YouTube
-            ? $"Remove the saved YouTube playlist \"{playlist.Name}\" from your library? It stays on YouTube."
-            : $"Delete the playlist \"{playlist.Name}\" with its {playlist.Videos.Count} videos? This cannot be undone.";
-        if (Confirm?.Invoke("Delete playlist", what) != true)
+            ? T("Remove the saved YouTube playlist \"{0}\" from your library? It stays on YouTube.", playlist.Name)
+            : T("Delete the playlist \"{0}\" with {1}? This cannot be undone.", playlist.Name, Plural(playlist.Videos.Count, "{0} video", "{0} videos"));
+        if (Confirm?.Invoke(T("Delete playlist"), what) != true)
             return;
         _library.DeletePlaylist(id);
-        _accessibility.Announce($"Deleted {playlist.Name}.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Deleted {0}.", playlist.Name), AnnouncementPriority.High);
         if (CurrentSection == BrowseSection.Playlist)
             await GoBackAsync();
         else if (SelectedSearchResult is { } row)
@@ -398,8 +401,8 @@ public sealed partial class MainViewModel
             var playlist = _library.GetPlaylist(libraryId);
             if (playlist is null)
             {
-                SectionTitle = "Playlist";
-                SectionEmptyText = "This playlist was deleted. Press Alt+Left to go back.";
+                SectionTitle = T("Playlist");
+                SectionEmptyText = T("This playlist was deleted. Press Alt+Left to go back.");
                 ShowItems(Array.Empty<SearchResult>(), moveFocus);
                 return;
             }
@@ -407,21 +410,21 @@ public sealed partial class MainViewModel
             // A saved YouTube playlist refreshes from YouTube on F5.
             if (forceRefresh && playlist.Kind == PlaylistKind.YouTube && playlist.YouTubeId is { } ytId)
             {
-                BeginLoading("Updating from YouTube...");
+                BeginLoading(T("Updating from YouTube..."));
                 var fresh = await _playlists.GetAllAsync(ytId, cancellationToken: token);
                 token.ThrowIfCancellationRequested();
                 if (fresh.IsSuccess)
                     playlist = _library.SaveYouTubePlaylist(ytId, fresh.Value.Title, fresh.Value.Owner, fresh.Value.Videos);
                 else
-                    _accessibility.Announce($"Could not update from YouTube. {fresh.Error?.Message}", AnnouncementPriority.High);
+                    _accessibility.Announce(T("Could not update from YouTube. {0}", fresh.Error?.Message), AnnouncementPriority.High);
             }
 
             _openPlaylistTitle = playlist.Name;
             SectionTitle = playlist.Name;
             SectionEmptyText = playlist.Kind switch
             {
-                PlaylistKind.Liked => "No liked videos yet. Press Control+K on any video, or in the player, to like it.",
-                _ => "This playlist is empty. Press Control+P on any video, or in the player, to add it here."
+                PlaylistKind.Liked => T("No liked videos yet. Press Control+K on any video, or in the player, to like it."),
+                _ => T("This playlist is empty. Press Control+P on any video, or in the player, to add it here.")
             };
             ShowItems(playlist.Videos.Select(v => v.ToSearchResult()).ToList(), moveFocus);
             return;
@@ -431,14 +434,14 @@ public sealed partial class MainViewModel
             return;
 
         SectionTitle = _openPlaylistTitle;
-        SectionEmptyText = "This playlist could not be loaded. It may be private or deleted. Press F5 to try again, or Alt+Left to go back.";
-        BeginLoading("Loading playlist...");
+        SectionEmptyText = T("This playlist could not be loaded. It may be private or deleted. Press F5 to try again, or Alt+Left to go back.");
+        BeginLoading(T("Loading playlist..."));
         var page = await _playlists.GetPageAsync(playlistId, null, token);
         token.ThrowIfCancellationRequested();
         if (page.IsFailure)
         {
             ShowItems(Array.Empty<SearchResult>(), moveFocus: false);
-            _accessibility.Announce($"Could not load the playlist. {page.Error?.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not load the playlist. {0}", page.Error?.Message), AnnouncementPriority.High);
             return;
         }
 
@@ -446,7 +449,7 @@ public sealed partial class MainViewModel
             _openPlaylistTitle = page.Value.Title;
         _openPlaylistOwner = page.Value.Owner;
         SectionTitle = _openPlaylistTitle;
-        ShowItems(page.Value.Videos, moveFocus, extraSummary: _openPlaylistOwner is { Length: > 0 } owner ? $"by {owner}" : null);
+        ShowItems(page.Value.Videos, moveFocus, extraSummary: _openPlaylistOwner is { Length: > 0 } owner ? T("by {0}", owner) : null);
         _playlistPageToken = page.Value.NextPageToken;
         if (_playlistPageToken is not null)
         {
@@ -466,11 +469,11 @@ public sealed partial class MainViewModel
     {
         if (_openYouTubePlaylistId is not { } playlistId || _openLibraryPlaylistId is not null)
             return;
-        _accessibility.Announce("Saving playlist...", AnnouncementPriority.Low);
+        _accessibility.Announce(T("Saving playlist..."), AnnouncementPriority.Low);
         var all = await _playlists.GetAllAsync(playlistId);
         if (all.IsFailure)
         {
-            _accessibility.Announce($"Could not save the playlist. {all.Error?.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not save the playlist. {0}", all.Error?.Message), AnnouncementPriority.High);
             return;
         }
         var title = string.IsNullOrWhiteSpace(all.Value.Title) ? _openPlaylistTitle : all.Value.Title;
@@ -480,7 +483,7 @@ public sealed partial class MainViewModel
             _openLibraryPlaylistId = saved.Id;
             RaisePlaylistViewState();
         }
-        _accessibility.Announce($"Saved {saved.Name} to Playlists, {saved.Videos.Count} videos. Press Control+5 to find it.", AnnouncementPriority.High);
+        _accessibility.Announce(T("Saved {0} to Playlists, {1}. Press Control+5 to find it.", saved.Name, Plural(saved.Videos.Count, "{0} video", "{0} videos")), AnnouncementPriority.High);
     }
 
     /// <summary>Plays the open playlist (or the selected one in Playlists) from the top, or shuffled.</summary>
@@ -499,7 +502,7 @@ public sealed partial class MainViewModel
         }
         else if (CurrentSection == BrowseSection.Playlist && _openLibraryPlaylistId is null && _openYouTubePlaylistId is { } ytId && CanLoadMore)
         {
-            _accessibility.Announce("Loading the whole playlist...", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Loading the whole playlist..."), AnnouncementPriority.Medium);
             var all = await _playlists.GetAllAsync(ytId);
             videos = all.IsSuccess ? all.Value.Videos.ToList() : SearchResults.ToList();
         }
@@ -511,13 +514,13 @@ public sealed partial class MainViewModel
         videos = videos.Where(v => v.IsVideo).ToList();
         if (videos.Count == 0)
         {
-            _accessibility.Announce("Nothing to play.", AnnouncementPriority.Medium);
+            _accessibility.Announce(T("Nothing to play."), AnnouncementPriority.Medium);
             return;
         }
         if (shuffle)
             videos = videos.OrderBy(_ => Random.Shared.Next()).ToList();
 
-        _accessibility.Announce(shuffle ? $"Shuffling {videos.Count} videos." : $"Playing {videos.Count} videos.", AnnouncementPriority.Medium);
+        _accessibility.Announce(shuffle ? T("Shuffling {0}.", Plural(videos.Count, "{0} video", "{0} videos")) : T("Playing {0}.", Plural(videos.Count, "{0} video", "{0} videos")), AnnouncementPriority.Medium);
         // One queue change for the whole list; adding them one at a time froze the window on long playlists.
         if (_playbackCoordinator is PlaybackCoordinator coord)
             await coord.ReplaceQueueAsync(videos.Select(v => v with { StatusPrefix = null }));
@@ -531,10 +534,10 @@ public sealed partial class MainViewModel
     {
         if (row.LibraryPlaylistId is { } id)
             return _library.GetPlaylist(id)?.Videos.Select(v => v.ToSearchResult()).ToList() ?? new();
-        _accessibility.Announce("Loading the whole playlist...", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Loading the whole playlist..."), AnnouncementPriority.Medium);
         var all = await _playlists.GetAllAsync(row.Id);
         if (all.IsFailure)
-            _accessibility.Announce($"Could not load the playlist. {all.Error?.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not load the playlist. {0}", all.Error?.Message), AnnouncementPriority.High);
         return all.IsSuccess ? all.Value.Videos.ToList() : new();
     }
 
@@ -547,13 +550,13 @@ public sealed partial class MainViewModel
         var target = _library.MoveInPlaylist(id, item.Id, offset);
         if (target < 0 || target == index)
         {
-            _accessibility.Announce(offset < 0 ? "Already first." : "Already last.", AnnouncementPriority.Low);
+            _accessibility.Announce(offset < 0 ? T("Already first.") : T("Already last."), AnnouncementPriority.Low);
             return;
         }
         SearchResults.Move(index, target);
         SelectedSearchResult = SearchResults[target];
         RequestFocusResults?.Invoke(this, EventArgs.Empty);
-        _accessibility.Announce($"Moved to {target + 1} of {SearchResults.Count}.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Moved to {0} of {1}.", target + 1, SearchResults.Count), AnnouncementPriority.Medium);
     }
 
     // --- Google Takeout ---
@@ -572,7 +575,7 @@ public sealed partial class MainViewModel
 
             if (contents.IsEmpty)
             {
-                _accessibility.Announce("Nothing to import was found in this zip. In Google Takeout, choose YouTube and YouTube Music, with subscriptions, playlists and history.", AnnouncementPriority.High);
+                _accessibility.Announce(T("Nothing to import was found in this zip. In Google Takeout, choose YouTube and YouTube Music, with subscriptions, playlists and history."), AnnouncementPriority.High);
                 return;
             }
 
@@ -580,14 +583,14 @@ public sealed partial class MainViewModel
             if (contents.Subscriptions is { Channels.Count: > 0 } subs)
             {
                 int added = _library.ImportSubscriptions(subs.Channels);
-                report.Add($"{added} channel{(added == 1 ? "" : "s")}");
+                report.Add(Plural(added, "{0} channel", "{0} channels"));
                 if (added > 0)
                     _feed = null;
             }
             if (contents.History.Count > 0)
             {
                 int added = _library.ImportHistory(contents.History);
-                report.Add($"{added} watched video{(added == 1 ? "" : "s")}");
+                report.Add(Plural(added, "{0} watched video", "{0} watched videos"));
             }
 
             // Takeout lists only video ids; look up titles so the lists are readable.
@@ -597,7 +600,7 @@ public sealed partial class MainViewModel
                 .Distinct().Where(id => !known.ContainsKey(id)).ToList();
             if (ids.Count > 0)
             {
-                _accessibility.Announce($"Looking up {ids.Count} video titles. This can take a minute.", AnnouncementPriority.Medium);
+                _accessibility.Announce(T("Looking up {0}. This can take a minute.", Plural(ids.Count, "{0} video title", "{0} video titles")), AnnouncementPriority.Medium);
                 var described = await _playlists.DescribeVideosAsync(ids);
                 foreach (var video in described)
                     known[video.Id] = video;
@@ -607,12 +610,12 @@ public sealed partial class MainViewModel
             if (contents.LikedVideoIds.Count > 0)
             {
                 int added = _library.ImportLikes(contents.LikedVideoIds.Select(Video));
-                report.Add($"{added} liked video{(added == 1 ? "" : "s")}");
+                report.Add(Plural(added, "{0} liked video", "{0} liked videos"));
             }
             if (contents.WatchLaterIds.Count > 0)
             {
                 int added = _library.ImportWatchLater(contents.WatchLaterIds.Select(Video));
-                report.Add($"{added} Watch Later video{(added == 1 ? "" : "s")}");
+                report.Add(Plural(added, "{0} Watch Later video", "{0} Watch Later videos"));
             }
             int playlistsAdded = 0;
             var existingNames = _library.Playlists.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
@@ -624,20 +627,20 @@ public sealed partial class MainViewModel
                 playlistsAdded++;
             }
             if (contents.Playlists.Count > 0)
-                report.Add($"{playlistsAdded} playlist{(playlistsAdded == 1 ? "" : "s")}");
+                report.Add(Plural(playlistsAdded, "{0} playlist", "{0} playlists"));
 
-            _accessibility.Announce($"Imported from Google Takeout: {string.Join(", ", report)}.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Imported from Google Takeout: {0}.", string.Join(", ", report)), AnnouncementPriority.High);
             if (CurrentSection is BrowseSection.Playlists or BrowseSection.Channels or BrowseSection.History)
                 _ = ShowSectionAsync(CurrentSection, moveFocus: false);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or System.Text.Json.JsonException)
         {
-            _accessibility.Announce($"Could not import: {ex.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not import: {0}", ex.Message), AnnouncementPriority.High);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Takeout import failed.");
-            _accessibility.Announce($"Could not import: {ex.Message}", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not import: {0}", ex.Message), AnnouncementPriority.High);
         }
         finally
         {

@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Audio;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.ViewModels;
 
 /// <summary>One equalizer band in Settings.</summary>
@@ -19,8 +21,8 @@ public sealed partial class EqualizerBand : ObservableObject
     }
 
     public int Frequency { get; }
-    public string Label => Frequency >= 1000 ? $"{Frequency / 1000} kilohertz" : $"{Frequency} hertz";
-    public string SliderName => $"{Label}, decibels";
+    public string Label => Frequency >= 1000 ? T("{0} kilohertz", Frequency / 1000) : T("{0} hertz", Frequency);
+    public string SliderName => T("{0}, decibels", Label);
 
     public override string ToString() => Label;
 
@@ -40,12 +42,16 @@ public sealed partial class MainViewModel
 
     public IReadOnlyList<string> AudioPresetNames { get; } = AudioPresets.Names;
 
+    /// <summary>Presets with their names in the user's language, for the lists in Settings.</summary>
+    public IReadOnlyList<ChoiceOption<string>> AudioPresetChoices { get; } =
+        AudioPresets.Names.Select(n => new ChoiceOption<string>(n, T(n))).ToList();
+
     public IReadOnlyList<ChoiceOption<int>> RoomChoices { get; } = new[]
     {
-        new ChoiceOption<int>(0, "Off"),
-        new ChoiceOption<int>(1, "Small room"),
-        new ChoiceOption<int>(2, "Large room"),
-        new ChoiceOption<int>(3, "Hall"),
+        new ChoiceOption<int>(0, T("Off")),
+        new ChoiceOption<int>(1, T("Small room")),
+        new ChoiceOption<int>(2, T("Large room")),
+        new ChoiceOption<int>(3, T("Hall")),
     };
 
     public IReadOnlyList<EqualizerBand> EqualizerBands { get; private set; } = Array.Empty<EqualizerBand>();
@@ -75,7 +81,7 @@ public sealed partial class MainViewModel
     private bool _loadingCustom;
     private CancellationTokenSource? _soundApplyCts;
 
-    public string MusicModeButtonText => MusicMode ? "Music mode: on" : "Music mode: off";
+    public string MusicModeButtonText => MusicMode ? T("Music mode: on") : T("Music mode: off");
     public string VideoPresetDescription => DescribePreset(VideoSoundPreset);
     public string MusicPresetDescription => DescribePreset(MusicSoundPreset);
 
@@ -93,13 +99,13 @@ public sealed partial class MainViewModel
             MusicSoundPreset = name;
         else
             VideoSoundPreset = name;
-        _accessibility.Announce($"{name} sound.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("{0} sound.", T(name)), AnnouncementPriority.Medium);
     }
 
     private static string DescribePreset(string name) =>
         name == AudioPresets.Custom
-            ? "Your own settings, below."
-            : AudioPresets.Find(name)?.Description ?? string.Empty;
+            ? T("Your own settings, below.")
+            : T(AudioPresets.Find(name)?.Description ?? string.Empty);
 
     private void InitializeSoundSettings()
     {
@@ -196,6 +202,7 @@ public sealed partial class MainViewModel
         if (!_soundSettingsLoaded)
             return;
         _soundApplyCts?.Cancel();
+        _soundApplyCts?.Dispose();
         _soundApplyCts = new CancellationTokenSource();
         _ = ApplySoundAsync(_soundApplyCts.Token);
     }
@@ -241,8 +248,8 @@ public sealed partial class MainViewModel
     {
         MusicMode = !MusicMode;
         _accessibility.Announce(MusicMode
-            ? $"Music. {ActiveSoundPreset} sound."
-            : $"Video. {ActiveSoundPreset} sound.", AnnouncementPriority.High);
+            ? T("Music. {0} sound.", T(ActiveSoundPreset))
+            : T("Video. {0} sound.", T(ActiveSoundPreset)), AnnouncementPriority.High);
     }
 
     /// <summary>E and Shift+E in the player: the next or previous sound preset for the current mode.</summary>
@@ -256,7 +263,7 @@ public sealed partial class MainViewModel
             MusicSoundPreset = next;
         else
             VideoSoundPreset = next;
-        _accessibility.Announce($"{next} sound.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("{0} sound.", T(next)), AnnouncementPriority.Medium);
     }
 
     /// <summary>Starts the custom sound from the preset playing now.</summary>
@@ -271,7 +278,7 @@ public sealed partial class MainViewModel
         else
             VideoSoundPreset = AudioPresets.Custom;
         SoundChanged();
-        _accessibility.Announce($"Custom now starts from {name}.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Custom now starts from {0}.", T(name)), AnnouncementPriority.Medium);
     }
 
     [RelayCommand]
@@ -279,6 +286,6 @@ public sealed partial class MainViewModel
     {
         LoadCustom(new AudioEffectSettings());
         SoundChanged();
-        _accessibility.Announce("Custom sound reset to flat.", AnnouncementPriority.Medium);
+        _accessibility.Announce(T("Custom sound reset to flat."), AnnouncementPriority.Medium);
     }
 }

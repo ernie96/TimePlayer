@@ -49,6 +49,14 @@ S skips a sponsor or other SponsorBlock segment, H jumps to the video's highligh
 Escape goes back.
 
 
+Languages
+---------
+
+TimePlayer speaks English, Romanian and Ukrainian. It follows the Windows language; to choose,
+open Settings (F2), Speech and braille, Language, and restart TimePlayer.
+Thank you to Stacy Carter for Ukrainian support.
+
+
 Subscriptions, playlists and For You
 ------------------------------------
 

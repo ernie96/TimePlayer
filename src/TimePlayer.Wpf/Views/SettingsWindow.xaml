@@ -1,8 +1,9 @@
 <Window x:Class="TimePlayer.Wpf.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:TimePlayer.Wpf.Localization"
         xmlns:controls="clr-namespace:TimePlayer.Wpf.Controls"
-        Title="Settings"
+        Title="{l:T 'Settings'}"
         Width="720" Height="660" MinWidth="540" MinHeight="440"
         WindowStartupLocation="CenterOwner"
         ShowInTaskbar="False"
@@ -42,37 +43,37 @@
 
         <TextBlock Grid.Row="0" Style="{StaticResource NoteText}">
             <Run Text="{Binding VersionText, Mode=OneWay}" Foreground="#E4E4E7"/>
-            <Run Text=". Control+Tab moves between pages. Changes apply right away and are saved when you close this window."/>
+            <Run Text="{l:T '. Control+Tab moves between pages. Changes apply right away and are saved when you close this window.'}"/>
         </TextBlock>
 
         <TabControl x:Name="Pages" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0"
-                    ItemContainerStyle="{StaticResource StripTabItemStyle}" AutomationProperties.Name="Settings pages">
+                    ItemContainerStyle="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Settings pages'}">
 
             <!-- ===== Playback ===== -->
-            <TabItem Header="Playback">
+            <TabItem Header="{l:T 'Playback'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
-                        <CheckBox x:Name="FirstSetting" Content="Continue videos where I left off" IsChecked="{Binding ResumePlayback}"/>
-                        <CheckBox Content="Autoplay a related video when the queue ends (A in the player)" IsChecked="{Binding Autoplay}"/>
-                        <CheckBox Content="Use hardware video decoding (takes effect after restart)" IsChecked="{Binding EnableHardwareDecoding}"/>
+                        <CheckBox x:Name="FirstSetting" Content="{l:T 'Continue videos where I left off'}" IsChecked="{Binding ResumePlayback}"/>
+                        <CheckBox Content="{l:T 'Autoplay a related video when the queue ends (A in the player)'}" IsChecked="{Binding Autoplay}"/>
+                        <CheckBox Content="{l:T 'Use hardware video decoding (takes effect after restart)'}" IsChecked="{Binding EnableHardwareDecoding}"/>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="Preferred video _quality:" Target="{Binding ElementName=QualityBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="QualityBox" AutomationProperties.Name="Preferred video quality" ItemsSource="{Binding QualityChoices}" DisplayMemberPath="Label"
+                            <Label Content="{l:T 'Preferred video _quality:'}" Target="{Binding ElementName=QualityBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="QualityBox" AutomationProperties.Name="{l:T 'Preferred video quality'}" ItemsSource="{Binding QualityChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding SelectedQuality}" MinWidth="180"/>
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="_Left and Right arrows move:" Target="{Binding ElementName=SmallSeekBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="SmallSeekBox" AutomationProperties.Name="Left and Right arrows move" ItemsSource="{Binding SmallSeekChoices}" DisplayMemberPath="Label"
+                            <Label Content="{l:T '_Left and Right arrows move:'}" Target="{Binding ElementName=SmallSeekBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="SmallSeekBox" AutomationProperties.Name="{l:T 'Left and Right arrows move'}" ItemsSource="{Binding SmallSeekChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding SmallSeekSeconds}" MinWidth="180"/>
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="Control+Left and Right m_ove:" Target="{Binding ElementName=LargeSeekBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="LargeSeekBox" AutomationProperties.Name="Control+Left and Right move" ItemsSource="{Binding LargeSeekChoices}" DisplayMemberPath="Label"
+                            <Label Content="{l:T 'Control+Left and Right m_ove:'}" Target="{Binding ElementName=LargeSeekBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="LargeSeekBox" AutomationProperties.Name="{l:T 'Control+Left and Right move'}" ItemsSource="{Binding LargeSeekChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding LargeSeekSeconds}" MinWidth="180"/>
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="Up and Down change the _volume by:" Target="{Binding ElementName=VolumeStepBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="VolumeStepBox" AutomationProperties.Name="Up and Down change the volume by" ItemsSource="{Binding VolumeStepChoices}" DisplayMemberPath="Label"
+                            <Label Content="{l:T 'Up and Down change the _volume by:'}" Target="{Binding ElementName=VolumeStepBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="VolumeStepBox" AutomationProperties.Name="{l:T 'Up and Down change the volume by'}" ItemsSource="{Binding VolumeStepChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding VolumeStepPercent}" MinWidth="180"/>
                         </StackPanel>
                     </StackPanel>
@@ -80,31 +81,31 @@
             </TabItem>
 
             <!-- ===== Sound ===== -->
-            <TabItem Header="Sound">
+            <TabItem Header="{l:T 'Sound'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
                         <TextBlock Style="{StaticResource NoteText}"
-                                   Text="These effects change TimePlayer's sound only; other apps and Windows sound as before. In the player, E and Shift+E switch presets."/>
-                        <CheckBox Content="Music mode: no video, and the music sound below (Control+M)" IsChecked="{Binding MusicMode}"/>
+                                   Text="{l:T 'These effects change TimePlayer\'s sound only; other apps and Windows sound as before. In the player, E and Shift+E switch presets.'}"/>
+                        <CheckBox Content="{l:T 'Music mode: no video, and the music sound below (Control+M)'}" IsChecked="{Binding MusicMode}"/>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="Sound for _videos:" Target="{Binding ElementName=VideoPresetBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="VideoPresetBox" AutomationProperties.Name="Sound for videos" ItemsSource="{Binding AudioPresetNames}"
-                                      SelectedItem="{Binding VideoSoundPreset}" MinWidth="200"/>
+                            <Label Content="{l:T 'Sound for _videos:'}" Target="{Binding ElementName=VideoPresetBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="VideoPresetBox" AutomationProperties.Name="{l:T 'Sound for videos'}" ItemsSource="{Binding AudioPresetChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding VideoSoundPreset}" MinWidth="200"/>
                         </StackPanel>
                         <TextBlock Text="{Binding VideoPresetDescription}" Style="{StaticResource NoteText}"/>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="Sound in _music mode:" Target="{Binding ElementName=MusicPresetBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="MusicPresetBox" AutomationProperties.Name="Sound in music mode" ItemsSource="{Binding AudioPresetNames}"
-                                      SelectedItem="{Binding MusicSoundPreset}" MinWidth="200"/>
+                            <Label Content="{l:T 'Sound in _music mode:'}" Target="{Binding ElementName=MusicPresetBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="MusicPresetBox" AutomationProperties.Name="{l:T 'Sound in music mode'}" ItemsSource="{Binding AudioPresetChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding MusicSoundPreset}" MinWidth="200"/>
                         </StackPanel>
                         <TextBlock Text="{Binding MusicPresetDescription}" Style="{StaticResource NoteText}"/>
 
-                        <TextBlock Text="Custom sound" Style="{StaticResource HeadingStyle}"/>
+                        <TextBlock Text="{l:T 'Custom sound'}" Style="{StaticResource HeadingStyle}"/>
                         <TextBlock Style="{StaticResource NoteText}"
-                                   Text="Used wherever Custom is chosen above. Changing anything here switches the sound you hear now to Custom. Equalizer sliders go from minus 12 to plus 12 decibels; Left and Right change them by 1, Page Up and Page Down by 3."/>
+                                   Text="{l:T 'Used wherever Custom is chosen above. Changing anything here switches the sound you hear now to Custom. Equalizer sliders go from minus 12 to plus 12 decibels; Left and Right change them by 1, Page Up and Page Down by 3.'}"/>
                         <WrapPanel Margin="0,0,0,8">
-                            <Button Content="Start Custom from the current _preset" Command="{Binding CopyPresetToCustomCommand}" Style="{StaticResource SmallButtonStyle}"/>
-                            <Button Content="_Reset Custom to flat" Command="{Binding ResetCustomSoundCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Start Custom from the current _preset'}" Command="{Binding CopyPresetToCustomCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T '_Reset Custom to flat'}" Command="{Binding ResetCustomSoundCommand}" Style="{StaticResource SmallButtonStyle}"/>
                         </WrapPanel>
                         <controls:LayoutItemsControl ItemsSource="{Binding EqualizerBands}" Focusable="False">
                             <controls:LayoutItemsControl.ItemTemplate>
@@ -119,43 +120,48 @@
                             </controls:LayoutItemsControl.ItemTemplate>
                         </controls:LayoutItemsControl>
                         <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Bass boost" Width="250" Foreground="#E4E4E7" VerticalAlignment="Center"/>
+                            <TextBlock Text="{l:T 'Bass boost'}" Width="250" Foreground="#E4E4E7" VerticalAlignment="Center"/>
                             <Slider Minimum="0" Maximum="12" SmallChange="1" LargeChange="3" TickFrequency="1" IsSnapToTickEnabled="True"
-                                    Value="{Binding CustomBass}" Width="240" AutomationProperties.Name="Bass boost, decibels"/>
+                                    Value="{Binding CustomBass}" Width="240" AutomationProperties.Name="{l:T 'Bass boost, decibels'}"/>
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Clarity" Width="250" Foreground="#E4E4E7" VerticalAlignment="Center"/>
+                            <TextBlock Text="{l:T 'Clarity'}" Width="250" Foreground="#E4E4E7" VerticalAlignment="Center"/>
                             <Slider Minimum="0" Maximum="10" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True"
-                                    Value="{Binding CustomClarity}" Width="240" AutomationProperties.Name="Clarity, 0 to 10"/>
+                                    Value="{Binding CustomClarity}" Width="240" AutomationProperties.Name="{l:T 'Clarity, 0 to 10'}"/>
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
-                            <TextBlock Text="Stereo width" Width="250" Foreground="#E4E4E7" VerticalAlignment="Center"/>
+                            <TextBlock Text="{l:T 'Stereo width'}" Width="250" Foreground="#E4E4E7" VerticalAlignment="Center"/>
                             <Slider Minimum="0" Maximum="10" SmallChange="1" LargeChange="2" TickFrequency="1" IsSnapToTickEnabled="True"
-                                    Value="{Binding CustomWidth}" Width="240" AutomationProperties.Name="Stereo width, 0 to 10"/>
+                                    Value="{Binding CustomWidth}" Width="240" AutomationProperties.Name="{l:T 'Stereo width, 0 to 10'}"/>
                         </StackPanel>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="R_oom:" Target="{Binding ElementName=RoomBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="RoomBox" AutomationProperties.Name="Room" ItemsSource="{Binding RoomChoices}" DisplayMemberPath="Label"
+                            <Label Content="{l:T 'R_oom:'}" Target="{Binding ElementName=RoomBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="RoomBox" AutomationProperties.Name="{l:T 'Room'}" ItemsSource="{Binding RoomChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding CustomRoom}" MinWidth="200"/>
                         </StackPanel>
-                        <CheckBox Content="Headphone crossfeed (less hard left and right on headphones)" IsChecked="{Binding CustomCrossfeed}"/>
-                        <CheckBox Content="Even out the volume" IsChecked="{Binding CustomLevelVolume}"/>
-                        <CheckBox Content="Compressor: quiet sounds louder, loud sounds softer" IsChecked="{Binding CustomCompressor}"/>
-                        <CheckBox Content="Voice focus: cut low rumble" IsChecked="{Binding CustomVoiceFocus}"/>
+                        <CheckBox Content="{l:T 'Headphone crossfeed (less hard left and right on headphones)'}" IsChecked="{Binding CustomCrossfeed}"/>
+                        <CheckBox Content="{l:T 'Even out the volume'}" IsChecked="{Binding CustomLevelVolume}"/>
+                        <CheckBox Content="{l:T 'Compressor: quiet sounds louder, loud sounds softer'}" IsChecked="{Binding CustomCompressor}"/>
+                        <CheckBox Content="{l:T 'Voice focus: cut low rumble'}" IsChecked="{Binding CustomVoiceFocus}"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- ===== Speech and braille ===== -->
-            <TabItem Header="Speech and braille">
+            <TabItem Header="{l:T 'Speech and braille'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
-                        <CheckBox Content="Read captions aloud as they appear (C in the player)" IsChecked="{Binding SpeakCaptions}"/>
-                        <CheckBox Content="Use the NVDA braille add-on (for braille displays; restart NVDA after changing)" IsChecked="{Binding UseBrailleAddon}"/>
-                        <CheckBox Content="Show playback progress on the braille display (Control+Shift+D)" IsChecked="{Binding EnableBrailleProgress}"/>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="Braille display _cells, when the add-on isn't running:" Target="{Binding ElementName=CellsBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="CellsBox" AutomationProperties.Name="Braille display cells, when the add-on isn't running" ItemsSource="{Binding AvailableBrailleCellCounts}"
+                            <Label Content="{l:T '_Language (after a restart):'}" Target="{Binding ElementName=LanguageBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="LanguageBox" AutomationProperties.Name="{l:T 'Language (after a restart)'}" ItemsSource="{Binding LanguageChoices}"
+                                      DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Language}" MinWidth="240"/>
+                        </StackPanel>
+                        <CheckBox Content="{l:T 'Read captions aloud as they appear (C in the player)'}" IsChecked="{Binding SpeakCaptions}"/>
+                        <CheckBox Content="{l:T 'Use the NVDA braille add-on (for braille displays; restart NVDA after changing)'}" IsChecked="{Binding UseBrailleAddon}"/>
+                        <CheckBox Content="{l:T 'Show playback progress on the braille display (Control+Shift+D)'}" IsChecked="{Binding EnableBrailleProgress}"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <Label Content="{l:T 'Braille display _cells, when the add-on isn\'t running:'}" Target="{Binding ElementName=CellsBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="CellsBox" AutomationProperties.Name="{l:T 'Braille display cells, when the add-on isn\'t running'}" ItemsSource="{Binding AvailableBrailleCellCounts}"
                                       SelectedItem="{Binding SelectedBrailleCellCount, Mode=TwoWay}" MinWidth="90"/>
                         </StackPanel>
                     </StackPanel>
@@ -163,15 +169,15 @@
             </TabItem>
 
             <!-- ===== Library ===== -->
-            <TabItem Header="Library">
+            <TabItem Header="{l:T 'Library'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
-                        <CheckBox Content="Keep a watch history on this computer (needed for resume and For You)" IsChecked="{Binding RecordHistory}"/>
-                        <CheckBox Content="Check my channels for new videos at startup" IsChecked="{Binding CheckFeedOnStartup}"/>
-                        <CheckBox Content="Hide Shorts in What's New, Featured and For You" IsChecked="{Binding HideShortsInFeed}"/>
+                        <CheckBox Content="{l:T 'Keep a watch history on this computer (needed for resume and For You)'}" IsChecked="{Binding RecordHistory}"/>
+                        <CheckBox Content="{l:T 'Check my channels for new videos at startup'}" IsChecked="{Binding CheckFeedOnStartup}"/>
+                        <CheckBox Content="{l:T 'Hide Shorts in What\'s New, Featured and For You'}" IsChecked="{Binding HideShortsInFeed}"/>
                         <StackPanel Style="{StaticResource Row}">
-                            <Label Content="_Region for Featured and the music charts:" Target="{Binding ElementName=RegionBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="RegionBox" AutomationProperties.Name="Region for Featured and the music charts" ItemsSource="{Binding RegionChoices}" DisplayMemberPath="Label"
+                            <Label Content="{l:T '_Region for Featured and the music charts:'}" Target="{Binding ElementName=RegionBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="RegionBox" AutomationProperties.Name="{l:T 'Region for Featured and the music charts'}" ItemsSource="{Binding RegionChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding FeaturedRegion}" MinWidth="240"
                                       IsTextSearchEnabled="True" TextSearch.TextPath="Label"/>
                         </StackPanel>
@@ -180,12 +186,12 @@
             </TabItem>
 
             <!-- ===== SponsorBlock and dislikes ===== -->
-            <TabItem Header="SponsorBlock and dislikes">
+            <TabItem Header="{l:T 'SponsorBlock and dislikes'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
                         <TextBlock Style="{StaticResource NoteText}"
-                                   Text="SponsorBlock (sponsor.ajay.app) skips or announces parts of videos that its users marked, such as sponsor reads. Only the first characters of a fingerprint of the video's id are sent, so the server can't tell which video you watch. In the player, S skips the segment playing now and H jumps to the highlight."/>
-                        <CheckBox Content="Use SponsorBlock" IsChecked="{Binding SponsorBlockEnabled}"/>
+                                   Text="{l:T 'SponsorBlock (sponsor.ajay.app) skips or announces parts of videos that its users marked, such as sponsor reads. Only the first characters of a fingerprint of the video\'s id are sent, so the server can\'t tell which video you watch. In the player, S skips the segment playing now and H jumps to the highlight.'}"/>
+                        <CheckBox Content="{l:T 'Use SponsorBlock'}" IsChecked="{Binding SponsorBlockEnabled}"/>
                         <controls:LayoutItemsControl ItemsSource="{Binding SponsorBlockCategories}" Focusable="False"
                                       IsEnabled="{Binding SponsorBlockEnabled}">
                             <controls:LayoutItemsControl.ItemTemplate>
@@ -199,40 +205,40 @@
                                 </DataTemplate>
                             </controls:LayoutItemsControl.ItemTemplate>
                         </controls:LayoutItemsControl>
-                        <CheckBox Content="Say what was skipped" IsChecked="{Binding AnnounceSegmentSkips}" IsEnabled="{Binding SponsorBlockEnabled}"/>
-                        <CheckBox Content="Tell me when a video has a highlight" IsChecked="{Binding AnnounceHighlight}" IsEnabled="{Binding SponsorBlockEnabled}"/>
-                        <CheckBox Content="Tell me when a whole video is labeled, such as sponsored" IsChecked="{Binding AnnounceWholeVideoLabels}" IsEnabled="{Binding SponsorBlockEnabled}"/>
+                        <CheckBox Content="{l:T 'Say what was skipped'}" IsChecked="{Binding AnnounceSegmentSkips}" IsEnabled="{Binding SponsorBlockEnabled}"/>
+                        <CheckBox Content="{l:T 'Tell me when a video has a highlight'}" IsChecked="{Binding AnnounceHighlight}" IsEnabled="{Binding SponsorBlockEnabled}"/>
+                        <CheckBox Content="{l:T 'Tell me when a whole video is labeled, such as sponsored'}" IsChecked="{Binding AnnounceWholeVideoLabels}" IsEnabled="{Binding SponsorBlockEnabled}"/>
 
-                        <TextBlock Text="Dislikes" Style="{StaticResource HeadingStyle}"/>
+                        <TextBlock Text="{l:T 'Dislikes'}" Style="{StaticResource HeadingStyle}"/>
                         <TextBlock Style="{StaticResource NoteText}"
-                                   Text="YouTube hides dislike counts. Return YouTube Dislike (returnyoutubedislike.com) estimates them; they appear in the description and when you press I in the player. Only the video's id is sent."/>
-                        <CheckBox Content="Show likes and estimated dislikes" IsChecked="{Binding ShowDislikes}"/>
+                                   Text="{l:T 'YouTube hides dislike counts. Return YouTube Dislike (returnyoutubedislike.com) estimates them; they appear in the description and when you press I in the player. Only the video\'s id is sent.'}"/>
+                        <CheckBox Content="{l:T 'Show likes and estimated dislikes'}" IsChecked="{Binding ShowDislikes}"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
 
             <!-- ===== Updates and help ===== -->
-            <TabItem Header="Updates and help">
+            <TabItem Header="{l:T 'Updates and help'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
-                        <CheckBox Content="Check for TimePlayer updates at startup" IsChecked="{Binding CheckForAppUpdatesAtStartup}"/>
+                        <CheckBox Content="{l:T 'Check for TimePlayer updates at startup'}" IsChecked="{Binding CheckForAppUpdatesAtStartup}"/>
                         <WrapPanel Margin="0,0,0,8">
-                            <Button Content="Check for TimePlayer _updates" Click="CheckAppUpdates_Click" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
-                            <Button Content="Update the YouTube _downloader" Command="{Binding CheckForUpdatesCommand}" Style="{StaticResource SmallButtonStyle}"/>
-                            <Button Content="Run dia_gnostics" Command="{Binding RunDiagnosticsCommand}" Style="{StaticResource SmallButtonStyle}"/>
-                            <Button Content="Play _test pattern" Click="PlayTestPattern_Click" Style="{StaticResource SmallButtonStyle}"/>
-                            <Button Content="Open _log folder" Command="{Binding OpenLogFolderCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Check for TimePlayer _updates'}" Click="CheckAppUpdates_Click" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="{l:T 'Update the YouTube _downloader'}" Command="{Binding CheckForUpdatesCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Run dia_gnostics'}" Command="{Binding RunDiagnosticsCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Play _test pattern'}" Click="PlayTestPattern_Click" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Open _log folder'}" Command="{Binding OpenLogFolderCommand}" Style="{StaticResource SmallButtonStyle}"/>
                         </WrapPanel>
                         <TextBlock Text="{Binding DependencyStatusMessage}" Style="{StaticResource NoteText}"/>
-                        <Label Content="Diagnostics _report:" Target="{Binding ElementName=ReportBox}" Foreground="#E4E4E7" Padding="0,0,0,4"/>
-                        <TextBox x:Name="ReportBox" AutomationProperties.Name="Diagnostics report" Text="{Binding DiagnosticsReport, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                        <Label Content="{l:T 'Diagnostics _report:'}" Target="{Binding ElementName=ReportBox}" Foreground="#E4E4E7" Padding="0,0,0,4"/>
+                        <TextBox x:Name="ReportBox" AutomationProperties.Name="{l:T 'Diagnostics report'}" Text="{Binding DiagnosticsReport, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
                                  VerticalScrollBarVisibility="Auto" Height="170" FontFamily="Consolas" FontSize="12" Background="#141416"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
         </TabControl>
 
-        <Button Grid.Row="2" Content="Close" IsCancel="True" Style="{StaticResource AccentButtonStyle}"
+        <Button Grid.Row="2" Content="{l:T 'Close'}" IsCancel="True" Style="{StaticResource AccentButtonStyle}"
                 HorizontalAlignment="Right" MinWidth="100" Margin="0,12,0,0" Click="Close_Click"
                 AutomationProperties.AcceleratorKey="Escape"/>
     </Grid>

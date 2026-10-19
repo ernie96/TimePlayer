@@ -18,6 +18,7 @@ using Xunit;
 
 namespace TimePlayer.Tests.ViewModels;
 
+[Collection("Language")]
 public class MainViewModelTests
 {
     private sealed class MockHealthService : IInstanceHealthService
@@ -660,6 +661,52 @@ public class MainViewModelTests
         var deadline = DateTime.UtcNow.AddSeconds(5);
         while (!condition() && DateTime.UtcNow < deadline)
             await Task.Delay(25);
+    }
+
+    /// <summary>
+    /// Window layouts read their translated text when they're built; a malformed entry would only
+    /// show up as a crash when the window opens. Build both windows in every language.
+    /// </summary>
+    [Theory]
+    [InlineData("en", "Settings")]
+    [InlineData("ro", "Setări")]
+    [InlineData("uk", "Налаштування")]
+    public void Windows_BuildInEveryLanguage(string language, string settingsTitle)
+    {
+        Exception? failure = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                TimePlayer.Core.Localization.Loc.Use(language);
+                if (System.Windows.Application.Current is null)
+                    _ = new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+                System.Windows.Application.ResourceAssembly ??= typeof(TimePlayer.Wpf.Views.MainWindow).Assembly;
+
+                var vm = CreateViewModel();
+                var updates = new TimePlayer.Core.Updates.UpdateService(new HttpClient(), _configService,
+                    NullLogger<TimePlayer.Core.Updates.UpdateService>.Instance);
+                var main = new TimePlayer.Wpf.Views.MainWindow(vm, _accessibility, updates, _configService,
+                    NullLogger<TimePlayer.Wpf.Views.MainWindow>.Instance);
+                var settings = new TimePlayer.Wpf.Views.SettingsWindow(vm);
+                Assert.Equal(settingsTitle, settings.Title);
+                settings.Close();
+                main.Close();
+            }
+            catch (Exception ex)
+            {
+                failure = ex;
+            }
+            finally
+            {
+                TimePlayer.Core.Localization.Loc.Use("en");
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        Assert.True(thread.Join(TimeSpan.FromSeconds(60)), "Building the windows hung.");
+        if (failure is not null)
+            throw failure;
     }
 
     [Fact]

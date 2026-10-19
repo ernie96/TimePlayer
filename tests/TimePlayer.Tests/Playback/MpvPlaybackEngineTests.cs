@@ -179,6 +179,29 @@ public class MpvPlaybackEngineTests
     }
 
     [Fact]
+    public async Task PositionUpdates_AreLimitedToAFewPerSecond_ButSeeksArriveAtOnce()
+    {
+        var engine = CreateEngine();
+        await engine.InitializeAsync((nint)12345);
+        var reports = new List<TimeSpan>();
+        engine.PositionChanged += (_, e) => reports.Add(e.Position);
+
+        // mpv sends the position on every frame: 60 updates in one second of video.
+        for (int frame = 1; frame <= 60; frame++)
+        {
+            using var pos = JsonDocument.Parse((10 + frame / 60.0).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            _ipcClient.RaisePropertyChange(2, "time-pos", pos.RootElement);
+        }
+        Assert.InRange(reports.Count, 1, 6);
+
+        // A jump (seek) is reported straight away.
+        using var seek = JsonDocument.Parse("95");
+        _ipcClient.RaisePropertyChange(2, "time-pos", seek.RootElement);
+        Assert.Equal(TimeSpan.FromSeconds(95), reports[^1]);
+        Assert.Equal(TimeSpan.FromSeconds(95), engine.CurrentTime);
+    }
+
+    [Fact]
     public async Task LoadingTheNextFile_IgnoresTheEndOfThePreviousOne()
     {
         var engine = CreateEngine();

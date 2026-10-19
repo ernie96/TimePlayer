@@ -1,6 +1,7 @@
 <Window x:Class="TimePlayer.Wpf.Views.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:l="clr-namespace:TimePlayer.Wpf.Localization"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:controls="clr-namespace:TimePlayer.Wpf.Controls"
@@ -26,40 +27,40 @@
                 <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}"/>
                 <Setter Property="ContextMenu">
                     <Setter.Value>
-                        <ContextMenu AutomationProperties.Name="Actions">
-                            <MenuItem Header="_Play or open" InputGestureText="Enter"
+                        <ContextMenu AutomationProperties.Name="{l:T 'Actions'}">
+                            <MenuItem Header="{l:T '_Play or open'}" InputGestureText="Enter"
                                       Command="{Binding PlacementTarget.Tag.PlaySearchResultCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Add to _queue" InputGestureText="Ctrl+Q"
+                            <MenuItem Header="{l:T 'Add to _queue'}" InputGestureText="Ctrl+Q"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.EnqueueSearchResultCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Save to or remove from _Watch Later" InputGestureText="Ctrl+L"
+                            <MenuItem Header="{l:T 'Save to or remove from _Watch Later'}" InputGestureText="Ctrl+L"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.ToggleWatchLaterForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Like or unlike" InputGestureText="Ctrl+K"
+                            <MenuItem Header="{l:T '_Like or unlike'}" InputGestureText="Ctrl+K"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.ToggleLikeForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Add to _playlist..." InputGestureText="Ctrl+P"
+                            <MenuItem Header="{l:T 'Add to _playlist...'}" InputGestureText="Ctrl+P"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.ShowAddToPlaylistMenuCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Subscribe or unsubscribe" InputGestureText="Ctrl+S"
+                            <MenuItem Header="{l:T '_Subscribe or unsubscribe'}" InputGestureText="Ctrl+S"
                                       Command="{Binding PlacementTarget.Tag.ToggleSubscriptionForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Go to _channel" InputGestureText="Ctrl+G"
+                            <MenuItem Header="{l:T 'Go to _channel'}" InputGestureText="Ctrl+G"
                                       Command="{Binding PlacementTarget.Tag.OpenChannelCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Copy share _link" InputGestureText="Ctrl+C"
+                            <MenuItem Header="{l:T 'Copy share _link'}" InputGestureText="Ctrl+C"
                                       Command="{Binding PlacementTarget.Tag.CopyLinkCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Download audio" InputGestureText="Ctrl+D"
+                            <MenuItem Header="{l:T '_Download audio'}" InputGestureText="Ctrl+D"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.DownloadAudioForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Download _video" InputGestureText="Ctrl+D"
+                            <MenuItem Header="{l:T 'Download _video'}" InputGestureText="Ctrl+D"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.DownloadVideoForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Remove from this list" InputGestureText="Delete"
+                            <MenuItem Header="{l:T '_Remove from this list'}" InputGestureText="Delete"
                                       Visibility="{Binding PlacementTarget.Tag.CanRemoveFromSection, RelativeSource={RelativeSource AncestorType=ContextMenu}, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.RemoveSelectedItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Not interested" InputGestureText="Delete"
+                            <MenuItem Header="{l:T '_Not interested'}" InputGestureText="Delete"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.NotInterestedCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="Don't recommend this c_hannel" InputGestureText="Shift+Delete"
+                            <MenuItem Header="{l:T 'Don\'t recommend this c_hannel'}" InputGestureText="Shift+Delete"
                                       Command="{Binding PlacementTarget.Tag.DontRecommendChannelCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                         </ContextMenu>
                     </Setter.Value>
@@ -72,12 +73,12 @@
                 <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=ListBox}}"/>
                 <Setter Property="ContextMenu">
                     <Setter.Value>
-                        <ContextMenu AutomationProperties.Name="Queue actions">
-                            <MenuItem Header="_Play now" InputGestureText="Enter"
+                        <ContextMenu AutomationProperties.Name="{l:T 'Queue actions'}">
+                            <MenuItem Header="{l:T '_Play now'}" InputGestureText="Enter"
                                       Command="{Binding PlacementTarget.Tag.PlayQueueItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Remove from queue" InputGestureText="Delete"
+                            <MenuItem Header="{l:T '_Remove from queue'}" InputGestureText="Delete"
                                       Command="{Binding PlacementTarget.Tag.RemoveQueueItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Clear the whole queue"
+                            <MenuItem Header="{l:T '_Clear the whole queue'}"
                                       Command="{Binding PlacementTarget.Tag.ClearQueueCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
                         </ContextMenu>
                     </Setter.Value>
@@ -94,10 +95,10 @@
                 <Setter Property="Tag" Value="{Binding DataContext, RelativeSource={RelativeSource AncestorType=TreeView}}"/>
                 <Setter Property="ContextMenu">
                     <Setter.Value>
-                        <ContextMenu AutomationProperties.Name="Comment actions">
-                            <MenuItem Header="Show or hide _replies" InputGestureText="Right, Left or Enter"
+                        <ContextMenu AutomationProperties.Name="{l:T 'Comment actions'}">
+                            <MenuItem Header="{l:T 'Show or hide _replies'}" InputGestureText="Right, Left or Enter"
                                       Command="{Binding PlacementTarget.Tag.ToggleRepliesCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="_Copy comment" InputGestureText="Ctrl+C"
+                            <MenuItem Header="{l:T '_Copy comment'}" InputGestureText="Ctrl+C"
                                       Command="{Binding PlacementTarget.Tag.CopyCommentCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                         </ContextMenu>
                     </Setter.Value>
@@ -145,7 +146,7 @@
                 <TextBox x:Name="SearchBox"
                          Grid.Column="1"
                          Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
-                         AutomationProperties.Name="Search YouTube or paste a link"
+                         AutomationProperties.Name="{l:T 'Search YouTube or paste a link'}"
                          AutomationProperties.AcceleratorKey="Slash"
                          VerticalContentAlignment="Center"
                          Margin="0,0,8,0">
@@ -154,19 +155,19 @@
                     </TextBox.InputBindings>
                 </TextBox>
 
-                <ComboBox x:Name="SearchKindBox" Grid.Column="2" ItemsSource="{Binding SearchKinds}"
-                          SelectedItem="{Binding SelectedSearchKind, Mode=TwoWay}" MinWidth="110" Margin="0,0,8,0"
-                          AutomationProperties.Name="Search for"/>
+                <ComboBox x:Name="SearchKindBox" Grid.Column="2" ItemsSource="{Binding SearchKinds}" DisplayMemberPath="Label"
+                          SelectedValuePath="Value" SelectedValue="{Binding SelectedSearchKind, Mode=TwoWay}" MinWidth="110" Margin="0,0,8,0"
+                          AutomationProperties.Name="{l:T 'Search for'}"/>
 
-                <Button Grid.Column="3" Content="Settings (F2)" Command="{Binding OpenSettingsCommand}"
-                        AutomationProperties.Name="Settings" AutomationProperties.AcceleratorKey="F2"/>
+                <Button Grid.Column="3" Content="{l:T 'Settings (F2)'}" Command="{Binding OpenSettingsCommand}"
+                        AutomationProperties.Name="{l:T 'Settings'}" AutomationProperties.AcceleratorKey="F2"/>
             </Grid>
         </Border>
 
         <!-- ============ Error banner ============ -->
         <Border x:Name="ErrorBanner" Grid.Row="1" Background="#7F1D1D" BorderBrush="#EF4444" BorderThickness="0,0,0,1" Padding="16,8"
                 KeyboardNavigation.TabNavigation="Cycle"
-                AutomationProperties.Name="{Binding ErrorMessage, StringFormat=Problem: {0}}"
+                AutomationProperties.Name="{Binding ErrorBannerName}"
                 Visibility="{Binding ErrorMessage, Converter={StaticResource NullOrEmptyToVisibilityConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -177,12 +178,12 @@
                 <!-- A read-only text box, not a label, so Tab and the arrow keys can read the reason. -->
                 <TextBox x:Name="ErrorMessageBox" Grid.Column="0" Text="{Binding ErrorMessage, Mode=OneWay}" IsReadOnly="True"
                          Foreground="#FEE2E2" Background="Transparent" BorderThickness="0" FontSize="13" FontWeight="SemiBold"
-                         VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.Name="Problem"/>
-                <Button Grid.Column="1" Content="_Retry" Command="{Binding RetryLastActionCommand}" Style="{StaticResource AccentButtonStyle}"
+                         VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.Name="{l:T 'Problem'}"/>
+                <Button Grid.Column="1" Content="{l:T '_Retry'}" Command="{Binding RetryLastActionCommand}" Style="{StaticResource AccentButtonStyle}"
                         Visibility="{Binding CanRetry, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        AutomationProperties.Name="Retry" AutomationProperties.HelpText="{Binding ErrorMessage}" Padding="12,4" Margin="8,0,0,0"/>
-                <Button Grid.Column="2" Content="_Dismiss" Command="{Binding ClearErrorCommand}"
-                        AutomationProperties.Name="Dismiss" AutomationProperties.HelpText="{Binding ErrorMessage}" Padding="10,4" Margin="8,0,0,0"/>
+                        AutomationProperties.Name="{l:T 'Retry'}" AutomationProperties.HelpText="{Binding ErrorMessage}" Padding="12,4" Margin="8,0,0,0"/>
+                <Button Grid.Column="2" Content="{l:T '_Dismiss'}" Command="{Binding ClearErrorCommand}"
+                        AutomationProperties.Name="{l:T 'Dismiss'}" AutomationProperties.HelpText="{Binding ErrorMessage}" Padding="10,4" Margin="8,0,0,0"/>
             </Grid>
         </Border>
 
@@ -205,7 +206,7 @@
                             SelectedItem="{Binding SelectedSectionTab, Mode=TwoWay}"
                             ItemContainerStyle="{StaticResource SectionTabItemStyle}"
                             Background="Transparent" BorderThickness="0" Padding="0"
-                            AutomationProperties.Name="Sections">
+                            AutomationProperties.Name="{l:T 'Sections'}">
                     <TabControl.ContentTemplate>
                         <DataTemplate/>
                     </TabControl.ContentTemplate>
@@ -215,7 +216,7 @@
                     <TextBlock Text="{Binding SectionTitle}" FontSize="17" FontWeight="Bold" Foreground="#E4E4E7"
                                TextTrimming="CharacterEllipsis" AutomationProperties.HeadingLevel="Level2"/>
                     <TextBlock Text="{Binding SectionCountText}" FontSize="14" Foreground="#A1A1AA" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                    <TextBlock Text="Loading..." FontSize="14" Foreground="#38BDF8" VerticalAlignment="Center" Margin="10,0,0,0">
+                    <TextBlock Text="{l:T 'Loading...'}" FontSize="14" Foreground="#38BDF8" VerticalAlignment="Center" Margin="10,0,0,0">
                         <TextBlock.Style>
                             <Style TargetType="TextBlock">
                                 <Setter Property="Visibility" Value="Collapsed"/>
@@ -234,62 +235,62 @@
 
                 <!-- Section toolbar: only the buttons that apply to this section are shown -->
                 <WrapPanel Grid.Row="2" Margin="0,0,0,8">
-                    <Button Content="&lt; _Back" Command="{Binding GoBackCommand}" Style="{StaticResource SmallButtonStyle}"
+                    <Button Content="{l:T '&lt; _Back'}" Command="{Binding GoBackCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsDetailView, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Back" AutomationProperties.AcceleratorKey="Alt+Left"/>
+                            AutomationProperties.Name="{l:T 'Back'}" AutomationProperties.AcceleratorKey="Alt+Left"/>
 
-                    <Button Content="Play _all" Command="{Binding PlayAllCommand}" Style="{StaticResource SmallButtonStyle}"
+                    <Button Content="{l:T 'Play _all'}" Command="{Binding PlayAllCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding CanPlayAll, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Play all"/>
-                    <Button Content="Sh_uffle" Command="{Binding ShufflePlayCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Play all'}"/>
+                    <Button Content="{l:T 'Sh_uffle'}" Command="{Binding ShufflePlayCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding CanPlayAll, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Shuffle play"/>
-                    <Button Content="_Save to Playlists" Command="{Binding SaveOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Shuffle play'}"/>
+                    <Button Content="{l:T '_Save to Playlists'}" Command="{Binding SaveOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding CanSaveOpenPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Save to Playlists"/>
-                    <Button Content="Copy _link" Command="{Binding CopyOpenPlaylistLinkCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Save to Playlists'}"/>
+                    <Button Content="{l:T 'Copy _link'}" Command="{Binding CopyOpenPlaylistLinkCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsPlaylistView, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Copy playlist link"/>
-                    <Button Content="_New playlist..." Command="{Binding CreatePlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Copy playlist link'}"/>
+                    <Button Content="{l:T '_New playlist...'}" Command="{Binding CreatePlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="New playlist"/>
-                    <Button Content="_Rename..." Command="{Binding RenameOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'New playlist'}"/>
+                    <Button Content="{l:T '_Rename...'}" Command="{Binding RenameOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding CanEditPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Rename playlist"/>
-                    <Button Content="_Delete playlist..." Command="{Binding DeleteOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Rename playlist'}"/>
+                    <Button Content="{l:T '_Delete playlist...'}" Command="{Binding DeleteOpenPlaylistCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding CanEditPlaylist, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Delete playlist"/>
-                    <Button Content="_Import from Google Takeout..." Click="ImportTakeout_Click" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Delete playlist'}"/>
+                    <Button Content="{l:T '_Import from Google Takeout...'}" Click="ImportTakeout_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Import from Google Takeout"/>
-                    <Button Content="_How to get my YouTube data..." Click="YouTubeSubscriptionsHelp_Click" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Import from Google Takeout'}"/>
+                    <Button Content="{l:T '_How to get my YouTube data...'}" Click="YouTubeSubscriptionsHelp_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="How to get my YouTube data"/>
+                            AutomationProperties.Name="{l:T 'How to get my YouTube data'}"/>
                     <StackPanel Orientation="Horizontal" Margin="0,0,8,0"
                                 Visibility="{Binding IsFeaturedSection, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Label Content="_Category:" Target="{Binding ElementName=FeaturedCategoryBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
-                        <ComboBox x:Name="FeaturedCategoryBox" ItemsSource="{Binding FeaturedCategories}"
-                                  SelectedItem="{Binding SelectedFeaturedCategory, Mode=TwoWay}" MinWidth="120"
-                                  AutomationProperties.Name="Category"/>
+                        <Label Content="{l:T '_Category:'}" Target="{Binding ElementName=FeaturedCategoryBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
+                        <ComboBox x:Name="FeaturedCategoryBox" ItemsSource="{Binding FeaturedCategories}" DisplayMemberPath="Label"
+                                  SelectedValuePath="Value" SelectedValue="{Binding SelectedFeaturedCategory, Mode=TwoWay}" MinWidth="120"
+                                  AutomationProperties.Name="{l:T 'Category'}"/>
                     </StackPanel>
-                    <Button Content="_Import subscriptions..." Click="ImportSubscriptions_Click" Style="{StaticResource SmallButtonStyle}"
+                    <Button Content="{l:T '_Import subscriptions...'}" Click="ImportSubscriptions_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsChannelsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Import subscriptions"/>
-                    <Button Content="_How to get my YouTube subscriptions..." Click="YouTubeSubscriptionsHelp_Click" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Import subscriptions'}"/>
+                    <Button Content="{l:T '_How to get my YouTube subscriptions...'}" Click="YouTubeSubscriptionsHelp_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsChannelsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="How to get my YouTube subscriptions"/>
-                    <Button Content="E_xport subscriptions..." Click="ExportSubscriptions_Click" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'How to get my YouTube subscriptions'}"/>
+                    <Button Content="{l:T 'E_xport subscriptions...'}" Click="ExportSubscriptions_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsChannelsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Export subscriptions"/>
-                    <Button Content="_Clear history..." Click="ClearHistory_Click" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Export subscriptions'}"/>
+                    <Button Content="{l:T '_Clear history...'}" Click="ClearHistory_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsHistorySection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Clear history"/>
-                    <Button Content="_Clear queue" Command="{Binding ClearQueueCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Clear history'}"/>
+                    <Button Content="{l:T '_Clear queue'}" Command="{Binding ClearQueueCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsQueueSection, Converter={StaticResource BooleanToVisibilityConverter}}"
-                            AutomationProperties.Name="Clear queue"/>
-                    <Button Content="Refresh (F5)" Command="{Binding RefreshSectionCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Clear queue'}"/>
+                    <Button Content="{l:T 'Refresh (F5)'}" Command="{Binding RefreshSectionCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsQueueSection, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"
-                            AutomationProperties.Name="Refresh" AutomationProperties.AcceleratorKey="F5"/>
+                            AutomationProperties.Name="{l:T 'Refresh'}" AutomationProperties.AcceleratorKey="F5"/>
                 </WrapPanel>
 
                 <!-- Empty-section explanation -->
@@ -329,7 +330,7 @@
                          SelectedItem="{Binding SelectedQueueItem}"
                          ItemContainerStyle="{StaticResource QueueItemStyle}"
                          ItemTemplate="{StaticResource QueueRowTemplate}"
-                         AutomationProperties.Name="Queue"
+                         AutomationProperties.Name="{l:T 'Queue'}"
                          Visibility="{Binding IsQueueListVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
                     <ListBox.InputBindings>
                         <KeyBinding Key="Enter" Command="{Binding PlayQueueItemCommand}" CommandParameter="{Binding SelectedQueueItem}"/>
@@ -354,17 +355,17 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="BackToSearchButton" Grid.Column="0" Content="&lt; Back (Esc)" Click="BackFromPlayer_Click"
-                                AutomationProperties.Name="Back to the list" AutomationProperties.AcceleratorKey="Escape" Margin="0,0,16,0"/>
+                        <Button x:Name="BackToSearchButton" Grid.Column="0" Content="{l:T '&lt; Back (Esc)'}" Click="BackFromPlayer_Click"
+                                AutomationProperties.Name="{l:T 'Back to the list'}" AutomationProperties.AcceleratorKey="Escape" Margin="0,0,16,0"/>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CurrentVideoTitle}" FontSize="17" FontWeight="Bold" Foreground="#F4F4F5"
                                        TextTrimming="CharacterEllipsis" AutomationProperties.HeadingLevel="Level1"/>
                             <TextBlock Text="{Binding CurrentChannelTitle}" FontSize="13" Foreground="#38BDF8" Margin="0,2,0,0"/>
                         </StackPanel>
-                        <Button x:Name="PlayerActionsButton" Grid.Column="2" Content="_Actions..." Click="PlayerActions_Click"
+                        <Button x:Name="PlayerActionsButton" Grid.Column="2" Content="{l:T '_Actions...'}" Click="PlayerActions_Click"
                                 Style="{StaticResource SmallButtonStyle}" VerticalAlignment="Center"
-                                AutomationProperties.Name="Actions" AutomationProperties.AcceleratorKey="Alt+A, Applications"
-                                AutomationProperties.HelpText="Like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more"/>
+                                AutomationProperties.Name="{l:T 'Actions'}" AutomationProperties.AcceleratorKey="Alt+A, Applications"
+                                AutomationProperties.HelpText="{l:T 'Like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more'}"/>
                     </Grid>
                 </Border>
 
@@ -434,10 +435,10 @@
 
                     <TabControl x:Name="PlayerPanelTabs" Grid.Column="2" Background="#1C1C1F" BorderThickness="0" Padding="8"
                                 SelectedIndex="{Binding SelectedPlayerPanelIndex, Mode=TwoWay}"
-                                AutomationProperties.Name="Video panels">
-                        <TabItem Header="_Up next" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="Up next" AutomationProperties.AcceleratorKey="Alt+U">
+                                AutomationProperties.Name="{l:T 'Video panels'}">
+                        <TabItem Header="{l:T '_Up next'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Up next'}" AutomationProperties.AcceleratorKey="Alt+U">
                             <Grid>
-                                <TextBlock Text="Related videos appear here once the video starts." Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
+                                <TextBlock Text="{l:T 'Related videos appear here once the video starts.'}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
                                            Visibility="{Binding UpNext.Count, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
                                 <ListBox x:Name="UpNextListBox"
                                          Style="{StaticResource AccessibleListBoxStyle}"
@@ -445,7 +446,7 @@
                                          SelectedItem="{Binding SelectedUpNext}"
                                          ItemContainerStyle="{StaticResource VideoItemStyle}"
                                          ItemTemplate="{StaticResource VideoRowTemplate}"
-                                         AutomationProperties.Name="Up next">
+                                         AutomationProperties.Name="{l:T 'Up next'}">
                                     <ListBox.InputBindings>
                                         <KeyBinding Key="Enter" Command="{Binding PlaySearchResultCommand}" CommandParameter="{Binding SelectedUpNext}"/>
                                         <KeyBinding Key="Q" Modifiers="Control" Command="{Binding EnqueueSearchResultCommand}" CommandParameter="{Binding SelectedUpNext}"/>
@@ -459,7 +460,7 @@
                                 </ListBox>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="_Comments" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="Comments" AutomationProperties.AcceleratorKey="Alt+C">
+                        <TabItem Header="{l:T '_Comments'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Comments'}" AutomationProperties.AcceleratorKey="Alt+C">
                             <Grid>
                                 <TextBlock Text="{Binding CommentsStatus}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
                                            Visibility="{Binding CommentsStatus, Converter={StaticResource NullOrEmptyToVisibilityConverter}}"/>
@@ -472,7 +473,7 @@
                                           VirtualizingPanel.IsVirtualizing="True"
                                           VirtualizingPanel.VirtualizationMode="Recycling"
                                           SelectedItemChanged="CommentsTree_SelectedItemChanged"
-                                          AutomationProperties.Name="Comments"
+                                          AutomationProperties.Name="{l:T 'Comments'}"
                                           Visibility="{Binding Comments.Count, Converter={StaticResource CountToVisibilityConverter}}">
                                     <TreeView.InputBindings>
                                         <KeyBinding Key="Enter" Command="{Binding ToggleRepliesCommand}" CommandParameter="{Binding SelectedComment}"/>
@@ -481,14 +482,14 @@
                                 </TreeView>
                             </Grid>
                         </TabItem>
-                        <TabItem Header="_Description" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="Description" AutomationProperties.AcceleratorKey="Alt+D">
+                        <TabItem Header="{l:T '_Description'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Description'}" AutomationProperties.AcceleratorKey="Alt+D">
                             <TextBox x:Name="DescriptionBox" Text="{Binding VideoDescriptionText, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Auto" Background="#141416" BorderBrush="#27272A" FontSize="14"
-                                     AutomationProperties.Name="Description"/>
+                                     AutomationProperties.Name="{l:T 'Description'}"/>
                         </TabItem>
-                        <TabItem Header="_Queue" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="Queue" AutomationProperties.AcceleratorKey="Alt+Q">
+                        <TabItem Header="{l:T '_Queue'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Queue'}" AutomationProperties.AcceleratorKey="Alt+Q">
                             <Grid>
-                                <TextBlock Text="The queue is empty. Control+Q on any video adds it." Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
+                                <TextBlock Text="{l:T 'The queue is empty. Control+Q on any video adds it.'}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
                                            Visibility="{Binding PlaybackQueue.Count, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
                                 <ListBox x:Name="PlayerQueueListBox"
                                          Style="{StaticResource AccessibleListBoxStyle}"
@@ -496,7 +497,7 @@
                                          SelectedItem="{Binding SelectedQueueItem}"
                                          ItemContainerStyle="{StaticResource QueueItemStyle}"
                                          ItemTemplate="{StaticResource QueueRowTemplate}"
-                                         AutomationProperties.Name="Queue">
+                                         AutomationProperties.Name="{l:T 'Queue'}">
                                     <ListBox.InputBindings>
                                         <KeyBinding Key="Enter" Command="{Binding PlayQueueItemCommand}" CommandParameter="{Binding SelectedQueueItem}"/>
                                         <KeyBinding Key="Delete" Command="{Binding RemoveQueueItemCommand}" CommandParameter="{Binding SelectedQueueItem}"/>
@@ -522,14 +523,14 @@
                                     Value="{Binding SliderSeconds, Mode=TwoWay}"
                                     SmallChange="{Binding SmallSeekSeconds}" LargeChange="{Binding LargeSeekSeconds}" IsMoveToPointEnabled="True"
                                     VerticalAlignment="Center"
-                                    AutomationProperties.Name="Position"/>
+                                    AutomationProperties.Name="{l:T 'Position'}"/>
                             <TextBlock Grid.Column="2" Text="{Binding DurationText}" Foreground="#A1A1AA" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>
                         </Grid>
 
                         <!-- On-screen copy of the braille progress line (clicking it seeks). Not a tab stop. -->
                         <TextBox x:Name="BrailleProgressTextBox" IsReadOnly="True" IsReadOnlyCaretVisible="False" Focusable="False" IsTabStop="False"
                                  FontFamily="Consolas, Segoe UI Symbol" FontSize="16" Background="#141416" Foreground="#38BDF8" BorderBrush="#27272A"
-                                 Padding="6,3" Margin="0,0,0,8" AutomationProperties.Name="Braille progress"
+                                 Padding="6,3" Margin="0,0,0,8" AutomationProperties.Name="{l:T 'Braille progress'}"
                                  Visibility="{Binding EnableBrailleProgress, Converter={StaticResource BooleanToVisibilityConverter}}"
                                  PreviewMouseDown="BrailleProgressTextBox_PreviewMouseDown"/>
 
@@ -537,13 +538,13 @@
                             <Button x:Name="PlayPauseButton" Content="{Binding PlayPauseButtonText}" Command="{Binding TogglePlayPauseCommand}"
                                     Style="{StaticResource AccentButtonStyle}" MinWidth="90" Margin="0,0,6,0"
                                     AutomationProperties.Name="{Binding PlayPauseButtonText}" AutomationProperties.AcceleratorKey="K"/>
-                            <Button Content="Previous" Command="{Binding PlayPreviousCommand}" IsEnabled="{Binding CanPlayPrevious}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Previous" AutomationProperties.AcceleratorKey="Shift+P"/>
-                            <Button Content="Next" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}" Margin="0,0,16,0"
-                                    AutomationProperties.Name="Next" AutomationProperties.AcceleratorKey="Shift+N"/>
+                            <Button Content="{l:T 'Previous'}" Command="{Binding PlayPreviousCommand}" IsEnabled="{Binding CanPlayPrevious}" Style="{StaticResource SmallButtonStyle}"
+                                    AutomationProperties.Name="{l:T 'Previous'}" AutomationProperties.AcceleratorKey="Shift+P"/>
+                            <Button Content="{l:T 'Next'}" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}" Margin="0,0,16,0"
+                                    AutomationProperties.Name="{l:T 'Next'}" AutomationProperties.AcceleratorKey="Shift+N"/>
                             <Button Content="{Binding MuteButtonText}" Command="{Binding ToggleMuteCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="{Binding MuteButtonText}" AutomationProperties.AcceleratorKey="M"/>
-                            <TextBlock Text="{Binding VolumePercent, StringFormat='Volume {0:0}%'}" Foreground="#F4F4F5" VerticalAlignment="Center" Margin="6,0,16,0"/>
+                            <TextBlock Text="{Binding VolumeText}" Foreground="#F4F4F5" VerticalAlignment="Center" Margin="6,0,16,0"/>
                         </WrapPanel>
                     </StackPanel>
                 </Border>
@@ -552,7 +553,7 @@
 
         <!-- ============ Now playing (music plays on while you browse) ============ -->
         <Border x:Name="NowPlayingBar" Grid.Row="3" Background="#1C1C1F" BorderBrush="#2E2E33" BorderThickness="0,1,0,0" Padding="16,8"
-                KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.Name="Now playing"
+                KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.Name="{l:T 'Now playing'}"
                 Visibility="{Binding IsNowPlayingBarVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -568,14 +569,14 @@
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <Button x:Name="NowPlayingPlayPause" Content="{Binding PlayPauseButtonText}" Command="{Binding TogglePlayPauseCommand}" Style="{StaticResource AccentButtonStyle}"
                             MinWidth="80" Margin="0,0,6,0" AutomationProperties.Name="{Binding PlayPauseButtonText}" AutomationProperties.AcceleratorKey="Control+Space"/>
-                    <Button Content="Previous" Command="{Binding PlayPreviousCommand}" IsEnabled="{Binding CanPlayPrevious}" Style="{StaticResource SmallButtonStyle}"
-                            AutomationProperties.Name="Previous" AutomationProperties.AcceleratorKey="Control+Shift+P"/>
-                    <Button Content="Next" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}"
-                            AutomationProperties.Name="Next" AutomationProperties.AcceleratorKey="Control+Shift+N"/>
-                    <Button Content="Open player" Command="{Binding ShowPlayerViewCommand}" Style="{StaticResource SmallButtonStyle}"
-                            AutomationProperties.Name="Open player" AutomationProperties.AcceleratorKey="Alt+P"/>
-                    <Button Content="Stop" Command="{Binding StopPlaybackSessionCommand}" Style="{StaticResource SmallButtonStyle}"
-                            AutomationProperties.Name="Stop"/>
+                    <Button Content="{l:T 'Previous'}" Command="{Binding PlayPreviousCommand}" IsEnabled="{Binding CanPlayPrevious}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Previous'}" AutomationProperties.AcceleratorKey="Control+Shift+P"/>
+                    <Button Content="{l:T 'Next'}" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Next'}" AutomationProperties.AcceleratorKey="Control+Shift+N"/>
+                    <Button Content="{l:T 'Open player'}" Command="{Binding ShowPlayerViewCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Open player'}" AutomationProperties.AcceleratorKey="Alt+P"/>
+                    <Button Content="{l:T 'Stop'}" Command="{Binding StopPlaybackSessionCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="{l:T 'Stop'}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -592,7 +593,7 @@
                            TextTrimming="CharacterEllipsis" AutomationProperties.LiveSetting="Polite"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DownloadStatusText}" Foreground="#38BDF8" FontSize="12" Margin="0,0,16,0"/>
-                    <TextBlock Text="F1: keys for where you are   F6: next area   /: search" Foreground="#8E8E96" FontSize="12"/>
+                    <TextBlock Text="{l:T 'F1: keys for where you are   F6: next area   /: search'}" Foreground="#8E8E96" FontSize="12"/>
                 </StackPanel>
             </Grid>
         </Border>

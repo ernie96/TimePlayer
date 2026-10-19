@@ -18,6 +18,8 @@ using TimePlayer.Core.Updates;
 using TimePlayer.Wpf.Accessibility;
 using TimePlayer.Wpf.ViewModels;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.Views;
 
 /// <summary>
@@ -167,11 +169,11 @@ public partial class MainWindow : Window
     private void AskAboutBrailleAddon()
     {
         var answer = MessageBox.Show(this,
-            "Do you use a braille display with NVDA?\n\n" +
-            "TimePlayer can add a small NVDA add-on that shows the playback position on your braille display " +
-            "and lets the routing keys jump to any point in the video. NVDA needs to be restarted once after installing.\n\n" +
-            "Choose Yes to install it, or No if you do not use braille. You will not be asked again; this can be changed in Settings.",
-            "Braille display support", MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+            T("Do you use a braille display with NVDA?\n\n") +
+            T("TimePlayer can add a small NVDA add-on that shows the playback position on your braille display ") +
+            T("and lets the routing keys jump to any point in the video. NVDA needs to be restarted once after installing.\n\n") +
+            T("Choose Yes to install it, or No if you do not use braille. You will not be asked again; this can be changed in Settings."),
+            T("Braille display support"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
         _ = _viewModel.ApplyBrailleAddonChoiceAsync(answer == MessageBoxResult.Yes);
         SearchBox.Focus();
     }
@@ -233,7 +235,7 @@ public partial class MainWindow : Window
     private void ShowDownloadMenu(UIElement anchor, SearchResult? item)
     {
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        AutomationProperties.SetName(menu, "Download");
+        AutomationProperties.SetName(menu, T("Download"));
         void Add(string header, Action action, bool enabled = true)
         {
             var menuItem = new MenuItem { Header = header, IsEnabled = enabled };
@@ -241,13 +243,13 @@ public partial class MainWindow : Window
             menu.Items.Add(menuItem);
         }
         bool isPlayer = item is null;
-        Add(_viewModel.CanConvertDownloads ? "Download _audio (MP3)" : "Download _audio (M4A)",
+        Add(_viewModel.CanConvertDownloads ? T("Download _audio (MP3)") : T("Download _audio (M4A)"),
             () => _ = isPlayer ? _viewModel.DownloadAudioCurrentAsync() : _viewModel.DownloadAudioForItemAsync(item));
-        Add("Download _video (MP4)",
+        Add(T("Download _video (MP4)"),
             () => _ = isPlayer ? _viewModel.DownloadVideoCurrentAsync() : _viewModel.DownloadVideoForItemAsync(item));
-        Add("_Open downloads folder", _viewModel.OpenDownloadsFolder);
+        Add(T("_Open downloads folder"), _viewModel.OpenDownloadsFolder);
         if (_viewModel.HasActiveDownloads)
-            Add("_Cancel downloads", _viewModel.CancelDownloads);
+            Add(T("_Cancel downloads"), _viewModel.CancelDownloads);
         menu.Opened += (_, _) => (menu.Items[0] as MenuItem)?.Focus();
         menu.IsOpen = true;
     }
@@ -300,7 +302,7 @@ public partial class MainWindow : Window
     private void ShowPlayerActionsMenu()
     {
         var menu = new ContextMenu { PlacementTarget = PlayerActionsButton, Placement = PlacementMode.Bottom };
-        AutomationProperties.SetName(menu, "Actions");
+        AutomationProperties.SetName(menu, T("Actions"));
 
         MenuItem Item(string header, string gesture, Action action, bool isChecked = false, bool checkable = false)
         {
@@ -310,16 +312,16 @@ public partial class MainWindow : Window
         }
         MenuItem Sub(string header) => new() { Header = header };
 
-        menu.Items.Add(Item(_viewModel.LikeButtonText, "Ctrl+K", _viewModel.ToggleLikeCurrent));
-        menu.Items.Add(Item(_viewModel.SubscribeButtonText, "Ctrl+S", _viewModel.ToggleSubscribeCurrentChannel));
-        menu.Items.Add(Item(_viewModel.WatchLaterButtonText, "Ctrl+L", _viewModel.ToggleWatchLaterCurrent));
-        menu.Items.Add(Item("Add to _playlist...", "Ctrl+P", () => _viewModel.ShowAddToPlaylistMenu(null)));
-        menu.Items.Add(Item("Go to _channel", "Ctrl+G", () => _ = _viewModel.OpenCurrentChannelAsync()));
-        menu.Items.Add(Item("Copy share _link at this point", "Ctrl+C", _viewModel.CopyShareLinkAtCurrentTime));
-        menu.Items.Add(Item("_Download...", "Ctrl+D", () => ShowDownloadMenu(PlayerActionsButton, null)));
+        menu.Items.Add(Item(_viewModel.LikeButtonText, T("Ctrl+K"), _viewModel.ToggleLikeCurrent));
+        menu.Items.Add(Item(_viewModel.SubscribeButtonText, T("Ctrl+S"), _viewModel.ToggleSubscribeCurrentChannel));
+        menu.Items.Add(Item(_viewModel.WatchLaterButtonText, T("Ctrl+L"), _viewModel.ToggleWatchLaterCurrent));
+        menu.Items.Add(Item(T("Add to _playlist..."), T("Ctrl+P"), () => _viewModel.ShowAddToPlaylistMenu(null)));
+        menu.Items.Add(Item(T("Go to _channel"), T("Ctrl+G"), () => _ = _viewModel.OpenCurrentChannelAsync()));
+        menu.Items.Add(Item(T("Copy share _link at this point"), T("Ctrl+C"), _viewModel.CopyShareLinkAtCurrentTime));
+        menu.Items.Add(Item(T("_Download..."), T("Ctrl+D"), () => ShowDownloadMenu(PlayerActionsButton, null)));
         menu.Items.Add(new Separator());
 
-        var captions = Sub("Ca_ptions");
+        var captions = Sub(T("Ca_ptions"));
         foreach (var track in _viewModel.AvailableSubtitleTracks)
         {
             var option = track;
@@ -327,30 +329,30 @@ public partial class MainWindow : Window
                 () => _ = _viewModel.SelectSubtitleTrackAsync(option), isChecked: ReferenceEquals(option, _viewModel.SelectedSubtitleTrack), checkable: true));
         }
         captions.Items.Add(new Separator());
-        captions.Items.Add(Item("_Read captions aloud", "C", _viewModel.ToggleSpeakCaptions, _viewModel.SpeakCaptions, checkable: true));
+        captions.Items.Add(Item(T("_Read captions aloud"), "C", _viewModel.ToggleSpeakCaptions, _viewModel.SpeakCaptions, checkable: true));
         menu.Items.Add(captions);
 
-        var speed = Sub($"_Speed, {_viewModel.PlaybackSpeed:0.##}x");
-        speed.Items.Add(Item("_Faster", "Shift+Period", () => _ = _viewModel.SpeedUpAsync()));
-        speed.Items.Add(Item("_Slower", "Shift+Comma", () => _ = _viewModel.SpeedDownAsync()));
-        speed.Items.Add(Item("_Normal speed", string.Empty, () => _ = _viewModel.ResetSpeedAsync()));
+        var speed = Sub(T("_Speed, {0:0.##}x", _viewModel.PlaybackSpeed));
+        speed.Items.Add(Item(T("_Faster"), T("Shift+Period"), () => _ = _viewModel.SpeedUpAsync()));
+        speed.Items.Add(Item(T("_Slower"), T("Shift+Comma"), () => _ = _viewModel.SpeedDownAsync()));
+        speed.Items.Add(Item(T("_Normal speed"), string.Empty, () => _ = _viewModel.ResetSpeedAsync()));
         menu.Items.Add(speed);
 
-        var sound = Sub("S_ound");
+        var sound = Sub(T("S_ound"));
         foreach (var name in _viewModel.AudioPresetNames)
         {
             var preset = name;
-            sound.Items.Add(Item(preset, string.Empty, () => _viewModel.SelectSoundPreset(preset),
+            sound.Items.Add(Item(T(preset), string.Empty, () => _viewModel.SelectSoundPreset(preset),
                 isChecked: preset == _viewModel.ActiveSoundPresetName, checkable: true));
         }
         sound.Items.Add(new Separator());
-        sound.Items.Add(Item("_Music mode", "Ctrl+M", _viewModel.ToggleMusicMode, _viewModel.MusicMode, checkable: true));
+        sound.Items.Add(Item(T("_Music mode"), T("Ctrl+M"), _viewModel.ToggleMusicMode, _viewModel.MusicMode, checkable: true));
         menu.Items.Add(sound);
 
-        menu.Items.Add(Item("_Autoplay related videos", "A", _viewModel.ToggleAutoplay, _viewModel.Autoplay, checkable: true));
-        menu.Items.Add(Item("S_kip SponsorBlock segment", "S", () => _ = _viewModel.SkipCurrentSegmentAsync()));
-        menu.Items.Add(Item("Jump to _highlight", "H", () => _ = _viewModel.JumpToHighlightAsync()));
-        menu.Items.Add(Item("_Video information", "I", _viewModel.AnnounceVideoInfo));
+        menu.Items.Add(Item(T("_Autoplay related videos"), "A", _viewModel.ToggleAutoplay, _viewModel.Autoplay, checkable: true));
+        menu.Items.Add(Item(T("S_kip SponsorBlock segment"), "S", () => _ = _viewModel.SkipCurrentSegmentAsync()));
+        menu.Items.Add(Item(T("Jump to _highlight"), "H", () => _ = _viewModel.JumpToHighlightAsync()));
+        menu.Items.Add(Item(T("_Video information"), "I", _viewModel.AnnounceVideoInfo));
 
         menu.Opened += (_, _) => (menu.Items[0] as MenuItem)?.Focus();
         menu.IsOpen = true;
@@ -378,7 +380,7 @@ public partial class MainWindow : Window
         if (item is null && _viewModel.IsPlayerViewVisible && !IsWithin(anchor as DependencyObject, PlayerPanelTabs))
             anchor = PlayerActionsButton;
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
-        AutomationProperties.SetName(menu, "Add to playlist");
+        AutomationProperties.SetName(menu, T("Add to playlist"));
         foreach (var playlist in _viewModel.PlaylistsForMenu())
         {
             var id = playlist.Id;
@@ -386,7 +388,7 @@ public partial class MainWindow : Window
             menuItem.Click += (_, _) => _viewModel.AddToPlaylist(item, id);
             menu.Items.Add(menuItem);
         }
-        var create = new MenuItem { Header = "_New playlist..." };
+        var create = new MenuItem { Header = T("_New playlist...") };
         create.Click += (_, _) => _viewModel.AddToPlaylist(item, null);
         menu.Items.Add(create);
         menu.Opened += (_, _) => (menu.Items[0] as MenuItem)?.Focus();
@@ -397,8 +399,8 @@ public partial class MainWindow : Window
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Import from Google Takeout",
-            Filter = "Google Takeout zip (*.zip)|*.zip|All files|*.*"
+            Title = T("Import from Google Takeout"),
+            Filter = T("Google Takeout zip (*.zip)|*.zip|All files|*.*")
         };
         if (dialog.ShowDialog(this) == true)
             _ = _viewModel.ImportTakeoutAsync(dialog.FileName);
@@ -487,18 +489,18 @@ public partial class MainWindow : Window
 
         if (_viewModel.IsPlayerViewVisible)
         {
-            if (IsWithin(focused, UpNextListBox)) (title, text) = ("Up next", KeyboardHelp.UpNext);
-            else if (IsWithin(focused, CommentsTree)) (title, text) = ("Comments", KeyboardHelp.Comments);
-            else if (IsWithin(focused, DescriptionBox)) (title, text) = ("Description", KeyboardHelp.Description);
-            else if (IsWithin(focused, PlayerQueueListBox)) (title, text) = ("Queue", KeyboardHelp.Queue);
-            else (title, text) = ("Player", KeyboardHelp.Player(_viewModel.SmallSeekSeconds, _viewModel.LargeSeekSeconds));
+            if (IsWithin(focused, UpNextListBox)) (title, text) = (T("Up next"), KeyboardHelp.UpNext);
+            else if (IsWithin(focused, CommentsTree)) (title, text) = (T("Comments"), KeyboardHelp.Comments);
+            else if (IsWithin(focused, DescriptionBox)) (title, text) = (T("Description"), KeyboardHelp.Description);
+            else if (IsWithin(focused, PlayerQueueListBox)) (title, text) = (T("Queue"), KeyboardHelp.Queue);
+            else (title, text) = (T("Player"), KeyboardHelp.Player(_viewModel.SmallSeekSeconds, _viewModel.LargeSeekSeconds));
         }
-        else if (IsWithin(focused, NowPlayingBar)) (title, text) = ("Now playing", KeyboardHelp.NowPlaying);
-        else if (IsWithin(focused, SearchBox)) (title, text) = ("Search box", KeyboardHelp.SearchBox);
-        else if (IsWithin(focused, SectionTabControl)) (title, text) = ("Sections", KeyboardHelp.Sections);
+        else if (IsWithin(focused, NowPlayingBar)) (title, text) = (T("Now playing"), KeyboardHelp.NowPlaying);
+        else if (IsWithin(focused, SearchBox)) (title, text) = (T("Search box"), KeyboardHelp.SearchBox);
+        else if (IsWithin(focused, SectionTabControl)) (title, text) = (T("Sections"), KeyboardHelp.Sections);
         else (title, text) = (_viewModel.SectionTitle, KeyboardHelp.ForList(_viewModel.CurrentSection));
 
-        MessageBox.Show(this, text, $"Help: {title}", MessageBoxButton.OK, MessageBoxImage.Information);
+        MessageBox.Show(this, text, T("Help: {0}", title), MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     // ===================== Keyboard =====================
@@ -789,8 +791,8 @@ public partial class MainWindow : Window
     {
         var dialog = new Microsoft.Win32.OpenFileDialog
         {
-            Title = "Import subscriptions",
-            Filter = "Subscription exports (Google Takeout zip or CSV, NewPipe, LibreTube, FreeTube, OPML)|*.zip;*.json;*.csv;*.opml;*.xml;*.db|All files|*.*"
+            Title = T("Import subscriptions"),
+            Filter = T("Subscription exports (Google Takeout zip or CSV, NewPipe, LibreTube, FreeTube, OPML)|*.zip;*.json;*.csv;*.opml;*.xml;*.db|All files|*.*")
         };
         if (dialog.ShowDialog(this) != true)
             return;
@@ -799,7 +801,7 @@ public partial class MainWindow : Window
 
     private void YouTubeSubscriptionsHelp_Click(object sender, RoutedEventArgs e)
     {
-        var answer = MessageBox.Show(this, KeyboardHelp.YouTubeSubscriptionsSteps, "Get your YouTube data",
+        var answer = MessageBox.Show(this, KeyboardHelp.YouTubeSubscriptionsSteps, T("Get your YouTube data"),
             MessageBoxButton.YesNo, MessageBoxImage.Information, MessageBoxResult.Yes);
         if (answer != MessageBoxResult.Yes)
             return;
@@ -810,7 +812,7 @@ public partial class MainWindow : Window
         }
         catch (Exception)
         {
-            _accessibility.Announce("Could not open the browser. Go to takeout.google.com yourself.", AnnouncementPriority.High);
+            _accessibility.Announce(T("Could not open the browser. Go to takeout.google.com yourself."), AnnouncementPriority.High);
         }
     }
 
@@ -818,9 +820,9 @@ public partial class MainWindow : Window
     {
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
-            Title = "Export subscriptions",
+            Title = T("Export subscriptions"),
             FileName = $"timeplayer_subscriptions_{DateTime.Now:yyyyMMdd}.json",
-            Filter = "NewPipe JSON, for NewPipe, LibreTube and Tubular (*.json)|*.json|OPML, for RSS readers and FreeTube (*.opml)|*.opml"
+            Filter = T("NewPipe JSON, for NewPipe, LibreTube and Tubular (*.json)|*.json|OPML, for RSS readers and FreeTube (*.opml)|*.opml")
         };
         if (dialog.ShowDialog(this) == true)
             _viewModel.ExportSubscriptionsToFile(dialog.FileName);
@@ -829,8 +831,8 @@ public partial class MainWindow : Window
     private void ClearHistory_Click(object sender, RoutedEventArgs e)
     {
         var answer = MessageBox.Show(this,
-            "Clear your whole watch history? Resume positions are lost too. This cannot be undone.",
-            "Clear watch history", MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
+            T("Clear your whole watch history? Resume positions are lost too. This cannot be undone."),
+            T("Clear watch history"), MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No);
         if (answer == MessageBoxResult.Yes)
             _viewModel.ClearHistory();
     }
