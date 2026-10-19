@@ -271,6 +271,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         InitializeViewState();
         InitializeBrailleAddonPreference();
         _checkForAppUpdatesAtStartup = _configService.CurrentConfig.Update.CheckAtStartup;
+        _announceRunCount = _configService.CurrentConfig.Runs.Announce;
+        _shareRunCount = _configService.CurrentConfig.Runs.Share == true;
 
         // Player engine events
         _playerEngine.StateChanged += OnEngineStateChanged;

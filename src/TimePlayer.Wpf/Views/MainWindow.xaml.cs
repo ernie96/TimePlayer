@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Automation;
 using System.Windows.Threading;
 using TimePlayer.Core.Accessibility;
+using TimePlayer.Core.Community;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Models;
@@ -34,10 +35,14 @@ public partial class MainWindow : Window
 
     private readonly UpdateFlow _updateFlow;
     private readonly IConfigurationService _config;
+    private readonly IRunCounter? _runCounter;
+    private readonly ILogger _logger;
 
     public MainWindow(MainViewModel viewModel, IAccessibilityService accessibility, IUpdateService updates,
-        IConfigurationService config, ILogger<MainWindow> logger)
+        IConfigurationService config, ILogger<MainWindow> logger, IRunCounter? runCounter = null)
     {
+        _runCounter = runCounter;
+        _logger = logger;
         InitializeComponent();
 
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
@@ -160,6 +165,9 @@ public partial class MainWindow : Window
         if (_viewModel.ShouldAskAboutBrailleAddon)
             Dispatcher.BeginInvoke(AskAboutBrailleAddon, DispatcherPriority.ApplicationIdle);
 
+        if (_runCounter is not null)
+            Dispatcher.BeginInvoke(CountThisRunAsync, DispatcherPriority.ApplicationIdle);
+
         // Check subscriptions after startup speech has finished.
         Dispatcher.BeginInvoke(async () =>
         {
@@ -168,6 +176,37 @@ public partial class MainWindow : Window
             if (_config.CurrentConfig.Update.CheckAtStartup)
                 await _updateFlow.RunAsync(this, manual: false);
         }, DispatcherPriority.ApplicationIdle);
+    }
+
+    /// <summary>Counts this start, asks once whether to add it to everyone's total, and says the count.</summary>
+    private async Task CountThisRunAsync()
+    {
+        try
+        {
+            var mine = await _runCounter!.RecordRunAsync();
+            if (_config.CurrentConfig.Runs.Share is null)
+            {
+                var answer = MessageBox.Show(this,
+                    T("Add your runs to the total for everyone?\n\n") +
+                    T("Each time TimePlayer starts, it can add 1 to a public count of how many times everyone has run it, and tell you that total. ") +
+                    T("Nothing else is sent: not your name, your computer or what you watch.\n\n") +
+                    T("You will not be asked again; this can be changed in Settings, Updates and help."),
+                    T("Count of runs"), MessageBoxButton.YesNo, MessageBoxImage.Question, MessageBoxResult.No);
+                // Saved even when it's No, so the question isn't asked again.
+                var share = answer == MessageBoxResult.Yes;
+                var current = _config.CurrentConfig;
+                await _config.UpdateConfigAsync(current with { Runs = current.Runs with { Share = share } });
+                _viewModel.ShareRunCount = share;
+                SearchBox.Focus();
+            }
+            var everyone = await _runCounter.SendRunAsync();
+            if (_config.CurrentConfig.Runs.Announce)
+                _accessibility.Announce(RunCounter.Spoken(mine, everyone), AnnouncementPriority.Low);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not count this run.");
+        }
     }
 
     /// <summary>Asked once, and only when NVDA is installed; the answer is saved either way.</summary>

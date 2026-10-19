@@ -18,6 +18,18 @@ public record AppConfig
     public SponsorBlockConfig SponsorBlock { get; init; } = new();
     public DislikeConfig Dislikes { get; init; } = new();
     public AudioConfig Audio { get; init; } = new();
+    public RunsConfig Runs { get; init; } = new();
+}
+
+/// <summary>How many times TimePlayer has started, and whether those starts are added to everyone's total.</summary>
+public record RunsConfig
+{
+    /// <summary>Starts on this computer, this one included.</summary>
+    public long Count { get; init; }
+    /// <summary>Say the count when TimePlayer starts.</summary>
+    public bool Announce { get; init; } = true;
+    /// <summary>Add each start to the shared count. Null until the person has been asked (once, at startup).</summary>
+    public bool? Share { get; init; }
 }
 
 /// <summary>Audio effects and music mode. They change TimePlayer's sound only, never the rest of Windows.</summary>

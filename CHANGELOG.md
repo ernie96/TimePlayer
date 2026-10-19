@@ -3,6 +3,11 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.8.0
+
+- TimePlayer can tell you at startup how many times it has been run on your computer. Turn this off in Settings, Updates and help.
+- You can also add your runs to a shared total for everyone, and hear that total too. TimePlayer asks once at startup. Each start adds 1 to a public counter (Abacus); nothing else is sent, not your name, your computer or what you watch. Change it in Settings, Updates and help.
+
 ## 1.7.1
 
 - Fixed: updates could fail silently when a second TimePlayer window was open (for example, if TimePlayer was started twice). The installer won't replace TimePlayer while any copy runs, so the old version simply came back. Now TimePlayer runs once: starting it again brings the open window to the front.

@@ -142,6 +142,26 @@ public sealed partial class MainViewModel
             _ = _configService.UpdateConfigAsync(current with { Update = current.Update with { CheckAtStartup = value } });
     }
 
+    [ObservableProperty]
+    private bool _announceRunCount = true;
+
+    [ObservableProperty]
+    private bool _shareRunCount;
+
+    partial void OnAnnounceRunCountChanged(bool value)
+    {
+        var current = _configService.CurrentConfig;
+        if (current.Runs.Announce != value)
+            _ = _configService.UpdateConfigAsync(current with { Runs = current.Runs with { Announce = value } });
+    }
+
+    partial void OnShareRunCountChanged(bool value)
+    {
+        var current = _configService.CurrentConfig;
+        if (current.Runs.Share != value)
+            _ = _configService.UpdateConfigAsync(current with { Runs = current.Runs with { Share = value } });
+    }
+
     public string VersionText => T("TimePlayer {0}", AppPaths.Version) + (AppPaths.IsPortable ? T(", portable") : string.Empty);
 
     [RelayCommand]

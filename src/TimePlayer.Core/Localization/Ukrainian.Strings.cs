@@ -35,9 +35,11 @@ internal static partial class Ukrainian
         table["A turns autoplay on or off. C turns reading captions aloud on or off.\n"] = "A вмикає або вимикає автовідтворення. C вмикає або вимикає читання субтитрів уголос.\n";
         table["A wide sound with the ambience of a large room."] = "Широкий звук з атмосферою великої зали.";
         table["Actions"] = "Дії";
+        table["Add my runs to the total for everyone (only adds 1 per start, nothing about you)"] = "Додавати мої запуски до загальної кількості (лише 1 за кожен запуск, нічого про вас)";
         table["Add to _playlist..."] = "Додати до _плейлиста...";
         table["Add to _queue"] = "Додати до _черги";
         table["Add to playlist"] = "Додати до плейлиста";
+        table["Add your runs to the total for everyone?\n\n"] = "Додавати ваші запуски до загальної кількості?\n\n";
         table["Added to queue."] = "Додано до черги.";
         table["Added to {0}."] = "Додано до «{0}».";
         table["All media components verified."] = "Усі медіакомпоненти перевірено.";
@@ -141,6 +143,7 @@ internal static partial class Ukrainian
         table["Could not play this video"] = "Не вдалося відтворити це відео";
         table["Could not save the playlist. {0}"] = "Не вдалося зберегти плейлист. {0}";
         table["Could not update from YouTube. {0}"] = "Не вдалося оновити з YouTube. {0}";
+        table["Count of runs"] = "Кількість запусків";
         table["Created playlist {0}."] = "Плейлист «{0}» створено.";
         table["Created {0} with {1}."] = "Створено «{0}» з «{1}».";
         table["Custom"] = "Власний";
@@ -176,6 +179,7 @@ internal static partial class Ukrainian
         table["Downloading {0}: {1}"] = "Завантаження {0}: {1}";
         table["E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n"] = "E і Shift+E перемикають набір звуку, Control+M вмикає або вимикає режим музики (без відео, звук для музики).\n";
         table["E_xport subscriptions..."] = "Е_кспортувати підписки...";
+        table["Each time TimePlayer starts, it can add 1 to a public count of how many times everyone has run it, and tell you that total. "] = "Під час кожного запуску TimePlayer може додавати 1 до загальнодоступного лічильника запусків усіх користувачів і повідомляти вам цю кількість. ";
         table["End of list."] = "Кінець списку.";
         table["Engine error"] = "Помилка рушія";
         table["Engine initialized"] = "Рушій ініціалізовано";
@@ -186,6 +190,7 @@ internal static partial class Ukrainian
         table["Escape returns to the player controls."] = "Escape повертає до елементів керування плеєром.";
         table["Even out the volume"] = "Вирівнювати гучність";
         table["Evens out the volume between videos."] = "Вирівнює гучність між відео.";
+        table["Everyone together: {0:N0} time.|Everyone together: {0:N0} times."] = "Усі разом: {0:N0} раз.|Усі разом: {0:N0} рази.|Усі разом: {0:N0} разів.";
         table["Export subscriptions"] = "Експортувати підписки";
         table["Exported {0} to {1}."] = "Експортовано {0} у {1}.";
         table["F1: keys for where you are   F6: next area   /: search"] = "F1: клавіші для поточного місця   F6: наступна область   /: пошук";
@@ -299,6 +304,7 @@ internal static partial class Ukrainian
         table["No video loaded"] = "Відео не завантажено";
         table["None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later."] = "Жодне з джерел TimePlayer не змогло відтворити це відео. Воно може бути приватним, обмеженим за віком чи заблокованим, або джерела мають проблеми; спробуйте пізніше.";
         table["Not interested. It won't be recommended again."] = "Не цікавить. Більше не рекомендуватиметься.";
+        table["Nothing else is sent: not your name, your computer or what you watch.\n\n"] = "Більше нічого не надсилається: ні ваше ім’я, ні ваш комп’ютер, ні те, що ви дивитеся.\n\n";
         table["Nothing is playing."] = "Нічого не відтворюється.";
         table["Nothing played in Music yet. Songs you play here appear in this list, newest first."] = "У Музиці ще нічого не відтворювалося. Пісні, які ви тут слухаєте, з’являться в цьому списку, спочатку найновіші.";
         table["Nothing to import was found in this zip. In Google Takeout, choose YouTube and YouTube Music, with subscriptions, playlists and history."] = "У цьому архіві немає нічого для імпорту. У Google Takeout виберіть YouTube і YouTube Music з підписками, плейлистами та історією.";
@@ -451,6 +457,7 @@ internal static partial class Ukrainian
         table["T says the time, I says what is playing, U says what plays next.\n"] = "T називає час, I — що відтворюється, U — що буде далі.\n";
         table["Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. "] = "Tab і Shift+Tab переходять між налаштуваннями. Пробіл перемикає прапорець; Вгору і Вниз змінюють вибір. ";
         table["Tell me (S skips it)"] = "Повідомляти (S пропускає)";
+        table["Tell me at startup how many times TimePlayer has run"] = "Повідомляти під час запуску, скільки разів запускали TimePlayer";
         table["Tell me when a video has a highlight"] = "Повідомляти, коли відео має головний момент";
         table["Tell me when a whole video is labeled, such as sponsored"] = "Повідомляти, коли все відео позначено, наприклад як спонсороване";
         table["The Applications key lists every action."] = "Клавіша контекстного меню показує всі дії.";
@@ -481,6 +488,7 @@ internal static partial class Ukrainian
         table["TimePlayer Error"] = "Помилка TimePlayer";
         table["TimePlayer braille add-on installed. Restart NVDA once to use the braille progress track and touch seeking."] = "Брайлівський додаток TimePlayer встановлено. Перезапустіть NVDA один раз, щоб користуватися смугою прогресу на брайлі та перемотуванням дотиком.";
         table["TimePlayer can add a small NVDA add-on that shows the playback position on your braille display "] = "TimePlayer може додати невеликий додаток NVDA, що показує позицію відтворення на брайлівському дисплеї ";
+        table["TimePlayer has been run {0:N0} time on this computer.|TimePlayer has been run {0:N0} times on this computer."] = "TimePlayer запускали {0:N0} раз на цьому комп’ютері.|TimePlayer запускали {0:N0} рази на цьому комп’ютері.|TimePlayer запускали {0:N0} разів на цьому комп’ютері.";
         table["TimePlayer is up to date, version {0}."] = "TimePlayer оновлено, версія {0}.";
         table["TimePlayer update"] = "Оновлення TimePlayer";
         table["TimePlayer will use {0} after you restart it."] = "TimePlayer використовуватиме {0} після перезапуску.";
@@ -535,6 +543,7 @@ internal static partial class Ukrainian
         table["Wider, more natural sound on headphones, with crossfeed."] = "Ширший, природніший звук у навушниках, з кросфідом.";
         table["You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files."] = "Ви ще не підписані на жоден канал.\nНатисніть Control+S на відео, щоб підписатися на його канал, або виберіть вище «Як отримати мої підписки YouTube», щоб перенести їх з YouTube. «Імпортувати підписки» читає також файли NewPipe, LibreTube і FreeTube.";
         table["You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions."] = "Підписок ще немає.\nНатисніть Control+S на будь-якому відео, щоб підписатися на його канал, або натисніть Control+4 і імпортуйте свої підписки.";
+        table["You will not be asked again; this can be changed in Settings, Updates and help."] = "Більше вас не питатимуть; це можна змінити в налаштуваннях, на сторінці «Оновлення й довідка».";
         table["YouTube hides dislike counts. Return YouTube Dislike (returnyoutubedislike.com) estimates them; they appear in the description and when you press I in the player. Only the video's id is sent."] = "YouTube приховує кількість дизлайків. Return YouTube Dislike (returnyoutubedislike.com) оцінює її; вона з’являється в описі та коли ви натискаєте I в плеєрі. Надсилається лише ідентифікатор відео.";
         table["YouTube says this video isn't available. It may have been removed, made private, or blocked where you are."] = "YouTube повідомляє, що це відео недоступне. Можливо, його видалено, зроблено приватним або заблоковано у вашому регіоні.";
         table["Your YouTube subscriptions, playlists, liked videos and watch history can be exported from Google with Google Takeout. Steps:\n\n1. Choose Yes below to open Google Takeout in your browser, set to YouTube only. Sign in to Google if asked.\n2. YouTube and YouTube Music is already checked. Activate the button \"All YouTube data included\", choose Deselect all, check \"subscriptions\", \"playlists\" and \"history\", then OK.\n3. For watch history, activate \"Multiple formats\" and set history to JSON instead of HTML. Otherwise history is skipped.\n4. Activate \"Next step\". Leave the delivery method as \"Send download link via email\" and the file type as .zip, then activate \"Create export\".\n5. Google emails you a download link, usually within a few minutes. Download the zip file.\n6. Back in TimePlayer: Playlists (Control+5), Import from Google Takeout, and choose that zip. There is no need to unzip it. Channels, Import subscriptions does the same.\n\nOpen Google Takeout now?"] = "Ваші підписки, плейлисти, вподобані відео та історію переглядів YouTube можна експортувати з Google за допомогою Google Takeout. Кроки:\n\n1. Виберіть «Так» нижче, щоб відкрити Google Takeout у браузері лише для YouTube. Увійдіть у Google, якщо буде запит.\n2. «YouTube і YouTube Music» уже позначено. Натисніть кнопку «Усі дані YouTube включено», виберіть «Скасувати вибір усіх», позначте «підписки», «плейлисти» та «історія», потім OK.\n3. Для історії переглядів натисніть «Кілька форматів» і виберіть для історії JSON замість HTML. Інакше історію буде пропущено.\n4. Натисніть «Наступний крок». Залиште спосіб доставки «Надіслати посилання для завантаження електронною поштою» і тип файлу .zip, потім натисніть «Створити експорт».\n5. Google надішле вам посилання для завантаження електронною поштою, зазвичай за кілька хвилин. Завантажте zip-файл.\n6. Поверніться до TimePlayer: Плейлисти (Control+5), «Імпорт із Google Takeout», і виберіть цей архів. Розпаковувати його не потрібно. «Канали», «Імпортувати підписки» робить те саме.\n\nВідкрити Google Takeout зараз?";

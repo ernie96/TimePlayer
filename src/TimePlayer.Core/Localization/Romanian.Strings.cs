@@ -35,9 +35,11 @@ internal static partial class Romanian
         table["A turns autoplay on or off. C turns reading captions aloud on or off.\n"] = "A pornește sau oprește redarea automată. C pornește sau oprește citirea cu voce a subtitrărilor.\n";
         table["A wide sound with the ambience of a large room."] = "Un sunet larg, cu ambianța unei săli mari.";
         table["Actions"] = "Acțiuni";
+        table["Add my runs to the total for everyone (only adds 1 per start, nothing about you)"] = "Adaugă pornirile mele la totalul tuturor (doar 1 la fiecare pornire, nimic despre dvs.)";
         table["Add to _playlist..."] = "Adaugă în _listă...";
         table["Add to _queue"] = "Adaugă la _coadă";
         table["Add to playlist"] = "Adaugă în listă";
+        table["Add your runs to the total for everyone?\n\n"] = "Adăugați pornirile dvs. la totalul tuturor?\n\n";
         table["Added to queue."] = "Adăugat la coadă.";
         table["Added to {0}."] = "Adăugat în {0}.";
         table["All media components verified."] = "Toate componentele media au fost verificate.";
@@ -141,6 +143,7 @@ internal static partial class Romanian
         table["Could not play this video"] = "Acest videoclip nu a putut fi redat";
         table["Could not save the playlist. {0}"] = "Lista nu a putut fi salvată. {0}";
         table["Could not update from YouTube. {0}"] = "Nu s-a putut actualiza de pe YouTube. {0}";
+        table["Count of runs"] = "Numărul de porniri";
         table["Created playlist {0}."] = "Lista {0} a fost creată.";
         table["Created {0} with {1}."] = "Lista {0} a fost creată cu {1}.";
         table["Custom"] = "Personalizat";
@@ -176,6 +179,7 @@ internal static partial class Romanian
         table["Downloading {0}: {1}"] = "Se descarcă {0}: {1}";
         table["E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n"] = "E și Shift+E schimbă presetarea de sunet, Control+M pornește sau oprește modul muzică (fără video, sunet pentru muzică).\n";
         table["E_xport subscriptions..."] = "E_xportă abonamentele...";
+        table["Each time TimePlayer starts, it can add 1 to a public count of how many times everyone has run it, and tell you that total. "] = "De fiecare dată când pornește, TimePlayer poate adăuga 1 la un contor public al pornirilor tuturor utilizatorilor și vă poate spune acel total. ";
         table["End of list."] = "Sfârșitul listei.";
         table["Engine error"] = "Eroare de motor";
         table["Engine initialized"] = "Motor inițializat";
@@ -186,6 +190,7 @@ internal static partial class Romanian
         table["Escape returns to the player controls."] = "Escape revine la comenzile playerului.";
         table["Even out the volume"] = "Uniformizează volumul";
         table["Evens out the volume between videos."] = "Uniformizează volumul între videoclipuri.";
+        table["Everyone together: {0:N0} time.|Everyone together: {0:N0} times."] = "Toți utilizatorii împreună: {0:N0} dată.|Toți utilizatorii împreună: de {0:N0} ori.|Toți utilizatorii împreună: de {0:N0} de ori.";
         table["Export subscriptions"] = "Exportă abonamentele";
         table["Exported {0} to {1}."] = "{0} exportate în {1}.";
         table["F1: keys for where you are   F6: next area   /: search"] = "F1: tastele locului curent   F6: zona următoare   /: căutare";
@@ -299,6 +304,7 @@ internal static partial class Romanian
         table["No video loaded"] = "Niciun videoclip încărcat";
         table["None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later."] = "Niciuna dintre sursele TimePlayer nu a putut reda acest videoclip. Poate fi privat, restricționat pe vârstă sau blocat, ori sursele au probleme; încercați mai târziu.";
         table["Not interested. It won't be recommended again."] = "Nu mă interesează. Nu va mai fi recomandat.";
+        table["Nothing else is sent: not your name, your computer or what you watch.\n\n"] = "Nu se trimite nimic altceva: nici numele dvs., nici computerul, nici ce vizionați.\n\n";
         table["Nothing is playing."] = "Nu se redă nimic.";
         table["Nothing played in Music yet. Songs you play here appear in this list, newest first."] = "Încă nu ați redat nimic în Muzică. Melodiile redate aici apar în această listă, cele mai noi primele.";
         table["Nothing to import was found in this zip. In Google Takeout, choose YouTube and YouTube Music, with subscriptions, playlists and history."] = "Nu s-a găsit nimic de importat în această arhivă. În Google Takeout, alegeți YouTube și YouTube Music, cu abonamente, liste de redare și istoric.";
@@ -451,6 +457,7 @@ internal static partial class Romanian
         table["T says the time, I says what is playing, U says what plays next.\n"] = "T spune timpul, I spune ce se redă, U spune ce urmează.\n";
         table["Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. "] = "Tab și Shift+Tab trec de la o setare la alta. Spațiu bifează o casetă; Sus și Jos schimbă o opțiune. ";
         table["Tell me (S skips it)"] = "Anunță-mă (S îl sare)";
+        table["Tell me at startup how many times TimePlayer has run"] = "Spune-mi la pornire de câte ori a fost pornit TimePlayer";
         table["Tell me when a video has a highlight"] = "Anunță-mă când un videoclip are un moment principal";
         table["Tell me when a whole video is labeled, such as sponsored"] = "Anunță-mă când un videoclip întreg este etichetat, de exemplu ca sponsorizat";
         table["The Applications key lists every action."] = "Tasta Aplicații afișează toate acțiunile.";
@@ -481,6 +488,7 @@ internal static partial class Romanian
         table["TimePlayer Error"] = "Eroare TimePlayer";
         table["TimePlayer braille add-on installed. Restart NVDA once to use the braille progress track and touch seeking."] = "Suplimentul Braille TimePlayer a fost instalat. Reporniți NVDA o dată pentru a folosi bara de progres Braille și derularea prin atingere.";
         table["TimePlayer can add a small NVDA add-on that shows the playback position on your braille display "] = "TimePlayer poate adăuga un mic supliment NVDA care arată poziția redării pe afișajul Braille ";
+        table["TimePlayer has been run {0:N0} time on this computer.|TimePlayer has been run {0:N0} times on this computer."] = "TimePlayer a fost pornit {0:N0} dată pe acest computer.|TimePlayer a fost pornit de {0:N0} ori pe acest computer.|TimePlayer a fost pornit de {0:N0} de ori pe acest computer.";
         table["TimePlayer is up to date, version {0}."] = "TimePlayer este actualizat, versiunea {0}.";
         table["TimePlayer update"] = "Actualizare TimePlayer";
         table["TimePlayer will use {0} after you restart it."] = "TimePlayer va folosi {0} după ce îl reporniți.";
@@ -535,6 +543,7 @@ internal static partial class Romanian
         table["Wider, more natural sound on headphones, with crossfeed."] = "Sunet mai larg și mai natural în căști, cu crossfeed.";
         table["You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files."] = "Încă nu sunteți abonat la niciun canal.\nApăsați Control+S pe un videoclip pentru a vă abona la canalul lui sau alegeți „Cum îmi obțin abonamentele YouTube” mai sus pentru a le aduce de pe YouTube. Importă abonamente citește și fișiere NewPipe, LibreTube și FreeTube.";
         table["You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions."] = "Încă nu aveți abonamente.\nApăsați Control+S pe orice videoclip pentru a vă abona la canalul lui sau apăsați Control+4 și importați-vă abonamentele.";
+        table["You will not be asked again; this can be changed in Settings, Updates and help."] = "Nu veți mai fi întrebat; puteți schimba asta în Setări, Actualizări și ajutor.";
         table["YouTube hides dislike counts. Return YouTube Dislike (returnyoutubedislike.com) estimates them; they appear in the description and when you press I in the player. Only the video's id is sent."] = "YouTube ascunde numărul de neaprecieri. Return YouTube Dislike (returnyoutubedislike.com) îl estimează; apare în descriere și când apăsați I în player. Se trimite doar ID-ul videoclipului.";
         table["YouTube says this video isn't available. It may have been removed, made private, or blocked where you are."] = "YouTube spune că acest videoclip nu este disponibil. Poate a fost eliminat, făcut privat sau blocat în zona dvs.";
         table["Your YouTube subscriptions, playlists, liked videos and watch history can be exported from Google with Google Takeout. Steps:\n\n1. Choose Yes below to open Google Takeout in your browser, set to YouTube only. Sign in to Google if asked.\n2. YouTube and YouTube Music is already checked. Activate the button \"All YouTube data included\", choose Deselect all, check \"subscriptions\", \"playlists\" and \"history\", then OK.\n3. For watch history, activate \"Multiple formats\" and set history to JSON instead of HTML. Otherwise history is skipped.\n4. Activate \"Next step\". Leave the delivery method as \"Send download link via email\" and the file type as .zip, then activate \"Create export\".\n5. Google emails you a download link, usually within a few minutes. Download the zip file.\n6. Back in TimePlayer: Playlists (Control+5), Import from Google Takeout, and choose that zip. There is no need to unzip it. Channels, Import subscriptions does the same.\n\nOpen Google Takeout now?"] = "Abonamentele, listele de redare, videoclipurile apreciate și istoricul vizionărilor de pe YouTube pot fi exportate de la Google cu Google Takeout. Pași:\n\n1. Alegeți Da mai jos pentru a deschide Google Takeout în browser, setat doar pentru YouTube. Conectați-vă la Google dacă vi se cere.\n2. YouTube și YouTube Music este deja bifat. Activați butonul „Toate datele YouTube sunt incluse”, alegeți Deselectați tot, bifați „abonamente”, „playlisturi” și „istoric”, apoi OK.\n3. Pentru istoricul vizionărilor, activați „Mai multe formate” și setați istoricul la JSON în loc de HTML. Altfel, istoricul este omis.\n4. Activați „Pasul următor”. Lăsați metoda de livrare „Trimiteți linkul de descărcare prin e-mail” și tipul de fișier .zip, apoi activați „Creați exportul”.\n5. Google vă trimite prin e-mail un link de descărcare, de obicei în câteva minute. Descărcați fișierul zip.\n6. Înapoi în TimePlayer: Liste de redare (Control+5), Importă din Google Takeout și alegeți acea arhivă. Nu este nevoie să o dezarhivați. Canale, Importă abonamente face același lucru.\n\nDeschideți Google Takeout acum?";

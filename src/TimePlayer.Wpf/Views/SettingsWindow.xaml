@@ -222,6 +222,8 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
                         <CheckBox Content="{l:T 'Check for TimePlayer updates at startup'}" IsChecked="{Binding CheckForAppUpdatesAtStartup}"/>
+                        <CheckBox Content="{l:T 'Tell me at startup how many times TimePlayer has run'}" IsChecked="{Binding AnnounceRunCount}"/>
+                        <CheckBox Content="{l:T 'Add my runs to the total for everyone (only adds 1 per start, nothing about you)'}" IsChecked="{Binding ShareRunCount}"/>
                         <WrapPanel Margin="0,0,0,8">
                             <Button Content="{l:T 'Check for TimePlayer _updates'}" Click="CheckAppUpdates_Click" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
                             <Button Content="{l:T 'Update the YouTube _downloader'}" Command="{Binding CheckForUpdatesCommand}" Style="{StaticResource SmallButtonStyle}"/>
