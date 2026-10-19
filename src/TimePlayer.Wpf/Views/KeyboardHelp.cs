@@ -9,14 +9,15 @@ namespace TimePlayer.Wpf.Views;
 public static class KeyboardHelp
 {
     public const string SearchBox =
-        "Type words or paste a YouTube link, then press Enter.\n" +
-        "Escape clears the box. Tab moves to the buttons: Search, Paste link and play (plays a YouTube link from the clipboard) and Settings. F6 moves to the sections.\n" +
-        "Control+1 to Control+9 open Search, Featured, What's New, Channels, History, Watch Later, Queue, For You and Playlists. Control+M turns music mode on or off.\n" +
-        "To find playlists instead of videos, Shift+Tab to the list's Find box (Alt+F) and choose Playlists. A YouTube playlist link opens the playlist.";
+        "Type words or paste a YouTube link, then press Enter. Results open as their own page; Alt+Left goes back.\n" +
+        "Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n" +
+        "From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard.\n" +
+        "A YouTube playlist link opens the playlist.";
 
     public const string Sections =
-        "Left and Right arrows switch sections. Tab moves to the list.\n" +
-        "From anywhere: Control+1 to Control+9 jump to a section, Control+Tab goes to the next one.";
+        "Left and Right arrows switch sections. Tab moves through this section's buttons and list, and stays in the section.\n" +
+        "From anywhere: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History, 8 Queue. " +
+        "Control+Tab goes to the next section. Slash searches. F6 moves between the search box, the sections and the list.";
 
     private const string VideoListKeys =
         "Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, " +
@@ -28,7 +29,7 @@ public static class KeyboardHelp
     public static string ForList(BrowseSection section) => section switch
     {
         BrowseSection.Search =>
-            "Search results. " + VideoListKeys + "\nMore results load as you reach the end of the list. Control+E goes back to the search box.",
+            "Search results. " + VideoListKeys + "\nMore results load as you reach the end of the list. Slash searches again; Alt+Left, Backspace or Escape goes back.",
         BrowseSection.Featured =>
             "Featured videos. " + VideoListKeys + "\nShift+Tab reaches the Category box: Trending, Music (the top 100 music videos), Gaming, Movies (trailers), News, Sports and Live. " +
             "Music, Gaming and Movies keep loading as you reach the end. F5 refreshes.",
@@ -48,7 +49,7 @@ public static class KeyboardHelp
             "Videos picked for you from what you watch, like and subscribe to. Nothing leaves this computer.\n" + VideoListKeys +
             "\nDelete means not interested; Shift+Delete stops recommending that channel. F5 finds new picks.",
         BrowseSection.Playlists =>
-            "Liked videos and your playlists. Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete and Import from Google Takeout.\n" +
+            "Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete and Import from Google Takeout.\n" +
             "Control+C copies a link to share the playlist. Delete deletes the selected playlist after asking.",
         BrowseSection.Playlist =>
             "The videos in this playlist. " + VideoListKeys + "\n" +
@@ -67,7 +68,7 @@ public static class KeyboardHelp
         3. For watch history, activate "Multiple formats" and set history to JSON instead of HTML. Otherwise history is skipped.
         4. Activate "Next step". Leave the delivery method as "Send download link via email" and the file type as .zip, then activate "Create export".
         5. Google emails you a download link, usually within a few minutes. Download the zip file.
-        6. Back in TimePlayer: Playlists (Control+9), Import from Google Takeout, and choose that zip. There is no need to unzip it. Channels, Import subscriptions does the same.
+        6. Back in TimePlayer: Playlists (Control+5), Import from Google Takeout, and choose that zip. There is no need to unzip it. Channels, Import subscriptions does the same.
 
         Open Google Takeout now?
         """;
@@ -87,7 +88,8 @@ public static class KeyboardHelp
         "E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n" +
         "Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n" +
         "Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n" +
-        "Escape closes the player.";
+        "Alt+A or the Applications key opens Actions: like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more.\n" +
+        "Slash closes the player and goes to search. Escape closes the player.";
 
     private static string Seconds(double value) => value == 1 ? "1 second" : $"{value:0.#} seconds";
 

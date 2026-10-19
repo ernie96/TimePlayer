@@ -371,6 +371,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             {
                 _lastSearchResults = searchResult.Value.Items.DistinctBy(item => item.Id).ToList();
                 _sectionCts?.Cancel();
+                // Results are a page of their own; Back returns to where the search started.
+                if (CurrentSection != BrowseSection.Search)
+                    PushNavigation();
                 CurrentSection = BrowseSection.Search;
                 SyncSelectedTab(BrowseSection.Search);
                 SectionTitle = $"Search results for {query}";
@@ -449,6 +452,23 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     {
         ErrorMessage = null;
         CanRetry = false;
+        // The banner (and the focused button in it) disappears; land somewhere useful.
+        if (IsPlayerDialogOpen)
+            RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
+        else
+            RequestFocusResults?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Shows the error banner with a reason, always, and says how to reach it.</summary>
+    private void ShowProblem(string what, string? reason, bool canRetry = true)
+    {
+        var why = string.IsNullOrWhiteSpace(reason)
+            ? "No reason was given. The log (Settings, Updates and help, Open log folder) may say more."
+            : reason.Trim();
+        ErrorMessage = $"{what}: {why}";
+        CanRetry = canRetry;
+        _logger.LogWarning("Shown to the user: {Problem}", ErrorMessage);
+        _accessibility.Announce($"{ErrorMessage} F6 reaches Retry and Dismiss.", AnnouncementPriority.High);
     }
 
     [RelayCommand]
@@ -492,8 +512,22 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
     }
 
+    /// <summary>
+    /// Plays a video the user picked from a list. Something new starts a fresh queue; a video already
+    /// in the queue plays from its place there.
+    /// </summary>
     [RelayCommand]
-    public async Task PlaySearchResultAsync(SearchResult? item)
+    public Task PlaySearchResultAsync(SearchResult? item) => PlayItemAsync(item, continueQueue: false);
+
+    private static string? SearchResultIdOf(string url) =>
+        YouTubeUrl.TryParse(url, out var parsed) ? parsed.VideoId.Value
+        : YouTubeVideoId.TryParse(url, out var id) ? id.Value
+        : null;
+
+    /// <summary>Autoplay and Next: the video joins the end of the current queue, so Previous still works.</summary>
+    private Task ContinueWithAsync(SearchResult item) => PlayItemAsync(item, continueQueue: true);
+
+    private async Task PlayItemAsync(SearchResult? item, bool continueQueue)
     {
         item ??= SelectedSearchResult;
         if (item == null) return;
@@ -532,10 +566,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _accessibility.Announce($"Loading {item.Title}", AnnouncementPriority.High);
         RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
 
-        // Add to queue if not already present
-        if (!PlaybackQueue.Any(q => q.VideoId.Value == item.Id))
+        // The coordinator's queue, not the on-screen copy, which updates a moment later.
+        bool queued = _playbackCoordinator is PlaybackCoordinator queueOwner
+            ? queueOwner.IsQueued(item.Id)
+            : PlaybackQueue.Any(q => q.VideoId.Value == item.Id);
+        if (!queued)
         {
-            await _playbackCoordinator.EnqueueAsync(item);
+            if (continueQueue || _playbackCoordinator is not PlaybackCoordinator coordinator)
+                await _playbackCoordinator.EnqueueAsync(item with { StatusPrefix = null });
+            else
+                await coordinator.ReplaceQueueAsync(new[] { item with { StatusPrefix = null } });
         }
 
         try
@@ -543,9 +583,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             var result = await _playbackCoordinator.PlayUrlOrIdAsync(item.Id, token);
             if (!result.IsSuccess)
             {
-                ErrorMessage = result.Error?.Message;
-                CanRetry = true;
-                _accessibility.Announce($"Could not play video: {ErrorMessage}", AnnouncementPriority.High);
+                ShowProblem("Could not play this video", result.Error?.Message);
             }
             else
             {
@@ -587,12 +625,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         try
         {
+            // A pasted link is new content: the old queue goes, as when picking from a list.
+            if (_playbackCoordinator is PlaybackCoordinator coordinator && SearchResultIdOf(url) is { } linkId && !coordinator.IsQueued(linkId))
+                await coordinator.ClearQueueAsync();
             var result = await _playbackCoordinator.PlayUrlOrIdAsync(url, token);
             if (!result.IsSuccess)
             {
-                ErrorMessage = result.Error?.Message;
-                CanRetry = true;
-                _accessibility.Announce($"Could not load video: {ErrorMessage}", AnnouncementPriority.High);
+                ShowProblem("Could not load this video", result.Error?.Message);
             }
             else
             {
@@ -1237,10 +1276,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
-        ErrorMessage = error.UserMessage;
-        CanRetry = true;
-        StatusAnnouncement = error.UserMessage;
-        _accessibility.Announce(error.UserMessage, AnnouncementPriority.High);
+        ShowProblem("Playback problem", error.UserMessage);
+        StatusAnnouncement = ErrorMessage ?? string.Empty;
     }
 
     private void OnCoordinatorStatusChanged(object? sender, string status)

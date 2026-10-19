@@ -62,15 +62,14 @@ public sealed partial class MainViewModel
 
     public ObservableCollection<SectionTab> SectionTabs { get; } = new()
     {
-        new(BrowseSection.Search, "Search", "Control+1"),
-        new(BrowseSection.Featured, "Featured", "Control+2"),
+        new(BrowseSection.Featured, "Featured", "Control+1"),
+        new(BrowseSection.ForYou, "For You", "Control+2"),
         new(BrowseSection.WhatsNew, "What's New", "Control+3"),
         new(BrowseSection.Channels, "Channels", "Control+4"),
-        new(BrowseSection.History, "History", "Control+5"),
+        new(BrowseSection.Playlists, "Playlists", "Control+5"),
         new(BrowseSection.WatchLater, "Watch Later", "Control+6"),
-        new(BrowseSection.Queue, "Queue", "Control+7"),
-        new(BrowseSection.ForYou, "For You", "Control+8"),
-        new(BrowseSection.Playlists, "Playlists", "Control+9"),
+        new(BrowseSection.History, "History", "Control+7"),
+        new(BrowseSection.Queue, "Queue", "Control+8"),
     };
 
     public IReadOnlyList<FeaturedCategory> FeaturedCategories { get; } = Enum.GetValues<FeaturedCategory>();
@@ -81,13 +80,13 @@ public sealed partial class MainViewModel
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFeaturedSection), nameof(IsChannelsSection), nameof(IsHistorySection), nameof(IsChannelView),
         nameof(IsForYouSection), nameof(IsPlaylistsSection), nameof(IsPlaylistView), nameof(IsDetailView), nameof(IsSearchSection))]
-    private BrowseSection _currentSection = BrowseSection.Search;
+    private BrowseSection _currentSection = BrowseSection.Featured;
 
     [ObservableProperty]
-    private string _sectionTitle = "Search results";
+    private string _sectionTitle = "Featured";
 
     [ObservableProperty]
-    private string _sectionEmptyText = "Type keywords or paste a YouTube video link above and press Enter to search.\nOr press Control+2 for featured videos.";
+    private string _sectionEmptyText = "Press slash to search, or Control+1 for featured videos.";
 
     [ObservableProperty]
     private bool _isSectionLoading;
@@ -151,6 +150,15 @@ public sealed partial class MainViewModel
 
     // --- Section navigation ---
 
+    private bool _quietSectionLoad;
+
+    /// <summary>At startup: Featured is ready behind the search box without speaking over startup.</summary>
+    public Task LoadStartSectionQuietlyAsync()
+    {
+        _quietSectionLoad = true;
+        return ShowSectionAsync(BrowseSection.Featured, moveFocus: false);
+    }
+
     [RelayCommand]
     public Task ShowSectionByNumberAsync(int number) =>
         number >= 1 && number <= SectionTabs.Count
@@ -177,7 +185,7 @@ public sealed partial class MainViewModel
             {
                 case BrowseSection.Search:
                     SectionTitle = "Search results";
-                    SectionEmptyText = "Type keywords or paste a YouTube video link above and press Enter to search.\nOr press Control+2 for featured videos.";
+                    SectionEmptyText = "No results. Press slash to search again.";
                     ShowItems(_lastSearchResults, moveFocus);
                     if (_lastSearchResults.Count > 0 && _lastSearchResults[0].Kind != SearchResultKind.Playlist)
                         ConfigureSearchPaging();
@@ -257,8 +265,8 @@ public sealed partial class MainViewModel
 
     private void SyncSelectedTab(BrowseSection section)
     {
-        if (section is BrowseSection.Channel or BrowseSection.Playlist)
-            return; // keep the tab the page was opened from
+        if (section is BrowseSection.Channel or BrowseSection.Playlist or BrowseSection.Search)
+            return; // pages opened from a section keep that section's tab
         _syncingTab = true;
         SelectedSectionTab = SectionTabs.First(t => t.Section == section);
         _syncingTab = false;
@@ -583,7 +591,10 @@ public sealed partial class MainViewModel
             var noun = $"{count} {SectionNoun(count)}";
             spoken = string.Join(", ", new[] { noun, extraSummary }.Where(s => !string.IsNullOrWhiteSpace(s)));
         }
-        _accessibility.Announce(spoken, AnnouncementPriority.Medium);
+        if (_quietSectionLoad)
+            _quietSectionLoad = false; // loading at startup: the user didn't ask, so nothing is spoken
+        else
+            _accessibility.Announce(spoken, AnnouncementPriority.Medium);
 
         if (moveFocus && count > 0)
             RequestFocusResults?.Invoke(this, EventArgs.Empty);

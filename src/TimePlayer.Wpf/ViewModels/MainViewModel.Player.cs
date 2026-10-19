@@ -312,7 +312,7 @@ public sealed partial class MainViewModel
         if (Autoplay && IsPlayerDialogOpen && NextAutoplayCandidate() is { } next)
         {
             _accessibility.Announce($"Up next: {next.Title}", AnnouncementPriority.Medium);
-            _ = PlaySearchResultAsync(next);
+            _ = ContinueWithAsync(next);
         }
         else
         {
@@ -330,7 +330,7 @@ public sealed partial class MainViewModel
         }
         else if (NextAutoplayCandidate() is { } next)
         {
-            await PlaySearchResultAsync(next);
+            await ContinueWithAsync(next);
         }
         else
         {

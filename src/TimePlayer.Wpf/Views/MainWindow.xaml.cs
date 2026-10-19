@@ -148,6 +148,7 @@ public partial class MainWindow : Window
         }
 
         SearchBox.Focus();
+        _ = _viewModel.LoadStartSectionQuietlyAsync();
 
         if (_viewModel.ShouldAskAboutBrailleAddon)
             Dispatcher.BeginInvoke(AskAboutBrailleAddon, DispatcherPriority.ApplicationIdle);
@@ -251,14 +252,93 @@ public partial class MainWindow : Window
         menu.IsOpen = true;
     }
 
-    private void PlayerDownload_Click(object sender, RoutedEventArgs e) => ShowDownloadMenu(PlayerDownloadButton, null);
+    private void PlayerActions_Click(object sender, RoutedEventArgs e) => ShowPlayerActionsMenu();
+
+    /// <summary>
+    /// The player's Actions menu (Alt+A, the Applications key or the Actions button): everything that used to be
+    /// a row of buttons. Each item names its shortcut, which keeps working without the menu.
+    /// </summary>
+    private void ShowPlayerActionsMenu()
+    {
+        var menu = new ContextMenu { PlacementTarget = PlayerActionsButton, Placement = PlacementMode.Bottom };
+        AutomationProperties.SetName(menu, "Actions");
+
+        MenuItem Item(string header, string gesture, Action action, bool isChecked = false, bool checkable = false)
+        {
+            var item = new MenuItem { Header = header, InputGestureText = gesture, IsCheckable = checkable, IsChecked = isChecked };
+            item.Click += (_, _) => action();
+            return item;
+        }
+        MenuItem Sub(string header) => new() { Header = header };
+
+        menu.Items.Add(Item(_viewModel.LikeButtonText, "Ctrl+K", _viewModel.ToggleLikeCurrent));
+        menu.Items.Add(Item(_viewModel.SubscribeButtonText, "Ctrl+S", _viewModel.ToggleSubscribeCurrentChannel));
+        menu.Items.Add(Item(_viewModel.WatchLaterButtonText, "Ctrl+L", _viewModel.ToggleWatchLaterCurrent));
+        menu.Items.Add(Item("Add to _playlist...", "Ctrl+P", () => _viewModel.ShowAddToPlaylistMenu(null)));
+        menu.Items.Add(Item("Go to _channel", "Ctrl+G", () => _ = _viewModel.OpenCurrentChannelAsync()));
+        menu.Items.Add(Item("Copy share _link at this point", "Ctrl+C", _viewModel.CopyShareLinkAtCurrentTime));
+        menu.Items.Add(Item("_Download...", "Ctrl+D", () => ShowDownloadMenu(PlayerActionsButton, null)));
+        menu.Items.Add(new Separator());
+
+        var captions = Sub("Ca_ptions");
+        foreach (var track in _viewModel.AvailableSubtitleTracks)
+        {
+            var option = track;
+            captions.Items.Add(Item(track.DisplayName.Replace("_", "__"), string.Empty,
+                () => _ = _viewModel.SelectSubtitleTrackAsync(option), isChecked: ReferenceEquals(option, _viewModel.SelectedSubtitleTrack), checkable: true));
+        }
+        captions.Items.Add(new Separator());
+        captions.Items.Add(Item("_Read captions aloud", "C", _viewModel.ToggleSpeakCaptions, _viewModel.SpeakCaptions, checkable: true));
+        menu.Items.Add(captions);
+
+        var speed = Sub($"_Speed, {_viewModel.PlaybackSpeed:0.##}x");
+        speed.Items.Add(Item("_Faster", "Shift+Period", () => _ = _viewModel.SpeedUpAsync()));
+        speed.Items.Add(Item("_Slower", "Shift+Comma", () => _ = _viewModel.SpeedDownAsync()));
+        speed.Items.Add(Item("_Normal speed", string.Empty, () => _ = _viewModel.ResetSpeedAsync()));
+        menu.Items.Add(speed);
+
+        var sound = Sub("S_ound");
+        foreach (var name in _viewModel.AudioPresetNames)
+        {
+            var preset = name;
+            sound.Items.Add(Item(preset, string.Empty, () => _viewModel.SelectSoundPreset(preset),
+                isChecked: preset == _viewModel.ActiveSoundPresetName, checkable: true));
+        }
+        sound.Items.Add(new Separator());
+        sound.Items.Add(Item("_Music mode", "Ctrl+M", _viewModel.ToggleMusicMode, _viewModel.MusicMode, checkable: true));
+        menu.Items.Add(sound);
+
+        menu.Items.Add(Item("_Autoplay related videos", "A", _viewModel.ToggleAutoplay, _viewModel.Autoplay, checkable: true));
+        menu.Items.Add(Item("S_kip SponsorBlock segment", "S", () => _ = _viewModel.SkipCurrentSegmentAsync()));
+        menu.Items.Add(Item("Jump to _highlight", "H", () => _ = _viewModel.JumpToHighlightAsync()));
+        menu.Items.Add(Item("_Video information", "I", _viewModel.AnnounceVideoInfo));
+
+        menu.Opened += (_, _) => (menu.Items[0] as MenuItem)?.Focus();
+        menu.IsOpen = true;
+    }
+
+    /// <summary>Slash, Control+F or Control+E: the search box, from anywhere. From the player, the player closes first.</summary>
+    private async void FocusSearchFromAnywhere()
+    {
+        if (_viewModel.IsPlayerDialogOpen)
+            await _viewModel.ClosePlayerDialogAsync();
+        await Dispatcher.InvokeAsync(() =>
+        {
+            SearchBox.Focus();
+            SearchBox.SelectAll();
+        }, DispatcherPriority.Input);
+    }
+
+    private static bool IsSearchKey(Key key, ModifierKeys mods) =>
+        (mods == ModifierKeys.None && key is Key.Oem2 or Key.Divide) ||
+        (mods == ModifierKeys.Control && key is Key.F or Key.E);
 
     /// <summary>Ctrl+P: your playlists, then "New playlist...". Liked videos has its own key, Ctrl+K.</summary>
     private void ShowAddToPlaylistMenu(SearchResult? item)
     {
-        UIElement anchor = Keyboard.FocusedElement as UIElement ?? (UIElement)PlayerPlaylistButton;
+        UIElement anchor = Keyboard.FocusedElement as UIElement ?? (UIElement)PlayerActionsButton;
         if (item is null && _viewModel.IsPlayerDialogOpen && !IsWithin(anchor as DependencyObject, PlayerPanelTabs))
-            anchor = PlayerPlaylistButton;
+            anchor = PlayerActionsButton;
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
         AutomationProperties.SetName(menu, "Add to playlist");
         foreach (var playlist in _viewModel.PlaylistsForMenu())
@@ -345,6 +425,11 @@ public partial class MainWindow : Window
             };
             current = IsWithin(focused, SectionTabControl) ? 1 : IsWithin(focused, list) ? 2 : 0;
         }
+        if (ErrorBanner.IsVisible)
+        {
+            areas = areas.Prepend(() => { ErrorMessageBox.Focus(); ErrorMessageBox.SelectAll(); }).ToArray();
+            current = IsWithin(focused, ErrorBanner) ? 0 : current + 1;
+        }
         areas[(current + (backwards ? areas.Length - 1 : 1)) % areas.Length]();
     }
 
@@ -410,6 +495,21 @@ public partial class MainWindow : Window
             return;
         }
 
+        // Slash types a slash in text boxes; elsewhere it (like Control+F and Control+E) goes to search.
+        if (IsSearchKey(key, mods) && !(focused is TextBox && mods == ModifierKeys.None))
+        {
+            FocusSearchFromAnywhere();
+            e.Handled = true;
+            return;
+        }
+
+        if (key == Key.V && mods == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            _ = _viewModel.PasteAndPlayAsync();
+            e.Handled = true;
+            return;
+        }
+
         e.Handled = _viewModel.IsPlayerDialogOpen
             ? HandlePlayerKey(key, mods, focused)
             : HandleLibraryKey(key, mods, focused);
@@ -424,6 +524,13 @@ public partial class MainWindow : Window
             if (focused == SearchBox && !string.IsNullOrEmpty(SearchBox.Text))
             {
                 SearchBox.Clear();
+                return true;
+            }
+            if (focused == SearchBox || (focused is DependencyObject top && IsWithin(top, TopBar)))
+            {
+                FocusCurrentList();
+                if (Keyboard.FocusedElement == SearchBox)
+                    (SectionTabControl.ItemContainerGenerator.ContainerFromItem(SectionTabControl.SelectedItem) as TabItem)?.Focus();
                 return true;
             }
             if (_viewModel.IsDetailView)
@@ -461,12 +568,6 @@ public partial class MainWindow : Window
             return true;
         }
 
-        if ((key == Key.E || key == Key.F) && mods == ModifierKeys.Control)
-        {
-            SearchBox.Focus();
-            SearchBox.SelectAll();
-            return true;
-        }
 
         if (key == Key.F5 && mods == ModifierKeys.None)
         {
@@ -503,6 +604,19 @@ public partial class MainWindow : Window
                 PlayPauseButton.Focus();
             else
                 _ = _viewModel.ClosePlayerDialogAsync();
+            return true;
+        }
+
+        if (mods == ModifierKeys.Alt && key == Key.A)
+        {
+            ShowPlayerActionsMenu();
+            return true;
+        }
+
+        bool onListItem = focused is ListBoxItem or TreeViewItem;
+        if (!onListItem && ((key == Key.Apps && mods == ModifierKeys.None) || (key == Key.F10 && mods == ModifierKeys.Shift)))
+        {
+            ShowPlayerActionsMenu();
             return true;
         }
 
@@ -548,7 +662,7 @@ public partial class MainWindow : Window
             if (focused is ListBoxItem { DataContext: SearchResult { IsVideo: true } upNextItem } upNextContainer)
                 ShowDownloadMenu(upNextContainer, upNextItem);
             else
-                ShowDownloadMenu(PlayerDownloadButton, null);
+                ShowDownloadMenu(PlayerActionsButton, null);
             return true;
         }
 
@@ -615,7 +729,7 @@ public partial class MainWindow : Window
         return false;
     }
 
-    private static int? SectionNumber(Key key) => DigitValue(key) is int d and >= 1 and <= 9 ? d : null;
+    private static int? SectionNumber(Key key) => DigitValue(key) is int d and >= 1 and <= 8 ? d : null;
 
     private static int? DigitValue(Key key) => key switch
     {

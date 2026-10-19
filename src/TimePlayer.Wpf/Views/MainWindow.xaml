@@ -126,14 +126,14 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- ============ Top bar: search ============ -->
-        <Border Grid.Row="0" Background="#202023" BorderBrush="#2E2E33" BorderThickness="0,0,0,1" Padding="16,10"
+        <!-- ============ Top bar: search (slash, Control+F or F6 from anywhere) ============ -->
+        <Border x:Name="TopBar" Grid.Row="0" Background="#202023" BorderBrush="#2E2E33" BorderThickness="0,0,0,1" Padding="16,10"
+                KeyboardNavigation.TabNavigation="Cycle"
                 Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
@@ -145,6 +145,7 @@
                          Grid.Column="1"
                          Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}"
                          AutomationProperties.Name="Search YouTube or paste a link"
+                         AutomationProperties.AcceleratorKey="Slash"
                          VerticalContentAlignment="Center"
                          Margin="0,0,8,0">
                     <TextBox.InputBindings>
@@ -152,18 +153,19 @@
                     </TextBox.InputBindings>
                 </TextBox>
 
-                <Button Grid.Column="2" Content="_Search" Command="{Binding SearchCommand}" Style="{StaticResource AccentButtonStyle}"
-                        AutomationProperties.Name="Search" Margin="0,0,8,0" MinWidth="85"/>
-                <Button Grid.Column="3" Content="_Paste link and play" Command="{Binding PasteAndPlayCommand}"
-                        AutomationProperties.Name="Paste link and play"
-                        Margin="0,0,8,0"/>
-                <Button Grid.Column="4" Content="Se_ttings (F2)" Command="{Binding OpenSettingsCommand}"
+                <ComboBox x:Name="SearchKindBox" Grid.Column="2" ItemsSource="{Binding SearchKinds}"
+                          SelectedItem="{Binding SelectedSearchKind, Mode=TwoWay}" MinWidth="110" Margin="0,0,8,0"
+                          AutomationProperties.Name="Search for"/>
+
+                <Button Grid.Column="3" Content="Settings (F2)" Command="{Binding OpenSettingsCommand}"
                         AutomationProperties.Name="Settings" AutomationProperties.AcceleratorKey="F2"/>
             </Grid>
         </Border>
 
         <!-- ============ Error banner ============ -->
-        <Border Grid.Row="1" Background="#7F1D1D" BorderBrush="#EF4444" BorderThickness="0,0,0,1" Padding="16,8"
+        <Border x:Name="ErrorBanner" Grid.Row="1" Background="#7F1D1D" BorderBrush="#EF4444" BorderThickness="0,0,0,1" Padding="16,8"
+                KeyboardNavigation.TabNavigation="Cycle"
+                AutomationProperties.Name="{Binding ErrorMessage, StringFormat=Problem: {0}}"
                 Visibility="{Binding ErrorMessage, Converter={StaticResource NullOrEmptyToVisibilityConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -171,13 +173,15 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="{Binding ErrorMessage}" Foreground="#FEE2E2" FontSize="13" FontWeight="SemiBold"
-                           VerticalAlignment="Center" TextWrapping="Wrap"/>
+                <!-- A read-only text box, not a label, so Tab and the arrow keys can read the reason. -->
+                <TextBox x:Name="ErrorMessageBox" Grid.Column="0" Text="{Binding ErrorMessage, Mode=OneWay}" IsReadOnly="True"
+                         Foreground="#FEE2E2" Background="Transparent" BorderThickness="0" FontSize="13" FontWeight="SemiBold"
+                         VerticalAlignment="Center" TextWrapping="Wrap" AutomationProperties.Name="Problem"/>
                 <Button Grid.Column="1" Content="_Retry" Command="{Binding RetryLastActionCommand}" Style="{StaticResource AccentButtonStyle}"
                         Visibility="{Binding CanRetry, Converter={StaticResource BooleanToVisibilityConverter}}"
-                        AutomationProperties.Name="Retry" Padding="12,4" Margin="8,0,0,0"/>
+                        AutomationProperties.Name="Retry" AutomationProperties.HelpText="{Binding ErrorMessage}" Padding="12,4" Margin="8,0,0,0"/>
                 <Button Grid.Column="2" Content="_Dismiss" Command="{Binding ClearErrorCommand}"
-                        AutomationProperties.Name="Dismiss error" Padding="10,4" Margin="8,0,0,0"/>
+                        AutomationProperties.Name="Dismiss" AutomationProperties.HelpText="{Binding ErrorMessage}" Padding="10,4" Margin="8,0,0,0"/>
             </Grid>
         </Border>
 
@@ -185,7 +189,8 @@
         <Grid Grid.Row="2">
 
             <!-- ===== Library view ===== -->
-            <Grid Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}" Margin="16,12">
+            <Grid x:Name="LibraryArea" Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}" Margin="16,12"
+                  KeyboardNavigation.TabNavigation="Cycle">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -231,13 +236,7 @@
                     <Button Content="&lt; _Back" Command="{Binding GoBackCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsDetailView, Converter={StaticResource BooleanToVisibilityConverter}}"
                             AutomationProperties.Name="Back" AutomationProperties.AcceleratorKey="Alt+Left"/>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,8,0"
-                                Visibility="{Binding IsSearchSection, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <Label Content="_Find:" Target="{Binding ElementName=SearchKindBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
-                        <ComboBox x:Name="SearchKindBox" ItemsSource="{Binding SearchKinds}"
-                                  SelectedItem="{Binding SelectedSearchKind, Mode=TwoWay}" MinWidth="110"
-                                  AutomationProperties.Name="Find"/>
-                    </StackPanel>
+
                     <Button Content="Play _all" Command="{Binding PlayAllCommand}" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding CanPlayAll, Converter={StaticResource BooleanToVisibilityConverter}}"
                             AutomationProperties.Name="Play all"/>
@@ -361,24 +360,10 @@
                                        TextTrimming="CharacterEllipsis" AutomationProperties.HeadingLevel="Level1"/>
                             <TextBlock Text="{Binding CurrentChannelTitle}" FontSize="13" Foreground="#38BDF8" Margin="0,2,0,0"/>
                         </StackPanel>
-                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Content="{Binding SubscribeButtonText}" Command="{Binding ToggleSubscribeCurrentChannelCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding SubscribeButtonText}" AutomationProperties.AcceleratorKey="Control+S"/>
-                            <Button Content="{Binding LikeButtonText}" Command="{Binding ToggleLikeCurrentCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding LikeButtonText}" AutomationProperties.AcceleratorKey="Control+K"/>
-                            <Button Content="{Binding WatchLaterButtonText}" Command="{Binding ToggleWatchLaterCurrentCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding WatchLaterButtonText}" AutomationProperties.AcceleratorKey="Control+L"/>
-                            <Button Content="{Binding MusicModeButtonText}" Command="{Binding ToggleMusicModeCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding MusicModeButtonText}" AutomationProperties.AcceleratorKey="Control+M"/>
-                            <Button x:Name="PlayerPlaylistButton" Content="Playlist..." Command="{Binding ShowAddToPlaylistMenuCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Add to playlist" AutomationProperties.AcceleratorKey="Control+P"/>
-                            <Button Content="Channel" Command="{Binding OpenCurrentChannelCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Go to channel" AutomationProperties.AcceleratorKey="Control+G"/>
-                            <Button Content="Share" Command="{Binding CopyShareLinkAtCurrentTimeCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Copy share link at the current time" AutomationProperties.AcceleratorKey="Control+C"/>
-                            <Button x:Name="PlayerDownloadButton" Content="Download..." Click="PlayerDownload_Click" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Download" AutomationProperties.AcceleratorKey="Control+D"/>
-                        </StackPanel>
+                        <Button x:Name="PlayerActionsButton" Grid.Column="2" Content="_Actions..." Click="PlayerActions_Click"
+                                Style="{StaticResource SmallButtonStyle}" VerticalAlignment="Center"
+                                AutomationProperties.Name="Actions" AutomationProperties.AcceleratorKey="Alt+A, Applications"
+                                AutomationProperties.HelpText="Like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more"/>
                     </Grid>
                 </Border>
 
@@ -529,36 +514,12 @@
                                     Style="{StaticResource AccentButtonStyle}" MinWidth="90" Margin="0,0,6,0"
                                     AutomationProperties.Name="{Binding PlayPauseButtonText}" AutomationProperties.AcceleratorKey="K"/>
                             <Button Content="Previous" Command="{Binding PlayPreviousCommand}" IsEnabled="{Binding CanPlayPrevious}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Previous in queue" AutomationProperties.AcceleratorKey="Shift+P"/>
-                            <Button Content="Next" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}"
+                                    AutomationProperties.Name="Previous" AutomationProperties.AcceleratorKey="Shift+P"/>
+                            <Button Content="Next" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}" Margin="0,0,16,0"
                                     AutomationProperties.Name="Next" AutomationProperties.AcceleratorKey="Shift+N"/>
-                            <Button Content="-5s" Command="{Binding SeekSmallBackwardCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Back 5 seconds" AutomationProperties.AcceleratorKey="Left"/>
-                            <Button Content="+5s" Command="{Binding SeekSmallForwardCommand}" Style="{StaticResource SmallButtonStyle}" Margin="0,0,16,0"
-                                    AutomationProperties.Name="Forward 5 seconds" AutomationProperties.AcceleratorKey="Right"/>
-
                             <Button Content="{Binding MuteButtonText}" Command="{Binding ToggleMuteCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="{Binding MuteButtonText}" AutomationProperties.AcceleratorKey="M"/>
-                            <Button Content="Vol -" Command="{Binding VolumeDownCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Volume down" AutomationProperties.AcceleratorKey="Down"/>
-                            <TextBlock Text="{Binding VolumePercent, StringFormat='{}{0:0}%'}" Foreground="#F4F4F5" VerticalAlignment="Center" MinWidth="40" TextAlignment="Center" Margin="0,0,6,0"/>
-                            <Button Content="Vol +" Command="{Binding VolumeUpCommand}" Style="{StaticResource SmallButtonStyle}" Margin="0,0,16,0"
-                                    AutomationProperties.Name="Volume up" AutomationProperties.AcceleratorKey="Up"/>
-
-                            <Button Content="Slower" Command="{Binding SpeedDownCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="Slower" AutomationProperties.AcceleratorKey="Shift+Comma"/>
-                            <Button Content="{Binding PlaybackSpeed, StringFormat='{}{0:0.##}x'}" Command="{Binding ResetSpeedCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding PlaybackSpeed, StringFormat='Speed {0:0.##}, press to reset'}"/>
-                            <Button Content="Faster" Command="{Binding SpeedUpCommand}" Style="{StaticResource SmallButtonStyle}" Margin="0,0,16,0"
-                                    AutomationProperties.Name="Faster" AutomationProperties.AcceleratorKey="Shift+Period"/>
-
-                            <Label Content="Capt_ions:" Target="{Binding ElementName=CaptionsBox}" Foreground="#A1A1AA" VerticalAlignment="Center" Padding="0,0,6,0"/>
-                            <ComboBox x:Name="CaptionsBox" ItemsSource="{Binding AvailableSubtitleTracks}" SelectedItem="{Binding SelectedSubtitleTrack}"
-                                      DisplayMemberPath="DisplayName" MinWidth="140" Margin="0,0,6,0" AutomationProperties.Name="Captions"/>
-                            <Button Content="{Binding SpeakCaptionsButtonText}" Command="{Binding ToggleSpeakCaptionsCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding SpeakCaptionsButtonText}" AutomationProperties.AcceleratorKey="C"/>
-                            <Button Content="{Binding AutoplayButtonText}" Command="{Binding ToggleAutoplayCommand}" Style="{StaticResource SmallButtonStyle}"
-                                    AutomationProperties.Name="{Binding AutoplayButtonText}" AutomationProperties.AcceleratorKey="A"/>
+                            <TextBlock Text="{Binding VolumePercent, StringFormat='Volume {0:0}%'}" Foreground="#F4F4F5" VerticalAlignment="Center" Margin="6,0,16,0"/>
                         </WrapPanel>
                     </StackPanel>
                 </Border>
@@ -577,7 +538,7 @@
                            TextTrimming="CharacterEllipsis" AutomationProperties.LiveSetting="Polite"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DownloadStatusText}" Foreground="#38BDF8" FontSize="12" Margin="0,0,16,0"/>
-                    <TextBlock Text="F1: keys for where you are   F6: next area" Foreground="#8E8E96" FontSize="12"/>
+                    <TextBlock Text="F1: keys for where you are   F6: next area   /: search" Foreground="#8E8E96" FontSize="12"/>
                 </StackPanel>
             </Grid>
         </Border>

@@ -63,8 +63,8 @@ public sealed partial class MainViewModel
     public bool IsPlaylistsSection => CurrentSection == BrowseSection.Playlists;
     public bool IsPlaylistView => CurrentSection == BrowseSection.Playlist;
     public bool IsSearchSection => CurrentSection == BrowseSection.Search;
-    /// <summary>Channel and playlist pages: Back (Alt+Left, Backspace, Escape) returns.</summary>
-    public bool IsDetailView => CurrentSection is BrowseSection.Channel or BrowseSection.Playlist;
+    /// <summary>Search results, channel and playlist pages: Back (Alt+Left, Backspace, Escape) returns.</summary>
+    public bool IsDetailView => CurrentSection is BrowseSection.Channel or BrowseSection.Playlist or BrowseSection.Search;
     public bool IsOpenPlaylistInLibrary => IsPlaylistView && _openLibraryPlaylistId is not null;
     public bool IsOpenPlaylistEditable => IsOpenPlaylistInLibrary && _openLibraryPlaylistId != LibraryService.LikedPlaylistId;
     public bool CanSaveOpenPlaylist => IsPlaylistView && _openLibraryPlaylistId is null && _openYouTubePlaylistId is not null;
@@ -132,7 +132,7 @@ public sealed partial class MainViewModel
             return;
         if (_backStack.Count == 0)
         {
-            await ShowSectionAsync(BrowseSection.Search, moveFocus: true);
+            await ShowSectionAsync(SelectedSectionTab?.Section ?? BrowseSection.Featured, moveFocus: true);
             return;
         }
         var entry = _backStack.Pop();
@@ -481,7 +481,7 @@ public sealed partial class MainViewModel
             _openLibraryPlaylistId = saved.Id;
             RaisePlaylistViewState();
         }
-        _accessibility.Announce($"Saved {saved.Name} to Playlists, {saved.Videos.Count} videos. Press Control+9 to find it.", AnnouncementPriority.High);
+        _accessibility.Announce($"Saved {saved.Name} to Playlists, {saved.Videos.Count} videos. Press Control+5 to find it.", AnnouncementPriority.High);
     }
 
     /// <summary>Plays the open playlist (or the selected one in Playlists) from the top, or shuffled.</summary>
@@ -500,7 +500,7 @@ public sealed partial class MainViewModel
         }
         else if (CurrentSection == BrowseSection.Playlist && _openLibraryPlaylistId is null && _openYouTubePlaylistId is { } ytId && CanLoadMore)
         {
-            _accessibility.Announce("Loading the whole playlist...", AnnouncementPriority.Low);
+            _accessibility.Announce("Loading the whole playlist...", AnnouncementPriority.Medium);
             var all = await _playlists.GetAllAsync(ytId);
             videos = all.IsSuccess ? all.Value.Videos.ToList() : SearchResults.ToList();
         }
@@ -518,10 +518,13 @@ public sealed partial class MainViewModel
         if (shuffle)
             videos = videos.OrderBy(_ => Random.Shared.Next()).ToList();
 
+        _accessibility.Announce(shuffle ? $"Shuffling {videos.Count} videos." : $"Playing {videos.Count} videos.", AnnouncementPriority.Medium);
+        // One queue change for the whole list; adding them one at a time froze the window on long playlists.
         if (_playbackCoordinator is PlaybackCoordinator coord)
-            await coord.ClearQueueAsync();
-        foreach (var video in videos)
-            await _playbackCoordinator.EnqueueAsync(video with { StatusPrefix = null });
+            await coord.ReplaceQueueAsync(videos.Select(v => v with { StatusPrefix = null }));
+        else
+            foreach (var video in videos)
+                await _playbackCoordinator.EnqueueAsync(video with { StatusPrefix = null });
         await PlaySearchResultAsync(videos[0]);
     }
 
@@ -529,7 +532,10 @@ public sealed partial class MainViewModel
     {
         if (row.LibraryPlaylistId is { } id)
             return _library.GetPlaylist(id)?.Videos.Select(v => v.ToSearchResult()).ToList() ?? new();
+        _accessibility.Announce("Loading the whole playlist...", AnnouncementPriority.Medium);
         var all = await _playlists.GetAllAsync(row.Id);
+        if (all.IsFailure)
+            _accessibility.Announce($"Could not load the playlist. {all.Error?.Message}", AnnouncementPriority.High);
         return all.IsSuccess ? all.Value.Videos.ToList() : new();
     }
 

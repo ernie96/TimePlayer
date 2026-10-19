@@ -71,6 +71,9 @@ public sealed class DefaultProcessRunner : IProcessRunner
         var stderrBuilder = new StringBuilder();
 
         var tcsExit = new TaskCompletionSource<int>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // A null line marks the end of a stream; output can still be arriving after the process exits.
+        var stdoutDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var stderrDone = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
         process.EnableRaisingEvents = true;
         process.Exited += (s, e) => tcsExit.TrySetResult(process.ExitCode);
@@ -78,6 +81,11 @@ public sealed class DefaultProcessRunner : IProcessRunner
         // Asynchronously read stdout
         process.OutputDataReceived += (s, e) =>
         {
+            if (e.Data is null)
+            {
+                stdoutDone.TrySetResult();
+                return;
+            }
             if (e.Data != null)
             {
                 lock (stdoutBuilder)
@@ -91,6 +99,11 @@ public sealed class DefaultProcessRunner : IProcessRunner
         // Asynchronously read stderr
         process.ErrorDataReceived += (s, e) =>
         {
+            if (e.Data is null)
+            {
+                stderrDone.TrySetResult();
+                return;
+            }
             if (e.Data != null)
             {
                 lock (stderrBuilder)
@@ -140,8 +153,9 @@ public sealed class DefaultProcessRunner : IProcessRunner
                     throw new TimeoutException($"Process '{executablePath}' timed out after {options.Timeout.TotalSeconds} seconds.");
                 }
 
-                // Wait briefly for standard streams to flush
-                process.WaitForExit(500);
+                // Let the last output lines arrive. A child process that inherited the pipes could keep
+                // them open, so don't wait forever.
+                await Task.WhenAny(Task.WhenAll(stdoutDone.Task, stderrDone.Task), Task.Delay(TimeSpan.FromSeconds(5), CancellationToken.None));
 
                 string stdout;
                 string stderr;

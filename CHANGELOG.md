@@ -3,6 +3,16 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.5.0
+
+- Search from anywhere: press slash (or Control+F). Results open as their own page, and Alt+Left goes back. The Search tab is gone.
+- Sections are now Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History and 8 Queue. Tab stays inside the section you're in, and F6 moves between the search box, the sections and the list.
+- The video player is simpler: Back, Actions, Play, Previous, Next and Mute. Everything else is in the Actions menu (Alt+A or the Applications key), and every shortcut still works.
+- Fixed: Shuffle and Play all froze TimePlayer on long playlists.
+- Fixed: playing something new now starts a fresh queue instead of adding to the old one. Autoplay and Next still continue the current queue.
+- Fixed: error messages can now be read. F6 reaches the reason, Retry and Dismiss, and a message always says what went wrong.
+- Fixed: results from the YouTube downloader could occasionally be cut short.
+
 ## 1.4.0
 
 - Sound effects for TimePlayer only, never the rest of Windows: equalizer, bass boost, clarity, stereo width, room ambience, headphone crossfeed, a compressor and volume leveling.

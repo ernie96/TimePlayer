@@ -323,6 +323,7 @@ public class MainViewModelTests
         await using var vm = CreateViewModel();
 
         vm.SearchQuery = "some query";
+        vm.CurrentSection = BrowseSection.Search;
         vm.SearchResults.Add(new SearchResult
         {
             Id = "dQw4w9WgXcQ",
@@ -523,7 +524,7 @@ public class MainViewModelTests
         _discovery.Featured.AddRange(Enumerable.Range(0, 12).Select(i => Video($"aaaaaaaa{i:000}", $"Song {i}")));
         _discovery.FeaturedPages.Add(Enumerable.Range(0, 12).Select(i => Video($"bbbbbbbb{i:000}", $"More {i}")).ToList());
 
-        await vm.ShowSectionByNumberAsync(2);
+        await vm.ShowSectionByNumberAsync(1);
         vm.SelectedFeaturedCategory = FeaturedCategory.Music;
         await vm.RefreshSectionAsync();
 
@@ -567,6 +568,60 @@ public class MainViewModelTests
 
         await vm.JumpToHighlightAsync();
         Assert.Equal(TimeSpan.FromSeconds(150), _playerEngine.CurrentTime);
+    }
+
+    [Fact]
+    public async Task ShuffleALongPlaylist_ChangesTheQueueOnceAndStartsPlaying()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        var playlist = _library.CreatePlaylist("Long", Enumerable.Range(0, 300).Select(i => Video($"vid{i:00000000}", $"Song {i}")));
+        int queueChanges = 0;
+        _coordinator.QueueChanged += (_, _) => queueChanges++;
+
+        await vm.ShowSectionByNumberAsync(5);
+        vm.SelectedSearchResult = vm.SearchResults.Single(r => r.LibraryPlaylistId == playlist.Id);
+        await vm.ShufflePlayAsync();
+
+        Assert.Equal(300, _coordinator.Queue.Count);
+        Assert.True(queueChanges <= 2, $"the queue changed {queueChanges} times"); // replace, then the playing position
+        Assert.True(vm.IsPlayerDialogOpen);
+        Assert.NotEmpty(_playerEngine.LoadedUrls);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Shuffling 300 videos.");
+    }
+
+    [Fact]
+    public async Task PlayingSomethingNew_StartsAFreshQueue_ButAutoplayContinuesIt()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        var playlist = _library.CreatePlaylist("Two", new[] { Video("jNQXAC9IVRw", "One"), Video("dQw4w9WgXcQ", "Two") });
+        await vm.ShowSectionByNumberAsync(5);
+        vm.SelectedSearchResult = vm.SearchResults.Single(r => r.LibraryPlaylistId == playlist.Id);
+        await vm.PlayAllAsync();
+        Assert.Equal(2, _coordinator.Queue.Count);
+
+        // Picking a video that's already queued plays it from its place.
+        await vm.PlaySearchResultAsync(Video("dQw4w9WgXcQ", "Two"));
+        Assert.Equal(2, _coordinator.Queue.Count);
+
+        // Something new replaces the queue.
+        await vm.PlaySearchResultAsync(Video("kJQP7kiw5Fk", "New pick"));
+        Assert.Equal(new[] { "kJQP7kiw5Fk" }, _coordinator.Queue.Select(q => q.VideoId.Value));
+    }
+
+    [Fact]
+    public async Task AProblemWithoutAReason_StillSaysSomethingUseful()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        _playerEngine.RaiseError("");
+
+        Assert.StartsWith("Playback problem: No reason was given.", vm.ErrorMessage);
+        Assert.Contains(_accessibility.Announcements, a => a.message.EndsWith("F6 reaches Retry and Dismiss."));
+
+        vm.ClearError();
+        Assert.Null(vm.ErrorMessage);
     }
 
     [Fact]
@@ -678,7 +733,7 @@ public class MainViewModelTests
         await vm.ShowSectionByNumberAsync(1);
         vm.ToggleLikeForItem(Video("jNQXAC9IVRw", "Liked one"));
 
-        await vm.ShowSectionByNumberAsync(9);
+        await vm.ShowSectionByNumberAsync(5);
         Assert.Equal("Playlist: Liked videos, 1 video", vm.SearchResults[0].AccessibleSummary);
 
         await vm.PlaySearchResultAsync(vm.SearchResults[0]);
@@ -703,7 +758,7 @@ public class MainViewModelTests
         vm.AddToPlaylist(Video("dQw4w9WgXcQ", "Second"), playlist.Id);
         Assert.Contains(_accessibility.Announcements, a => a.message == "Already in Mine.");
 
-        await vm.ShowSectionByNumberAsync(9);
+        await vm.ShowSectionByNumberAsync(5);
         await vm.PlaySearchResultAsync(vm.SearchResults.Single(r => r.LibraryPlaylistId == playlist.Id));
         Assert.True(vm.IsOpenPlaylistEditable);
 
@@ -723,7 +778,7 @@ public class MainViewModelTests
         _recommendations.Videos.Add(Video("jNQXAC9IVRw", "Pick one"));
         _recommendations.Videos.Add(Video("dQw4w9WgXcQ", "Pick two"));
 
-        await vm.ShowSectionByNumberAsync(8);
+        await vm.ShowSectionByNumberAsync(2);
         Assert.Equal(BrowseSection.ForYou, vm.CurrentSection);
         Assert.Equal(2, vm.SearchResults.Count);
 

@@ -82,6 +82,20 @@ public sealed partial class MainViewModel
     /// <summary>The preset playing now: the music one in music mode.</summary>
     private string ActiveSoundPreset => MusicMode ? MusicSoundPreset : VideoSoundPreset;
 
+    public string ActiveSoundPresetName => ActiveSoundPreset;
+
+    /// <summary>Chooses the sound for the current mode (Actions menu).</summary>
+    public void SelectSoundPreset(string name)
+    {
+        if (!AudioPresetNames.Contains(name))
+            return;
+        if (MusicMode)
+            MusicSoundPreset = name;
+        else
+            VideoSoundPreset = name;
+        _accessibility.Announce($"{name} sound.", AnnouncementPriority.Medium);
+    }
+
     private static string DescribePreset(string name) =>
         name == AudioPresets.Custom
             ? "Your own settings, below."

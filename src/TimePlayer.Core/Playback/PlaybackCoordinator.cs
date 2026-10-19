@@ -694,6 +694,23 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// Starts a new queue with these videos, in one change: adding a long playlist item by item
+    /// rebuilt the on-screen queue once per video and froze the window.
+    /// </summary>
+    public Task ReplaceQueueAsync(IEnumerable<SearchResult> items)
+    {
+        ArgumentNullException.ThrowIfNull(items);
+        _queue.Clear();
+        _queue.AddRange(items.Select(PlaybackQueueItem.FromSearchResult));
+        _currentIndex = -1;
+        QueueChanged?.Invoke(this, Queue);
+        _logger.LogInformation("Queue replaced with {Count} items.", _queue.Count);
+        return Task.CompletedTask;
+    }
+
+    public bool IsQueued(string videoId) => _queue.Any(i => i.VideoId.Value == videoId);
+
     public Task RemoveFromQueueAsync(Guid queueItemId)
     {
         var index = _queue.FindIndex(i => i.QueueItemId == queueItemId);
