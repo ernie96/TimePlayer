@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using TimePlayer.Wpf.ViewModels;
 
@@ -48,10 +49,16 @@ public partial class SettingsWindow : Window
 
     private void OnPreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.F1)
+        if (e.Key == Key.F1 && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            var page = (Pages.SelectedItem as TabItem)?.Header as string ?? Title;
+            Accessibility.WpfAccessibilityService.SpeakIn(HelpLiveRegion, Views.QuickHelp.Settings(page));
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F1 && Keyboard.Modifiers == ModifierKeys.Control)
         {
             MessageBox.Show(this,
-                T("Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. ") +
+                T("Settings has seven pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, and Updates and help. ") +
                 T("Control+Tab and Control+Shift+Tab move between pages; on the page names, Left and Right do too.\n") +
                 T("Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. ") +
                 T("Alt plus the underlined letter jumps to a setting on the current page.\n") +

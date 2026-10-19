@@ -21,11 +21,17 @@ internal static partial class Romanian
         table[", more load as you go"] = ", se încarcă mai multe pe parcurs";
         table[", portable"] = ", portabil";
         table[", subscribed"] = ", abonat";
-        table[". Control+Tab moves between pages. Changes apply right away and are saved when you close this window."] = ". Control+Tab trece de la o pagină la alta. Modificările se aplică imediat și se salvează când închideți această fereastră.";
+        table[". F1 for help. Changes apply right away and are saved when you close this window."] = ". F1 pentru ajutor. Modificările se aplică imediat și se salvează când închideți această fereastră.";
         table["0 to 9 jump to 0 to 90 percent. Home starts over. Up and Down change the volume, M mutes.\n"] = "Tastele 0-9 sar la 0-90 la sută. Home pornește de la început. Sus și Jos schimbă volumul, M oprește sunetul.\n";
         table["1 SponsorBlock segment: {0}"] = "1 segment SponsorBlock: {0}";
+        table["1. Choose \"Copy the extension folder's location\" above."] = "1. Alegeți „Copiază locația folderului extensiei” de mai sus.";
         table["1080p, full HD"] = "1080p, full HD";
+        table["2. In Chrome, Edge or Brave, type chrome://extensions in the address bar (edge://extensions in Edge, brave://extensions in Brave) and press Enter."] = "2. În Chrome, Edge sau Brave, tastați chrome://extensions în bara de adrese (edge://extensions în Edge, brave://extensions în Brave) și apăsați Enter.";
+        table["3. Turn on Developer mode. It's a switch on that page."] = "3. Activați Modul pentru dezvoltatori. Este un comutator pe acea pagină.";
         table["360p, saves data"] = "360p, economisește date";
+        table["4. Choose \"Load unpacked\". In the folder window, paste the location into the folder box, press Enter, then choose Select Folder."] = "4. Alegeți „Încarcă extensia neîmpachetată”. În fereastra de foldere, lipiți locația în caseta folderului, apăsați Enter, apoi alegeți Selectare folder.";
+        table["5. That's it. On other websites, \"Play in TimePlayer\" now follows each YouTube link. On YouTube itself, press Alt+Shift+P to play the page."] = "5. Gata. Pe alte site-uri, după fiecare link YouTube apare acum „Redă în TimePlayer”. Pe YouTube, apăsați Alt+Shift+P pentru a reda pagina.";
+        table["6. The first time, the browser asks whether to open TimePlayer. Check \"Always allow\", then choose Open."] = "6. Prima dată, browserul întreabă dacă să deschidă TimePlayer. Bifați „Permite întotdeauna”, apoi alegeți Deschide.";
         table["720p, HD"] = "720p, HD";
         table["< Back (Esc)"] = "< Înapoi (Esc)";
         table["< _Back"] = "< _Înapoi";
@@ -111,6 +117,7 @@ internal static partial class Romanian
         table["Comments"] = "Comentarii";
         table["Comments are a tree. Each is read as: who, what they said, then when, likes and replies. More comments load as you reach the end.\n"] = "Comentariile sunt un arbore. Fiecare este citit astfel: cine, ce a spus, apoi când, aprecieri și răspunsuri. Mai multe comentarii se încarcă atunci când ajungeți la sfârșit.\n";
         table["Comments could not be loaded. They may be turned off for this video."] = "Comentariile nu au putut fi încărcate. Este posibil să fie dezactivate pentru acest videoclip.";
+        table["Comments. Right arrow opens a comment's replies and Left closes them. Escape returns to the player controls."] = "Comentarii. Săgeata dreapta deschide răspunsurile unui comentariu, iar săgeata stânga le închide. Escape revine la comenzile playerului.";
         table["Compressor: quiet sounds louder, loud sounds softer"] = "Compresor: sunetele încete mai tare, cele puternice mai încet";
         table["Continue videos where I left off"] = "Continuă videoclipurile de unde am rămas";
         table["Control+C _shares:"] = "Control+C partajea_ză:";
@@ -119,6 +126,7 @@ internal static partial class Romanian
         table["Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n"] = "Control+C copiază un link de distribuire care pornește de unde sunteți; Control+Shift+C copiază unul de la început. Control+D descarcă audio sau video.\n";
         table["Control+C shares"] = "Control+C partajează";
         table["Control+D downloads the audio or video. "] = "Control+D descarcă audio sau video. ";
+        table["Control+F1 for more help."] = "Control+F1 pentru mai mult ajutor.";
         table["Control+K likes, Control+P adds to a playlist, "] = "Control+K apreciază, Control+P adaugă într-o listă, ";
         table["Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n"] = "Control+K apreciază, Control+P adaugă într-o listă, Control+S abonează, Control+L Vizionează mai târziu, Control+G merge la canal.\n";
         table["Control+Left and Right m_ove:"] = "Control+Stânga și Dreapta _mută cu:";
@@ -132,6 +140,7 @@ internal static partial class Romanian
         table["Copy playlist link"] = "Copiază linkul listei";
         table["Copy share _link at this point"] = "Copiază lin_kul de la acest moment";
         table["Copy the _browser bookmark"] = "Copiază _semnul de carte pentru browser";
+        table["Copy the extension folder's _location"] = "Copiază _locația folderului extensiei";
         table["Copy which link?"] = "Ce link copiați?";
         table["Could not check for updates."] = "Nu s-au putut verifica actualizările.";
         table["Could not copy to the clipboard. Try again."] = "Nu s-a putut copia în clipboard. Încercați din nou.";
@@ -159,7 +168,9 @@ internal static partial class Romanian
         table["Delete removes items from History, Watch Later, Channels, For You and your playlists."] = "Delete elimină elemente din Istoric, Vizionează mai târziu, Canale, Pentru tine și listele dvs.";
         table["Delete the playlist \"{0}\" with {1}? This cannot be undone."] = "Ștergeți lista „{0}” cu {1}? Acțiunea nu poate fi anulată.";
         table["Deleted {0}."] = "{0} a fost ștearsă.";
+        table["Describe it in the box, then Tab to Send. Escape closes without sending."] = "Descrieți în casetă, apoi Tab până la Trimite. Escape închide fără a trimite.";
         table["Description"] = "Descriere";
+        table["Description. Read it with the arrow keys. Escape returns to the player controls."] = "Descriere. Citiți-o cu săgețile. Escape revine la comenzile playerului.";
         table["Diagnostics _report:"] = "_Raport de diagnosticare:";
         table["Diagnostics complete."] = "Diagnosticarea s-a încheiat.";
         table["Diagnostics report"] = "Raport de diagnosticare";
@@ -168,6 +179,7 @@ internal static partial class Romanian
         table["Do nothing"] = "Nu face nimic";
         table["Do you use a braille display with NVDA?\n\n"] = "Folosiți un afișaj Braille cu NVDA?\n\n";
         table["Don't recommend this c_hannel"] = "Nu reco_manda acest canal";
+        table["Done. Browsers and other apps can open YouTube links in TimePlayer again."] = "Gata. Browserele și alte aplicații pot deschide din nou linkuri YouTube în TimePlayer.";
         table["Download"] = "Descarcă";
         table["Download _video"] = "Descarcă v_ideo";
         table["Download _video (MP4)"] = "Descarcă _video (MP4)";
@@ -189,7 +201,11 @@ internal static partial class Romanian
         table["Engine error"] = "Eroare de motor";
         table["Engine initialized"] = "Motor inițializat";
         table["English"] = "engleză";
+        table["Enter opens the playlist. The Applications key lists what you can do with it."] = "Enter deschide lista de redare. Tasta Aplicații arată ce puteți face cu ea.";
+        table["Enter plays the video now, and Delete takes it out of the queue."] = "Enter redă videoclipul acum, iar Delete îl scoate din coadă.";
         table["Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, "] = "Enter redă. Control+Q adaugă la coadă, Control+L salvează în Vizionează mai târziu, ";
+        table["Enter plays. The Applications key lists what you can do with the selected video."] = "Enter redă. Tasta Aplicații arată ce puteți face cu videoclipul selectat.";
+        table["Enter shows the channel's videos, and Delete unsubscribes."] = "Enter arată videoclipurile canalului, iar Delete vă dezabonează.";
         table["Error during update check: {0}"] = "Eroare la verificarea actualizărilor: {0}";
         table["Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n"] = "Escape golește caseta, iar Escape din nou revine la listă. Tab trece la Caută (Videoclipuri sau Liste de redare) și la Setări.\n";
         table["Escape closes and saves."] = "Escape închide și salvează.";
@@ -198,7 +214,7 @@ internal static partial class Romanian
         table["Everyone together: {0:N0} time.|Everyone together: {0:N0} times."] = "Toți utilizatorii împreună: {0:N0} dată.|Toți utilizatorii împreună: de {0:N0} ori.|Toți utilizatorii împreună: de {0:N0} de ori.";
         table["Export subscriptions"] = "Exportă abonamentele";
         table["Exported {0} to {1}."] = "{0} exportate în {1}.";
-        table["F1: keys for where you are   F6: next area   /: search"] = "F1: tastele locului curent   F6: zona următoare   /: căutare";
+        table["F1: help   Control+F1: more help   F6: next area   /: search"] = "F1: ajutor   Control+F1: mai mult ajutor   F6: zona următoare   /: căutare";
         table["Failed to initialize video engine. Please check dependencies."] = "Motorul video nu a putut fi inițializat. Verificați componentele.";
         table["Failed to load test video: {0}"] = "Videoclipul de test nu a putut fi încărcat: {0}";
         table["Failed to search YouTube. Please check network or try a direct link."] = "Căutarea pe YouTube a eșuat. Verificați rețeaua sau încercați un link direct.";
@@ -212,6 +228,7 @@ internal static partial class Romanian
         table["Featured: top music videos"] = "Recomandate: videoclipuri muzicale de top";
         table["Featured: {0}"] = "Recomandate: {0}";
         table["Finding videos for you..."] = "Se caută videoclipuri pentru dvs....";
+        table["Folder location copied: {0}"] = "Locația folderului a fost copiată: {0}";
         table["For You"] = "Pentru tine";
         table["From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard. Control+Shift+B reports a problem to TimePlayer's developer, and Control+Shift+F suggests a feature.\n"] = "De oriunde, bara oblică, Control+F sau Control+E revin aici. Control+Shift+V redă un link YouTube din clipboard. Control+Shift+B raportează o problemă dezvoltatorului TimePlayer, iar Control+Shift+F sugerează o funcție.\n";
         table["From the beginning."] = "De la început.";
@@ -226,8 +243,10 @@ internal static partial class Romanian
         table["Highlight at {0}. H jumps to it."] = "Moment principal la {0}. H sare la el.";
         table["Highlight, {0}."] = "Moment principal, {0}.";
         table["History"] = "Istoric";
+        table["How to add the Play in TimePlayer extension"] = "Cum adăugați extensia Redă în TimePlayer";
         table["How to get my YouTube data"] = "Cum îmi obțin datele YouTube";
         table["How to get my YouTube subscriptions"] = "Cum îmi obțin abonamentele YouTube";
+        table["If links stop opening in TimePlayer (for example after moving a portable copy), choose \"Register TimePlayer for links again\"."] = "Dacă linkurile nu se mai deschid în TimePlayer (de exemplu după mutarea unei copii portabile), alegeți „Înregistrează din nou TimePlayer pentru linkuri”.";
         table["Import from Google Takeout"] = "Importă din Google Takeout";
         table["Import subscriptions"] = "Importă abonamente";
         table["Imported from Google Takeout: {0}."] = "Importat din Google Takeout: {0}.";
@@ -254,6 +273,7 @@ internal static partial class Romanian
         table["Liked {0}."] = "Ați apreciat {0}.";
         table["Liked."] = "Apreciat.";
         table["Link copied with the first 50 videos; YouTube allows no more in a shared list."] = "Link copiat cu primele 50 de videoclipuri; YouTube nu permite mai multe într-o listă distribuită.";
+        table["Links and browser"] = "Linkuri și browser";
         table["Live now"] = "În direct acum";
         table["Live streams cannot be downloaded."] = "Transmisiunile în direct nu pot fi descărcate.";
         table["Loading YouTube video..."] = "Se încarcă videoclipul YouTube...";
@@ -309,6 +329,7 @@ internal static partial class Romanian
         table["Nothing up next yet."] = "Încă nu urmează nimic.";
         table["Nothing watched yet. Videos you play appear here, newest first, and continue where you left off."] = "Încă nu ați vizionat nimic. Videoclipurile redate apar aici, cele mai noi primele, și continuă de unde ați rămas.";
         table["Now playing"] = "Se redă acum";
+        table["Now playing. Tab moves through Play, Previous, Next, Open player and Stop. Control+Space plays or pauses from anywhere."] = "Se redă acum. Tab trece prin Redă, Anterior, Următor, Deschide playerul și Oprește. Control+Spațiu redă sau pune pauză de oriunde.";
         table["Now playing: music keeps playing while you browse. Tab moves through Play, Previous, Next, Open player and Stop.\n"] = "Se redă acum: muzica continuă cât timp navigați. Tab parcurge Redă, Anterior, Următorul, Deschide playerul și Oprește.\n";
         table["Now playing: {0}"] = "Se redă acum: {0}";
         table["Now playing: {0}, by {1}"] = "Se redă acum: {0}, de {1}";
@@ -336,6 +357,7 @@ internal static partial class Romanian
         table["Playback stopped."] = "Redarea a fost oprită.";
         table["Player"] = "Player";
         table["Player initialization failed: {0}"] = "Inițializarea playerului a eșuat: {0}";
+        table["Player. K or Space plays or pauses, Left and Right move through the video, and Up and Down change the volume. Alt+A or the Applications key lists every action, and Escape leaves the player."] = "Player. K sau Spațiu redă sau pune pauză, săgețile stânga și dreapta se deplasează prin videoclip, iar sus și jos schimbă volumul. Alt+A sau tasta Aplicații arată toate acțiunile, iar Escape iese din player.";
         table["Playing"] = "Se redă";
         table["Playing {0}"] = "Se redă {0}";
         table["Playing {0}."] = "Se redau {0}.";
@@ -350,12 +372,14 @@ internal static partial class Romanian
         table["Position"] = "Poziție";
         table["Preferred video _quality:"] = "_Calitate video preferată:";
         table["Preferred video quality"] = "Calitate video preferată";
+        table["Press F1 for help."] = "Apăsați F1 pentru ajutor.";
         table["Press slash to search, or Control+1 for featured videos."] = "Apăsați bara oblică pentru a căuta sau Control+1 pentru videoclipurile recomandate.";
         table["Previous"] = "Anterior";
         table["Problem"] = "Problemă";
         table["Problem: {0}"] = "Problemă: {0}";
         table["Queue"] = "Coadă";
         table["Queue actions"] = "Acțiuni pentru coadă";
+        table["Queue. Enter plays the video now, and Delete takes it out of the queue. Escape returns to the player controls."] = "Coadă. Enter redă videoclipul acum, iar Delete îl scoate din coadă. Escape revine la comenzile playerului.";
         table["R_oom:"] = "_Încăpere:";
         table["Read captions aloud as they appear (C in the player)"] = "Citește subtitrările cu voce când apar (C în player)";
         table["Read captions: off"] = "Citire subtitrări: oprită";
@@ -402,6 +426,7 @@ internal static partial class Romanian
         table["Say what was skipped"] = "Spune ce s-a sărit";
         table["Search YouTube or paste a link"] = "Căutați pe YouTube sau lipiți un link";
         table["Search box"] = "Caseta de căutare";
+        table["Search box. Type words or paste a YouTube link, then press Enter. Escape clears the box, and Escape again goes back to the list."] = "Caseta de căutare. Tastați cuvinte sau lipiți un link YouTube, apoi apăsați Enter. Escape golește caseta, iar Escape din nou revine la listă.";
         table["Search cancelled."] = "Căutare anulată.";
         table["Search failed: {0}"] = "Căutarea a eșuat: {0}";
         table["Search for"] = "Caută";
@@ -412,12 +437,15 @@ internal static partial class Romanian
         table["Searching for videos."] = "Se caută videoclipuri.";
         table["Searching..."] = "Se caută...";
         table["Sections"] = "Secțiuni";
+        table["Sections. Left and Right arrows switch sections, or Control+1 to 4 go straight to one."] = "Secțiuni. Săgețile stânga și dreapta schimbă secțiunea, iar Control+1 până la 4 duc direct la una.";
+        table["Sections. Left and Right arrows switch sections, or Control+1 to 8 go straight to one."] = "Secțiuni. Săgețile stânga și dreapta schimbă secțiunea, iar Control+1 până la 8 duc direct la una.";
         table["Sending the report..."] = "Se trimite raportul...";
         table["Sending your suggestion..."] = "Se trimite sugestia...";
         table["Settings"] = "Setări";
         table["Settings (F2)"] = "Setări (F2)";
-        table["Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. "] = "Setările au șase pagini: Redare, Sunet, Vorbire și Braille, Bibliotecă, SponsorBlock și neaprecieri, Actualizări și ajutor. ";
+        table["Settings has seven pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, and Updates and help. "] = "Setările au șapte pagini: Redare, Sunet, Vorbire și Braille, Bibliotecă, SponsorBlock și neaprecieri, Linkuri și browser, și Actualizări și ajutor. ";
         table["Settings pages"] = "Paginile setărilor";
+        table["Settings, {0}. Tab moves between settings, and Control+Tab goes to the next page. Escape closes and saves."] = "Setări, {0}. Tab trece de la o setare la alta, iar Control+Tab merge la pagina următoare. Escape închide și salvează.";
         table["Sh_uffle"] = "_Amestecă";
         table["Share link copied, from the beginning."] = "Linkul de distribuire a fost copiat, de la început.";
         table["Share link copied, starts at {0}."] = "Linkul de distribuire a fost copiat, pornește la {0}.";
@@ -523,8 +551,10 @@ internal static partial class Romanian
         table["Unsubscribed from {0}."] = "V-ați dezabonat de la {0}.";
         table["Up and Down change the _volume by:"] = "Sus și Jos schimbă _volumul cu:";
         table["Up and Down change the volume by"] = "Sus și Jos schimbă volumul cu";
+        table["Up and Down move through the list; the first letter of a title jumps to it."] = "Săgețile sus și jos se deplasează prin listă; prima literă a unui titlu sare la el.";
         table["Up next"] = "Urmează";
         table["Up next, autoplay off: {0}, by {1}"] = "Urmează, redarea automată e oprită: {0}, de {1}";
+        table["Up next. Enter plays the selected video, and the Applications key lists more. Escape returns to the player controls."] = "Urmează. Enter redă videoclipul selectat, iar tasta Aplicații arată mai multe. Escape revine la comenzile playerului.";
         table["Up next: {0}"] = "Urmează: {0}";
         table["Up next: {0}, by {1}"] = "Urmează: {0}, de {1}";
         table["Update check: {0}"] = "Verificare actualizări: {0}";
@@ -561,6 +591,8 @@ internal static partial class Romanian
         table["What's New"] = "Noutăți";
         table["What's new:\n{0}\n\n"] = "Noutăți:\n{0}\n\n";
         table["While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. "] = "Cât timp se redă ceva: Control+Spațiu redă sau pune pauză, Control+Shift+N și Control+Shift+P trec la următorul și la anteriorul, iar tastele media ale tastaturii funcționează. ";
+        table["Windows did not allow TimePlayer to register for links: {0}"] = "Windows nu a permis TimePlayer să se înregistreze pentru linkuri: {0}";
+        table["Without the extension: choose \"Copy the browser bookmark\", add a bookmark in your browser and paste it as the address. On a YouTube page, choose that bookmark."] = "Fără extensie: alegeți „Copiază semnul de carte pentru browser”, adăugați un semn de carte în browser și lipiți-l ca adresă. Pe o pagină YouTube, alegeți acel semn de carte.";
         table["You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files."] = "Încă nu sunteți abonat la niciun canal.\nApăsați Control+S pe un videoclip pentru a vă abona la canalul lui sau alegeți „Cum îmi obțin abonamentele YouTube” mai sus pentru a le aduce de pe YouTube. Importă abonamente citește și fișiere NewPipe, LibreTube și FreeTube.";
         table["You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions."] = "Încă nu aveți abonamente.\nApăsați Control+S pe orice videoclip pentru a vă abona la canalul lui sau apăsați Control+4 și importați-vă abonamentele.";
         table["You will not be asked again; this can be changed in Settings, Updates and help."] = "Nu veți mai fi întrebat; puteți schimba asta în Setări, Actualizări și ajutor.";
@@ -588,6 +620,7 @@ internal static partial class Romanian
         table["_Download..."] = "_Descarcă...";
         table["_Faster"] = "Mai _repede";
         table["_Filler and tangents"] = "_Umplutură și digresiuni";
+        table["_How to add the Play in TimePlayer extension:"] = "_Cum adăugați extensia Redă în TimePlayer:";
         table["_How to get my YouTube data..."] = "_Cum îmi obțin datele YouTube...";
         table["_How to get my YouTube subscriptions..."] = "_Cum îmi obțin abonamentele YouTube...";
         table["_Import from Google Takeout..."] = "_Importă din Google Takeout...";
@@ -610,6 +643,7 @@ internal static partial class Romanian
         table["_Queue"] = "C_oadă";
         table["_Read captions aloud"] = "_Citește subtitrările cu voce";
         table["_Region for Featured and the music charts:"] = "_Regiunea pentru Recomandate și topurile muzicale:";
+        table["_Register TimePlayer for links again"] = "Înregist_rează din nou TimePlayer pentru linkuri";
         table["_Remove from queue"] = "_Elimină din coadă";
         table["_Remove from this list"] = "_Elimină din această listă";
         table["_Rename..."] = "_Redenumește...";

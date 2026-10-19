@@ -199,10 +199,51 @@ public sealed partial class MainViewModel
         }
     }
 
+    private static string ExtensionFolder => Path.Combine(AppContext.BaseDirectory, "browser-extension");
+
+    /// <summary>Steps for the Links and browser page, readable line by line.</summary>
+    public string ExtensionSteps =>
+        T("1. Choose \"Copy the extension folder's location\" above.") + "\n" +
+        T("2. In Chrome, Edge or Brave, type chrome://extensions in the address bar (edge://extensions in Edge, brave://extensions in Brave) and press Enter.") + "\n" +
+        T("3. Turn on Developer mode. It's a switch on that page.") + "\n" +
+        T("4. Choose \"Load unpacked\". In the folder window, paste the location into the folder box, press Enter, then choose Select Folder.") + "\n" +
+        T("5. That's it. On other websites, \"Play in TimePlayer\" now follows each YouTube link. On YouTube itself, press Alt+Shift+P to play the page.") + "\n" +
+        T("6. The first time, the browser asks whether to open TimePlayer. Check \"Always allow\", then choose Open.") + "\n\n" +
+        T("Without the extension: choose \"Copy the browser bookmark\", add a bookmark in your browser and paste it as the address. On a YouTube page, choose that bookmark.") + "\n\n" +
+        T("If links stop opening in TimePlayer (for example after moving a portable copy), choose \"Register TimePlayer for links again\".");
+
+    [RelayCommand]
+    public void RegisterLinksAgain()
+    {
+        try
+        {
+            LinkProtocol.Apply(enabled: true);
+            OpenLinksFromOtherApps = true;
+            _accessibility.Announce(T("Done. Browsers and other apps can open YouTube links in TimePlayer again."), AnnouncementPriority.High);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            _logger.LogWarning(ex, "Could not register timeplayer:// links.");
+            _accessibility.Announce(T("Windows did not allow TimePlayer to register for links: {0}", ex.Message), AnnouncementPriority.High);
+        }
+    }
+
+    [RelayCommand]
+    public void CopyExtensionFolderLocation()
+    {
+        if (!Directory.Exists(ExtensionFolder))
+        {
+            _accessibility.Announce(T("The browser extension isn't included in this copy of TimePlayer. It's on the TimePlayer releases page."), AnnouncementPriority.High);
+            return;
+        }
+        if (CopyToClipboard(ExtensionFolder))
+            _accessibility.Announce(T("Folder location copied: {0}", ExtensionFolder), AnnouncementPriority.High);
+    }
+
     [RelayCommand]
     public void OpenBrowserExtensionFolder()
     {
-        var folder = Path.Combine(AppContext.BaseDirectory, "browser-extension");
+        var folder = ExtensionFolder;
         if (!Directory.Exists(folder))
         {
             _accessibility.Announce(T("The browser extension isn't included in this copy of TimePlayer. It's on the TimePlayer releases page."), AnnouncementPriority.High);

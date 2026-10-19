@@ -21,11 +21,17 @@ internal static partial class Ukrainian
         table[", more load as you go"] = ", решта завантажується під час перегляду";
         table[", portable"] = ", портативна";
         table[", subscribed"] = ", ви підписані";
-        table[". Control+Tab moves between pages. Changes apply right away and are saved when you close this window."] = ". Control+Tab перемикає сторінки. Зміни діють одразу й зберігаються, коли ви закриваєте це вікно.";
+        table[". F1 for help. Changes apply right away and are saved when you close this window."] = ". F1 — довідка. Зміни застосовуються одразу й зберігаються, коли ви закриваєте це вікно.";
         table["0 to 9 jump to 0 to 90 percent. Home starts over. Up and Down change the volume, M mutes.\n"] = "Клавіші 0–9 переходять до 0–90 відсотків. Home починає спочатку. Вгору і Вниз змінюють гучність, M вимикає звук.\n";
         table["1 SponsorBlock segment: {0}"] = "1 сегмент SponsorBlock: {0}";
+        table["1. Choose \"Copy the extension folder's location\" above."] = "1. Виберіть «Копіювати розташування папки розширення» вище.";
         table["1080p, full HD"] = "1080p, Full HD";
+        table["2. In Chrome, Edge or Brave, type chrome://extensions in the address bar (edge://extensions in Edge, brave://extensions in Brave) and press Enter."] = "2. У Chrome, Edge або Brave введіть chrome://extensions в адресному рядку (edge://extensions в Edge, brave://extensions у Brave) і натисніть Enter.";
+        table["3. Turn on Developer mode. It's a switch on that page."] = "3. Увімкніть «Режим розробника». Це перемикач на тій сторінці.";
         table["360p, saves data"] = "360p, економить трафік";
+        table["4. Choose \"Load unpacked\". In the folder window, paste the location into the folder box, press Enter, then choose Select Folder."] = "4. Виберіть «Завантажити розпаковане розширення». У вікні вибору папки вставте розташування в поле папки, натисніть Enter, потім виберіть «Вибрати папку».";
+        table["5. That's it. On other websites, \"Play in TimePlayer\" now follows each YouTube link. On YouTube itself, press Alt+Shift+P to play the page."] = "5. Готово. На інших сайтах після кожного посилання YouTube тепер є «Відтворити в TimePlayer». На самому YouTube натисніть Alt+Shift+P, щоб відтворити сторінку.";
+        table["6. The first time, the browser asks whether to open TimePlayer. Check \"Always allow\", then choose Open."] = "6. Першого разу браузер запитає, чи відкрити TimePlayer. Позначте «Завжди дозволяти», потім виберіть «Відкрити».";
         table["720p, HD"] = "720p, HD";
         table["< Back (Esc)"] = "< Назад (Esc)";
         table["< _Back"] = "< _Назад";
@@ -111,6 +117,7 @@ internal static partial class Ukrainian
         table["Comments"] = "Коментарі";
         table["Comments are a tree. Each is read as: who, what they said, then when, likes and replies. More comments load as you reach the end.\n"] = "Коментарі — це дерево. Кожен читається так: хто, що сказав, потім коли, вподобання й відповіді. Нові коментарі завантажуються, коли ви доходите до кінця.\n";
         table["Comments could not be loaded. They may be turned off for this video."] = "Не вдалося завантажити коментарі. Можливо, для цього відео їх вимкнено.";
+        table["Comments. Right arrow opens a comment's replies and Left closes them. Escape returns to the player controls."] = "Коментарі. Стрілка вправо відкриває відповіді на коментар, а вліво закриває їх. Escape повертає до елементів керування програвачем.";
         table["Compressor: quiet sounds louder, loud sounds softer"] = "Компресор: тихі звуки гучніше, гучні тихіше";
         table["Continue videos where I left off"] = "Продовжувати відео з місця, де я зупинився";
         table["Control+C _shares:"] = "Control+C по_ширює:";
@@ -119,6 +126,7 @@ internal static partial class Ukrainian
         table["Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n"] = "Control+C копіює посилання, що починається з поточного місця; Control+Shift+C — з початку. Control+D завантажує аудіо або відео.\n";
         table["Control+C shares"] = "Control+C поширює";
         table["Control+D downloads the audio or video. "] = "Control+D завантажує аудіо або відео. ";
+        table["Control+F1 for more help."] = "Control+F1 — більше довідки.";
         table["Control+K likes, Control+P adds to a playlist, "] = "Control+K вподобає, Control+P додає до плейлиста, ";
         table["Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n"] = "Control+K вподобає, Control+P додає до плейлиста, Control+S підписує, Control+L «Переглянути пізніше», Control+G переходить до каналу.\n";
         table["Control+Left and Right m_ove:"] = "Control+Ліворуч і Праворуч _переходять на:";
@@ -132,6 +140,7 @@ internal static partial class Ukrainian
         table["Copy playlist link"] = "Копіювати посилання на плейлист";
         table["Copy share _link at this point"] = "Копіювати посилання з цього _моменту";
         table["Copy the _browser bookmark"] = "Копіювати за_кладку для браузера";
+        table["Copy the extension folder's _location"] = "Копіювати розташування _папки розширення";
         table["Copy which link?"] = "Яке посилання скопіювати?";
         table["Could not check for updates."] = "Не вдалося перевірити оновлення.";
         table["Could not copy to the clipboard. Try again."] = "Не вдалося скопіювати в буфер обміну. Спробуйте ще раз.";
@@ -159,7 +168,9 @@ internal static partial class Ukrainian
         table["Delete removes items from History, Watch Later, Channels, For You and your playlists."] = "Delete видаляє елементи з Історії, «Переглянути пізніше», Каналів, «Для вас» і ваших плейлистів.";
         table["Delete the playlist \"{0}\" with {1}? This cannot be undone."] = "Видалити плейлист «{0}», у якому {1}? Цю дію не можна скасувати.";
         table["Deleted {0}."] = "«{0}» видалено.";
+        table["Describe it in the box, then Tab to Send. Escape closes without sending."] = "Опишіть у полі, потім Tab до кнопки «Надіслати». Escape закриває без надсилання.";
         table["Description"] = "Опис";
+        table["Description. Read it with the arrow keys. Escape returns to the player controls."] = "Опис. Читайте його стрілками. Escape повертає до елементів керування програвачем.";
         table["Diagnostics _report:"] = "_Звіт діагностики:";
         table["Diagnostics complete."] = "Діагностику завершено.";
         table["Diagnostics report"] = "Звіт діагностики";
@@ -168,6 +179,7 @@ internal static partial class Ukrainian
         table["Do nothing"] = "Нічого не робити";
         table["Do you use a braille display with NVDA?\n\n"] = "Ви користуєтеся брайлівським дисплеєм з NVDA?\n\n";
         table["Don't recommend this c_hannel"] = "Не реко_мендувати цей канал";
+        table["Done. Browsers and other apps can open YouTube links in TimePlayer again."] = "Готово. Браузери та інші програми знову можуть відкривати посилання YouTube у TimePlayer.";
         table["Download"] = "Завантажити";
         table["Download _video"] = "Завантажити ві_део";
         table["Download _video (MP4)"] = "Завантажити _відео (MP4)";
@@ -189,7 +201,11 @@ internal static partial class Ukrainian
         table["Engine error"] = "Помилка рушія";
         table["Engine initialized"] = "Рушій ініціалізовано";
         table["English"] = "англійська";
+        table["Enter opens the playlist. The Applications key lists what you can do with it."] = "Enter відкриває плейлист. Клавіша контекстного меню показує, що з ним можна зробити.";
+        table["Enter plays the video now, and Delete takes it out of the queue."] = "Enter відтворює відео зараз, а Delete прибирає його з черги.";
         table["Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, "] = "Enter відтворює. Control+Q додає до черги, Control+L зберігає в «Переглянути пізніше», ";
+        table["Enter plays. The Applications key lists what you can do with the selected video."] = "Enter відтворює. Клавіша контекстного меню показує, що можна зробити з вибраним відео.";
+        table["Enter shows the channel's videos, and Delete unsubscribes."] = "Enter показує відео каналу, а Delete скасовує підписку.";
         table["Error during update check: {0}"] = "Помилка під час перевірки оновлень: {0}";
         table["Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n"] = "Escape очищує поле, а повторний Escape повертає до списку. Tab переходить до «Шукати» (Відео або Плейлисти) і Налаштувань.\n";
         table["Escape closes and saves."] = "Escape закриває й зберігає.";
@@ -198,7 +214,7 @@ internal static partial class Ukrainian
         table["Everyone together: {0:N0} time.|Everyone together: {0:N0} times."] = "Усі разом: {0:N0} раз.|Усі разом: {0:N0} рази.|Усі разом: {0:N0} разів.";
         table["Export subscriptions"] = "Експортувати підписки";
         table["Exported {0} to {1}."] = "Експортовано {0} у {1}.";
-        table["F1: keys for where you are   F6: next area   /: search"] = "F1: клавіші для поточного місця   F6: наступна область   /: пошук";
+        table["F1: help   Control+F1: more help   F6: next area   /: search"] = "F1: довідка   Control+F1: більше довідки   F6: наступна область   /: пошук";
         table["Failed to initialize video engine. Please check dependencies."] = "Не вдалося ініціалізувати відеорушій. Перевірте компоненти.";
         table["Failed to load test video: {0}"] = "Не вдалося завантажити тестове відео: {0}";
         table["Failed to search YouTube. Please check network or try a direct link."] = "Не вдалося виконати пошук на YouTube. Перевірте мережу або спробуйте пряме посилання.";
@@ -212,6 +228,7 @@ internal static partial class Ukrainian
         table["Featured: top music videos"] = "Рекомендоване: найпопулярніші музичні кліпи";
         table["Featured: {0}"] = "Рекомендоване: {0}";
         table["Finding videos for you..."] = "Добираємо відео для вас...";
+        table["Folder location copied: {0}"] = "Розташування папки скопійовано: {0}";
         table["For You"] = "Для вас";
         table["From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard. Control+Shift+B reports a problem to TimePlayer's developer, and Control+Shift+F suggests a feature.\n"] = "Звідусіль скісна риска, Control+F або Control+E повертають сюди. Control+Shift+V відтворює посилання YouTube з буфера обміну. Control+Shift+B повідомляє про проблему розробнику TimePlayer, а Control+Shift+F пропонує нову функцію.\n";
         table["From the beginning."] = "З початку.";
@@ -226,8 +243,10 @@ internal static partial class Ukrainian
         table["Highlight at {0}. H jumps to it."] = "Головний момент на {0}. H переходить до нього.";
         table["Highlight, {0}."] = "Головний момент, {0}.";
         table["History"] = "Історія";
+        table["How to add the Play in TimePlayer extension"] = "Як додати розширення «Відтворити в TimePlayer»";
         table["How to get my YouTube data"] = "Як отримати мої дані YouTube";
         table["How to get my YouTube subscriptions"] = "Як отримати мої підписки YouTube";
+        table["If links stop opening in TimePlayer (for example after moving a portable copy), choose \"Register TimePlayer for links again\"."] = "Якщо посилання перестали відкриватися в TimePlayer (наприклад, після перенесення портативної копії), виберіть «Знову зареєструвати TimePlayer для посилань».";
         table["Import from Google Takeout"] = "Імпорт із Google Takeout";
         table["Import subscriptions"] = "Імпортувати підписки";
         table["Imported from Google Takeout: {0}."] = "Імпортовано з Google Takeout: {0}.";
@@ -254,6 +273,7 @@ internal static partial class Ukrainian
         table["Liked {0}."] = "Вподобано «{0}».";
         table["Liked."] = "Вподобано.";
         table["Link copied with the first 50 videos; YouTube allows no more in a shared list."] = "Посилання скопійовано з першими 50 відео; більше YouTube у спільному списку не дозволяє.";
+        table["Links and browser"] = "Посилання й браузер";
         table["Live now"] = "Зараз наживо";
         table["Live streams cannot be downloaded."] = "Трансляції наживо не можна завантажити.";
         table["Loading YouTube video..."] = "Завантаження відео YouTube...";
@@ -309,6 +329,7 @@ internal static partial class Ukrainian
         table["Nothing up next yet."] = "Далі ще нічого немає.";
         table["Nothing watched yet. Videos you play appear here, newest first, and continue where you left off."] = "Ви ще нічого не переглянули. Відтворені відео з’являться тут, спочатку найновіші, і продовжаться з місця зупинки.";
         table["Now playing"] = "Зараз грає";
+        table["Now playing. Tab moves through Play, Previous, Next, Open player and Stop. Control+Space plays or pauses from anywhere."] = "Зараз грає. Tab переходить між «Відтворити», «Попереднє», «Наступне», «Відкрити програвач» і «Зупинити». Control+Пробіл відтворює чи призупиняє звідусіль.";
         table["Now playing: music keeps playing while you browse. Tab moves through Play, Previous, Next, Open player and Stop.\n"] = "Зараз грає: музика продовжує грати, поки ви переглядаєте списки. Tab проходить через «Відтворити», «Попереднє», «Далі», «Відкрити плеєр» і «Зупинити».\n";
         table["Now playing: {0}"] = "Зараз грає: {0}";
         table["Now playing: {0}, by {1}"] = "Зараз грає: {0}, {1}";
@@ -336,6 +357,7 @@ internal static partial class Ukrainian
         table["Playback stopped."] = "Відтворення зупинено.";
         table["Player"] = "Плеєр";
         table["Player initialization failed: {0}"] = "Не вдалося ініціалізувати плеєр: {0}";
+        table["Player. K or Space plays or pauses, Left and Right move through the video, and Up and Down change the volume. Alt+A or the Applications key lists every action, and Escape leaves the player."] = "Програвач. K або Пробіл відтворює чи призупиняє, стрілки вліво й вправо переміщують відео, а вгору й вниз змінюють гучність. Alt+A або клавіша контекстного меню показує всі дії, а Escape закриває програвач.";
         table["Playing"] = "Відтворюється";
         table["Playing {0}"] = "Відтворюється: {0}";
         table["Playing {0}."] = "Відтворюється {0}.";
@@ -350,12 +372,14 @@ internal static partial class Ukrainian
         table["Position"] = "Позиція";
         table["Preferred video _quality:"] = "Бажана _якість відео:";
         table["Preferred video quality"] = "Бажана якість відео";
+        table["Press F1 for help."] = "Натисніть F1 для довідки.";
         table["Press slash to search, or Control+1 for featured videos."] = "Натисніть скісну риску для пошуку або Control+1 для рекомендованих відео.";
         table["Previous"] = "Попереднє";
         table["Problem"] = "Проблема";
         table["Problem: {0}"] = "Проблема: {0}";
         table["Queue"] = "Черга";
         table["Queue actions"] = "Дії з чергою";
+        table["Queue. Enter plays the video now, and Delete takes it out of the queue. Escape returns to the player controls."] = "Черга. Enter відтворює відео зараз, а Delete прибирає його з черги. Escape повертає до елементів керування програвачем.";
         table["R_oom:"] = "_Приміщення:";
         table["Read captions aloud as they appear (C in the player)"] = "Читати субтитри вголос, коли вони з’являються (C у плеєрі)";
         table["Read captions: off"] = "Читання субтитрів: вимкнено";
@@ -402,6 +426,7 @@ internal static partial class Ukrainian
         table["Say what was skipped"] = "Повідомляти, що пропущено";
         table["Search YouTube or paste a link"] = "Пошук на YouTube або вставте посилання";
         table["Search box"] = "Поле пошуку";
+        table["Search box. Type words or paste a YouTube link, then press Enter. Escape clears the box, and Escape again goes back to the list."] = "Поле пошуку. Введіть слова або вставте посилання YouTube і натисніть Enter. Escape очищує поле, а повторний Escape повертає до списку.";
         table["Search cancelled."] = "Пошук скасовано.";
         table["Search failed: {0}"] = "Пошук не вдався: {0}";
         table["Search for"] = "Шукати";
@@ -412,12 +437,15 @@ internal static partial class Ukrainian
         table["Searching for videos."] = "Шукаємо відео.";
         table["Searching..."] = "Пошук...";
         table["Sections"] = "Розділи";
+        table["Sections. Left and Right arrows switch sections, or Control+1 to 4 go straight to one."] = "Розділи. Стрілки вліво й вправо перемикають розділи, а Control+1–4 переходять одразу до потрібного.";
+        table["Sections. Left and Right arrows switch sections, or Control+1 to 8 go straight to one."] = "Розділи. Стрілки вліво й вправо перемикають розділи, а Control+1–8 переходять одразу до потрібного.";
         table["Sending the report..."] = "Надсилання звіту...";
         table["Sending your suggestion..."] = "Надсилання пропозиції...";
         table["Settings"] = "Налаштування";
         table["Settings (F2)"] = "Налаштування (F2)";
-        table["Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. "] = "Налаштування мають шість сторінок: Відтворення, Звук, Мовлення й брайль, Бібліотека, SponsorBlock і дизлайки, Оновлення й довідка. ";
+        table["Settings has seven pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, and Updates and help. "] = "Налаштування мають сім сторінок: Відтворення, Звук, Мовлення й брайль, Бібліотека, SponsorBlock і дизлайки, Посилання й браузер, Оновлення й довідка. ";
         table["Settings pages"] = "Сторінки налаштувань";
+        table["Settings, {0}. Tab moves between settings, and Control+Tab goes to the next page. Escape closes and saves."] = "Налаштування, {0}. Tab переходить між параметрами, а Control+Tab — на наступну сторінку. Escape закриває й зберігає.";
         table["Sh_uffle"] = "Пере_мішати";
         table["Share link copied, from the beginning."] = "Посилання для поширення скопійовано, з початку.";
         table["Share link copied, starts at {0}."] = "Посилання для поширення скопійовано, починається з {0}.";
@@ -523,8 +551,10 @@ internal static partial class Ukrainian
         table["Unsubscribed from {0}."] = "Ви відписалися від {0}.";
         table["Up and Down change the _volume by:"] = "Вгору і Вниз змінюють _гучність на:";
         table["Up and Down change the volume by"] = "Вгору і Вниз змінюють гучність на";
+        table["Up and Down move through the list; the first letter of a title jumps to it."] = "Стрілки вгору й вниз переміщують списком; перша літера назви переходить до неї.";
         table["Up next"] = "Далі";
         table["Up next, autoplay off: {0}, by {1}"] = "Далі (автовідтворення вимкнено): {0}, {1}";
+        table["Up next. Enter plays the selected video, and the Applications key lists more. Escape returns to the player controls."] = "Далі. Enter відтворює вибране відео, а клавіша контекстного меню показує більше. Escape повертає до елементів керування програвачем.";
         table["Up next: {0}"] = "Далі: {0}";
         table["Up next: {0}, by {1}"] = "Далі: {0}, {1}";
         table["Update check: {0}"] = "Перевірка оновлень: {0}";
@@ -561,6 +591,8 @@ internal static partial class Ukrainian
         table["What's New"] = "Нове";
         table["What's new:\n{0}\n\n"] = "Що нового:\n{0}\n\n";
         table["While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. "] = "Поки щось грає: Control+Пробіл відтворює або ставить на паузу, Control+Shift+N і Control+Shift+P переходять до наступного й попереднього, а мультимедійні клавіші клавіатури працюють. ";
+        table["Windows did not allow TimePlayer to register for links: {0}"] = "Windows не дозволила TimePlayer зареєструватися для посилань: {0}";
+        table["Without the extension: choose \"Copy the browser bookmark\", add a bookmark in your browser and paste it as the address. On a YouTube page, choose that bookmark."] = "Без розширення: виберіть «Копіювати закладку для браузера», додайте закладку в браузері й вставте це як її адресу. На сторінці YouTube виберіть цю закладку.";
         table["You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files."] = "Ви ще не підписані на жоден канал.\nНатисніть Control+S на відео, щоб підписатися на його канал, або виберіть вище «Як отримати мої підписки YouTube», щоб перенести їх з YouTube. «Імпортувати підписки» читає також файли NewPipe, LibreTube і FreeTube.";
         table["You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions."] = "Підписок ще немає.\nНатисніть Control+S на будь-якому відео, щоб підписатися на його канал, або натисніть Control+4 і імпортуйте свої підписки.";
         table["You will not be asked again; this can be changed in Settings, Updates and help."] = "Більше вас не питатимуть; це можна змінити в налаштуваннях, на сторінці «Оновлення й довідка».";
@@ -588,6 +620,7 @@ internal static partial class Ukrainian
         table["_Download..."] = "_Завантажити...";
         table["_Faster"] = "_Швидше";
         table["_Filler and tangents"] = "_Заповнювачі й відступи від теми";
+        table["_How to add the Play in TimePlayer extension:"] = "_Як додати розширення «Відтворити в TimePlayer»:";
         table["_How to get my YouTube data..."] = "_Як отримати мої дані YouTube...";
         table["_How to get my YouTube subscriptions..."] = "_Як отримати мої підписки YouTube...";
         table["_Import from Google Takeout..."] = "_Імпорт із Google Takeout...";
@@ -610,6 +643,7 @@ internal static partial class Ukrainian
         table["_Queue"] = "_Черга";
         table["_Read captions aloud"] = "_Читати субтитри вголос";
         table["_Region for Featured and the music charts:"] = "_Регіон для рекомендованого й музичних чартів:";
+        table["_Register TimePlayer for links again"] = "_Знову зареєструвати TimePlayer для посилань";
         table["_Remove from queue"] = "_Прибрати з черги";
         table["_Remove from this list"] = "П_рибрати з цього списку";
         table["_Rename..."] = "_Перейменувати...";

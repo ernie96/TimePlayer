@@ -165,6 +165,7 @@ public partial class MainWindow : Window
 
         SearchBox.Focus();
         _ = _viewModel.LoadStartSectionQuietlyAsync();
+        _accessibility.Announce(QuickHelp.Startup, AnnouncementPriority.Medium);
 
         if (TimePlayer.Core.Updates.UpdateService.TakeInstallFailure() is { } setupCode)
         {
@@ -596,6 +597,28 @@ public partial class MainWindow : Window
 
     // ===================== F1 help =====================
 
+    /// <summary>F1: a sentence or two about where the focus is, spoken; Control+F1 has the rest.</summary>
+    private void SpeakQuickHelp()
+    {
+        var focused = Keyboard.FocusedElement as DependencyObject;
+        string text;
+        if (_viewModel.IsPlayerViewVisible)
+        {
+            if (IsWithin(focused, UpNextListBox)) text = QuickHelp.UpNext;
+            else if (IsWithin(focused, CommentsTree)) text = QuickHelp.Comments;
+            else if (IsWithin(focused, DescriptionBox)) text = QuickHelp.Description;
+            else if (IsWithin(focused, PlayerQueueListBox)) text = QuickHelp.PlayerQueue;
+            else text = QuickHelp.Player;
+        }
+        else if (IsWithin(focused, NowPlayingBar)) text = QuickHelp.NowPlaying;
+        else if (IsWithin(focused, SearchBox)) text = QuickHelp.Search;
+        else if (IsWithin(focused, SectionTabControl)) text = QuickHelp.Sections(_viewModel.MusicMode);
+        else if (_viewModel.IsQueueSection) text = QuickHelp.List(BrowseSection.Queue, QueueListBox.Items.Count, _viewModel.SectionEmptyText);
+        else text = QuickHelp.List(_viewModel.CurrentSection, ResultsListBox.Items.Count, _viewModel.SectionEmptyText);
+        _accessibility.Announce(text, AnnouncementPriority.High);
+    }
+
+    /// <summary>Control+F1: everything about where the focus is, in a window to read at leisure.</summary>
     private void ShowContextHelp()
     {
         var focused = Keyboard.FocusedElement as DependencyObject;
@@ -645,6 +668,13 @@ public partial class MainWindow : Window
         var mods = Keyboard.Modifiers;
 
         if (key == Key.F1 && mods == ModifierKeys.None)
+        {
+            SpeakQuickHelp();
+            e.Handled = true;
+            return;
+        }
+
+        if (key == Key.F1 && mods == ModifierKeys.Control)
         {
             ShowContextHelp();
             e.Handled = true;

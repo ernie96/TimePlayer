@@ -120,6 +120,16 @@ public sealed class WpfAccessibilityService : IAccessibilityService
         });
     }
 
+    /// <summary>Speaks <paramref name="message"/> through a live region in another window (a dialog in front).</summary>
+    public static void SpeakIn(TextBlock liveRegion, string message)
+    {
+        // Same text twice in a row isn't a change, so clear it first: F1 pressed again is spoken again.
+        liveRegion.Text = string.Empty;
+        liveRegion.Text = message;
+        var peer = UIElementAutomationPeer.FromElement(liveRegion) ?? UIElementAutomationPeer.CreatePeerForElement(liveRegion);
+        peer?.RaiseAutomationEvent(AutomationEvents.LiveRegionChanged);
+    }
+
     private void UpdateLiveRegion(string message)
     {
         if (_liveRegionControl == null) return;

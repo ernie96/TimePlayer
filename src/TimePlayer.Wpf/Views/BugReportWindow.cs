@@ -95,6 +95,14 @@ public sealed class BugReportWindow : Window
         Content = panel;
 
         Loaded += (_, _) => _description.Focus();
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.F1)
+            {
+                Accessibility.WpfAccessibilityService.SpeakIn(_status, QuickHelp.ReportForm);
+                e.Handled = true;
+            }
+        };
         Closing += (_, _) => _sending?.Cancel();
     }
 

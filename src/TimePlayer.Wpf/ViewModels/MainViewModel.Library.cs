@@ -593,7 +593,8 @@ public sealed partial class MainViewModel
         string spoken;
         if (count == 0)
         {
-            spoken = SectionEmptyText.Replace('\n', ' ');
+            // Only what's there (or isn't); how to fill it is F1's job, so moving around stays quiet.
+            spoken = FirstSentence(SectionEmptyText);
         }
         else
         {
@@ -607,6 +608,13 @@ public sealed partial class MainViewModel
 
         if (moveFocus && count > 0)
             RequestFocusResults?.Invoke(this, EventArgs.Empty);
+    }
+
+    public static string FirstSentence(string text)
+    {
+        text = text.Replace('\n', ' ').Trim();
+        var end = text.IndexOf(". ", StringComparison.Ordinal);
+        return end < 0 ? text : text[..(end + 1)];
     }
 
     /// <summary>"3 videos", "1 channel", "5 playlists" for the current section, in the user's language.</summary>

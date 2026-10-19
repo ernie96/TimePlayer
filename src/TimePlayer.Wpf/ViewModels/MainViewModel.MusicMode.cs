@@ -17,7 +17,7 @@ public sealed partial class MainViewModel
 {
     private static readonly SectionTab[] VideoTabs =
     {
-        new(BrowseSection.Featured, "Featured", "Control+1"),
+        new(BrowseSection.Featured, T("Featured"), T("Control+1")),
         new(BrowseSection.ForYou, T("For You"), T("Control+2")),
         new(BrowseSection.WhatsNew, T("What's New"), T("Control+3")),
         new(BrowseSection.Channels, T("Channels"), T("Control+4")),

@@ -5,7 +5,7 @@
     <LangVersion>latest</LangVersion>
     <Authors>TimePlayer Contributors</Authors>
     <Product>TimePlayer</Product>
-    <Version>1.9.0</Version>
+    <Version>1.10.0</Version>
     <Copyright>Copyright (C) 2026 ernie96. Licensed under 0BSD.</Copyright>
     <PackageLicenseExpression>0BSD</PackageLicenseExpression>
   </PropertyGroup>

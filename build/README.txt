@@ -9,20 +9,21 @@ No Google account or sign-in is needed.
 Installing
 ----------
 
-Installer (TimePlayer_setup.exe): run it and follow the steps. It installs for your
-Windows user only, so it does not ask for administrator rights. Your settings and library
-are kept in %LOCALAPPDATA%\TimePlayer.
+Installer (TimePlayer_setup.exe): run it and follow the steps. It speaks English, Spanish,
+Romanian and Ukrainian, and installs for your Windows user only, so it does not ask for
+administrator rights. Your settings and library are kept in %LOCALAPPDATA%\TimePlayer.
 
-Portable zip (TimePlayer.zip): extract the whole folder anywhere you can write to (not Program Files) and
-run TimePlayer.exe. Because the folder contains portable.txt, your settings, library and
-logs are kept inside that folder, so you can carry it on a USB drive. Delete portable.txt
-to keep them in %LOCALAPPDATA%\TimePlayer instead.
+Portable zip (TimePlayer.zip): extract the whole folder anywhere you can write to (not
+Program Files) and run TimePlayer.exe. Because the folder contains portable.txt, your
+settings, library and logs are kept inside that folder, so you can carry it on a USB drive.
+Delete portable.txt to keep them in %LOCALAPPDATA%\TimePlayer instead.
 
 
 First start
 -----------
 
-Focus starts in the search box. Type and press Enter, or press Control+2 for Featured videos.
+TimePlayer says "Press F1 for help", and focus starts in the search box. Type and press
+Enter, or press Control+1 for Featured videos.
 
 If NVDA is installed, TimePlayer asks once whether you use a braille display. Answer Yes to
 install a small NVDA add-on that shows the playback position on the display and lets the
@@ -31,30 +32,63 @@ use braille. You can change this later in Settings (F2). The add-on is also incl
 TimePlayerBraille.nvda-addon if you prefer to install it from NVDA yourself.
 
 
+Help
+----
+
+TimePlayer keeps quiet while you work, and help is there when you ask for it:
+
+F1 says, in a sentence or two, where you are and the keys that matter most there. Try it
+in the search box, a list, the player or Settings.
+Control+F1 opens the full help for that place in a window you can read at your own pace.
+In lists, the Applications key lists everything you can do with the selected item.
+
+
 Keys
 ----
 
-Press F1 anywhere: it explains the keys for the part of the app that has focus.
-F6 moves between the main areas. The Applications key lists the actions for any item.
+F6 moves between the main areas. / (slash) searches from anywhere.
 
-Library: Control+1 to Control+9 open Search, Featured, What's New, Channels, History,
-Watch Later, Queue, For You and Playlists. In any list, Enter plays, Control+Q queues,
+Video: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists,
+6 Watch Later, 7 History, 8 Queue.
+Music: Control+1 Charts, 2 Recently played, 3 Playlists, 4 Queue.
+Control+M switches between Video and Music.
+
+In any list, the first letter of a title jumps to it and Enter plays. Control+Q queues,
 Control+L saves to Watch Later, Control+K likes, Control+P adds to a playlist,
-Control+S subscribes, Control+G opens the channel, Control+C copies a share link and
+Control+S subscribes, Control+G opens the channel, Control+C copies a link to share and
 Control+D downloads.
 
 Player: K plays and pauses, Left and Right seek, 0 to 9 jump through the video, T says the
 time, Alt+U, Alt+C, Alt+D and Alt+Q open Up next, Comments, Description and Queue.
 S skips a sponsor or other SponsorBlock segment, H jumps to the video's highlight.
-Escape goes back.
+Alt+A lists every action. Escape goes back.
+
+Anywhere: Control+Shift+V plays a YouTube link you copied, Control+Shift+B reports a
+problem, Control+Shift+F suggests a feature, F2 opens Settings.
 
 
 Languages
 ---------
 
-TimePlayer speaks English, Romanian and Ukrainian. It follows the Windows language; to choose,
-open Settings (F2), Speech and braille, Language, and restart TimePlayer.
+TimePlayer speaks English, Spanish, Romanian and Ukrainian. It follows the Windows language;
+to choose, open Settings (F2), Speech and braille, Language, and restart TimePlayer.
 Thank you to Stacy Carter for Ukrainian support.
+
+
+Opening links from your browser and other apps
+----------------------------------------------
+
+Copy a YouTube link anywhere and press Control+Shift+V in TimePlayer to play it.
+
+The "Play in TimePlayer" browser extension (Chrome, Edge, Brave) adds a "Play in TimePlayer"
+link after YouTube links on other websites, and Alt+Shift+P plays the YouTube page you are
+on. Settings (F2), Links and browser, has the steps to add it, a bookmark that works
+without the extension, and "Register TimePlayer for links again" if links stop opening.
+YouTube Music links open in Music.
+
+Control+C asks whether to copy a YouTube link, which opens anywhere, or a TimePlayer link,
+which opens straight in TimePlayer for people who have it. Settings, Links and browser,
+can always use one of them instead.
 
 
 Subscriptions, playlists and For You
@@ -63,12 +97,12 @@ Subscriptions, playlists and For You
 Everything an account would keep stays on this computer instead: subscriptions, likes,
 playlists, Watch Later and history. Nothing is sent to Google.
 
-For You (Control+8) suggests videos from what you watch, like and subscribe to. Delete on
+For You (Control+2) suggests videos from what you watch, like and subscribe to. Delete on
 a video means not interested; Shift+Delete stops recommending that channel.
 
-Playlists (Control+9) holds Liked videos and your own playlists. Paste a YouTube playlist
+Playlists (Control+5) holds Liked videos and your own playlists. Paste a YouTube playlist
 link into the search box to open it, and Save to Playlists keeps it. To find playlists,
-choose Playlists in the Find box next to the search results.
+choose Playlists in the "Search for" box next to the search box.
 
 Bring your YouTube account's data with Google Takeout: in Playlists, "How to get my
 YouTube data" walks you through it; then Import from Google Takeout and choose the zip
@@ -83,10 +117,9 @@ Sound and music mode
 Settings (F2), Sound, has effects for TimePlayer's sound only: presets such as Music, Bass
 boost, Headphones, Voice and podcasts, Night and Concert hall, and a custom sound with a
 10-band equalizer. In the player, E and Shift+E switch presets.
-Control+M switches between Video and Music. Music has its own sections (Control+1 Charts,
-2 Recently played, 3 Playlists, 4 Queue), no video, and its own sound preset. Songs keep
-playing while you browse: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P
-go to the next and previous, Alt+P opens the player, and Escape returns to the lists.
+Music has its own sections, no video, and its own sound preset. Songs keep playing while
+you browse: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the
+next and previous, Alt+P opens the player, and Escape returns to the lists.
 
 
 SponsorBlock and dislikes
@@ -114,15 +147,19 @@ Updates
 TimePlayer checks for a new version when it starts (you can turn this off in Settings, F2)
 and offers it with a list of what changed. Choose Yes and it downloads the update, checks
 that it really comes from TimePlayer's publisher, installs it and opens again by itself.
-Settings also has "Check for TimePlayer updates" to look right away.
+Settings, Updates and help, also has "Check for TimePlayer updates" to look right away.
 
 
-Problems
---------
+Problems and ideas
+------------------
 
-Settings (F2) has "Open log folder". Please attach the newest log file when reporting a
-problem. TimePlayer updates its YouTube downloader (yt-dlp) by itself at startup; if
-videos stop playing, "Update YouTube downloader" in Settings usually helps.
+Press Control+Shift+B to report a problem, or Control+Shift+F to suggest a feature. Say
+what happened or what you would like; a report can include TimePlayer's log, with your
+Windows user name taken out. It goes privately to TimePlayer's developer, and no account
+is needed.
+
+TimePlayer updates its YouTube downloader (yt-dlp) by itself at startup; if videos stop
+playing, "Update the YouTube downloader" in Settings, Updates and help, usually helps.
 
 
 Uninstalling

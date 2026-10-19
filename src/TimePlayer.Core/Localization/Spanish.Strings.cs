@@ -21,11 +21,17 @@ internal static partial class Spanish
         table[", more load as you go"] = ", se cargan más a medida que avanzas";
         table[", portable"] = ", portátil";
         table[", subscribed"] = ", suscrito";
-        table[". Control+Tab moves between pages. Changes apply right away and are saved when you close this window."] = ". Control+Tab pasa de una página a otra. Los cambios se aplican al instante y se guardan al cerrar esta ventana.";
+        table[". F1 for help. Changes apply right away and are saved when you close this window."] = ". F1 para la ayuda. Los cambios se aplican al instante y se guardan al cerrar esta ventana.";
         table["0 to 9 jump to 0 to 90 percent. Home starts over. Up and Down change the volume, M mutes.\n"] = "Del 0 al 9 saltan del 0 al 90 por ciento. Inicio vuelve a empezar. Arriba y Abajo cambian el volumen, M silencia.\n";
         table["1 SponsorBlock segment: {0}"] = "1 segmento de SponsorBlock: {0}";
+        table["1. Choose \"Copy the extension folder's location\" above."] = "1. Elige «Copiar la ubicación de la carpeta de la extensión» arriba.";
         table["1080p, full HD"] = "1080p, Full HD";
+        table["2. In Chrome, Edge or Brave, type chrome://extensions in the address bar (edge://extensions in Edge, brave://extensions in Brave) and press Enter."] = "2. En Chrome, Edge o Brave, escribe chrome://extensions en la barra de direcciones (edge://extensions en Edge, brave://extensions en Brave) y pulsa Intro.";
+        table["3. Turn on Developer mode. It's a switch on that page."] = "3. Activa el Modo de desarrollador. Es un interruptor en esa página.";
         table["360p, saves data"] = "360p, ahorra datos";
+        table["4. Choose \"Load unpacked\". In the folder window, paste the location into the folder box, press Enter, then choose Select Folder."] = "4. Elige «Cargar descomprimida». En la ventana de carpetas, pega la ubicación en el cuadro de la carpeta, pulsa Intro y luego elige Seleccionar carpeta.";
+        table["5. That's it. On other websites, \"Play in TimePlayer\" now follows each YouTube link. On YouTube itself, press Alt+Shift+P to play the page."] = "5. Listo. En otros sitios web, ahora aparece «Reproducir en TimePlayer» después de cada enlace de YouTube. En el propio YouTube, pulsa Alt+Mayús+P para reproducir la página.";
+        table["6. The first time, the browser asks whether to open TimePlayer. Check \"Always allow\", then choose Open."] = "6. La primera vez, el navegador pregunta si quieres abrir TimePlayer. Marca «Permitir siempre» y elige Abrir.";
         table["720p, HD"] = "720p, HD";
         table["< Back (Esc)"] = "< Atrás (Esc)";
         table["< _Back"] = "< _Atrás";
@@ -111,6 +117,7 @@ internal static partial class Spanish
         table["Comments"] = "Comentarios";
         table["Comments are a tree. Each is read as: who, what they said, then when, likes and replies. More comments load as you reach the end.\n"] = "Los comentarios forman un árbol. Cada uno se lee así: quién, qué dijo, y luego cuándo, los me gusta y las respuestas. Se cargan más comentarios al llegar al final.\n";
         table["Comments could not be loaded. They may be turned off for this video."] = "No se pudieron cargar los comentarios. Puede que estén desactivados en este video.";
+        table["Comments. Right arrow opens a comment's replies and Left closes them. Escape returns to the player controls."] = "Comentarios. Flecha derecha abre las respuestas de un comentario e Izquierda las cierra. Escape vuelve a los controles del reproductor.";
         table["Compressor: quiet sounds louder, loud sounds softer"] = "Compresor: los sonidos suaves más fuertes y los fuertes más suaves";
         table["Continue videos where I left off"] = "Continuar los videos donde los dejé";
         table["Control+C _shares:"] = "Control+C _comparte:";
@@ -119,6 +126,7 @@ internal static partial class Spanish
         table["Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n"] = "Control+C copia un enlace para compartir que empieza donde estás; Control+Mayús+C copia uno desde el principio. Control+D descarga el audio o el video.\n";
         table["Control+C shares"] = "Control+C comparte";
         table["Control+D downloads the audio or video. "] = "Control+D descarga el audio o el video. ";
+        table["Control+F1 for more help."] = "Control+F1 para más ayuda.";
         table["Control+K likes, Control+P adds to a playlist, "] = "Control+K marca me gusta, Control+P agrega a una lista, ";
         table["Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n"] = "Control+K marca me gusta, Control+P agrega a una lista, Control+S suscribe, Control+L Ver más tarde, Control+G va al canal.\n";
         table["Control+Left and Right m_ove:"] = "Control+Izquierda y Derecha _mueven:";
@@ -132,6 +140,7 @@ internal static partial class Spanish
         table["Copy playlist link"] = "Copiar el enlace de la lista";
         table["Copy share _link at this point"] = "Copiar _enlace para compartir desde este punto";
         table["Copy the _browser bookmark"] = "Copiar el _marcador del navegador";
+        table["Copy the extension folder's _location"] = "Copiar la _ubicación de la carpeta de la extensión";
         table["Copy which link?"] = "¿Qué enlace quieres copiar?";
         table["Could not check for updates."] = "No se pudo buscar actualizaciones.";
         table["Could not copy to the clipboard. Try again."] = "No se pudo copiar al portapapeles. Inténtalo de nuevo.";
@@ -159,7 +168,9 @@ internal static partial class Spanish
         table["Delete removes items from History, Watch Later, Channels, For You and your playlists."] = "Suprimir quita elementos del Historial, Ver más tarde, Canales, Para ti y tus listas.";
         table["Delete the playlist \"{0}\" with {1}? This cannot be undone."] = "¿Quieres eliminar la lista «{0}» con {1}? No se puede deshacer.";
         table["Deleted {0}."] = "{0} eliminada.";
+        table["Describe it in the box, then Tab to Send. Escape closes without sending."] = "Descríbelo en el cuadro y luego pulsa Tab hasta Enviar. Escape cierra sin enviar.";
         table["Description"] = "Descripción";
+        table["Description. Read it with the arrow keys. Escape returns to the player controls."] = "Descripción. Léela con las flechas. Escape vuelve a los controles del reproductor.";
         table["Diagnostics _report:"] = "_Informe de diagnóstico:";
         table["Diagnostics complete."] = "Diagnóstico terminado.";
         table["Diagnostics report"] = "Informe de diagnóstico";
@@ -168,6 +179,7 @@ internal static partial class Spanish
         table["Do nothing"] = "No hacer nada";
         table["Do you use a braille display with NVDA?\n\n"] = "¿Usas una pantalla braille con NVDA?\n\n";
         table["Don't recommend this c_hannel"] = "No recomendar es_te canal";
+        table["Done. Browsers and other apps can open YouTube links in TimePlayer again."] = "Listo. Los navegadores y otras aplicaciones pueden volver a abrir enlaces de YouTube en TimePlayer.";
         table["Download"] = "Descargar";
         table["Download _video"] = "Descargar v_ideo";
         table["Download _video (MP4)"] = "Descargar _video (MP4)";
@@ -189,7 +201,11 @@ internal static partial class Spanish
         table["Engine error"] = "Error del reproductor";
         table["Engine initialized"] = "Reproductor iniciado";
         table["English"] = "inglés";
+        table["Enter opens the playlist. The Applications key lists what you can do with it."] = "Intro abre la lista. La tecla de aplicaciones muestra lo que puedes hacer con ella.";
+        table["Enter plays the video now, and Delete takes it out of the queue."] = "Intro reproduce el video ahora, y Suprimir lo quita de la cola.";
         table["Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, "] = "Intro reproduce. Control+Q agrega a la cola, Control+L guarda en Ver más tarde, ";
+        table["Enter plays. The Applications key lists what you can do with the selected video."] = "Intro reproduce. La tecla de aplicaciones muestra lo que puedes hacer con el video seleccionado.";
+        table["Enter shows the channel's videos, and Delete unsubscribes."] = "Intro muestra los videos del canal, y Suprimir cancela la suscripción.";
         table["Error during update check: {0}"] = "Error al buscar actualizaciones: {0}";
         table["Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n"] = "Escape vacía el cuadro, y Escape otra vez vuelve a la lista. Tab pasa a Buscar (Videos o Listas) y a Configuración.\n";
         table["Escape closes and saves."] = "Escape cierra y guarda.";
@@ -198,7 +214,7 @@ internal static partial class Spanish
         table["Everyone together: {0:N0} time.|Everyone together: {0:N0} times."] = "Todos juntos: {0:N0} vez.|Todos juntos: {0:N0} veces.";
         table["Export subscriptions"] = "Exportar suscripciones";
         table["Exported {0} to {1}."] = "Se exportaron {0} a {1}.";
-        table["F1: keys for where you are   F6: next area   /: search"] = "F1: teclas de donde estás   F6: siguiente zona   /: buscar";
+        table["F1: help   Control+F1: more help   F6: next area   /: search"] = "F1: ayuda   Control+F1: más ayuda   F6: siguiente zona   /: buscar";
         table["Failed to initialize video engine. Please check dependencies."] = "No se pudo iniciar el reproductor de video. Revisa los componentes necesarios.";
         table["Failed to load test video: {0}"] = "No se pudo cargar el video de prueba: {0}";
         table["Failed to search YouTube. Please check network or try a direct link."] = "No se pudo buscar en YouTube. Revisa la red o prueba con un enlace directo.";
@@ -212,6 +228,7 @@ internal static partial class Spanish
         table["Featured: top music videos"] = "Destacados: videos musicales más populares";
         table["Featured: {0}"] = "Destacados: {0}";
         table["Finding videos for you..."] = "Buscando videos para ti...";
+        table["Folder location copied: {0}"] = "Ubicación de la carpeta copiada: {0}";
         table["For You"] = "Para ti";
         table["From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard. Control+Shift+B reports a problem to TimePlayer's developer, and Control+Shift+F suggests a feature.\n"] = "Desde cualquier lugar, la barra diagonal, Control+F o Control+E vuelven aquí. Control+Mayús+V reproduce un enlace de YouTube del portapapeles. Control+Mayús+B informa de un problema al desarrollador de TimePlayer, y Control+Mayús+F sugiere una función.\n";
         table["From the beginning."] = "Desde el principio.";
@@ -226,8 +243,10 @@ internal static partial class Spanish
         table["Highlight at {0}. H jumps to it."] = "Momento destacado en {0}. H salta a él.";
         table["Highlight, {0}."] = "Momento destacado, {0}.";
         table["History"] = "Historial";
+        table["How to add the Play in TimePlayer extension"] = "Cómo agregar la extensión Reproducir en TimePlayer";
         table["How to get my YouTube data"] = "Cómo obtener mis datos de YouTube";
         table["How to get my YouTube subscriptions"] = "Cómo obtener mis suscripciones de YouTube";
+        table["If links stop opening in TimePlayer (for example after moving a portable copy), choose \"Register TimePlayer for links again\"."] = "Si los enlaces dejan de abrirse en TimePlayer (por ejemplo, después de mover una copia portátil), elige «Registrar TimePlayer para enlaces de nuevo».";
         table["Import from Google Takeout"] = "Importar desde Google Takeout";
         table["Import subscriptions"] = "Importar suscripciones";
         table["Imported from Google Takeout: {0}."] = "Importado desde Google Takeout: {0}.";
@@ -254,6 +273,7 @@ internal static partial class Spanish
         table["Liked {0}."] = "Te gusta {0}.";
         table["Liked."] = "Te gusta.";
         table["Link copied with the first 50 videos; YouTube allows no more in a shared list."] = "Enlace copiado con los primeros 50 videos; YouTube no permite más en una lista compartida.";
+        table["Links and browser"] = "Enlaces y navegador";
         table["Live now"] = "En vivo ahora";
         table["Live streams cannot be downloaded."] = "Las transmisiones en vivo no se pueden descargar.";
         table["Loading YouTube video..."] = "Cargando video de YouTube...";
@@ -309,6 +329,7 @@ internal static partial class Spanish
         table["Nothing up next yet."] = "Todavía no hay nada a continuación.";
         table["Nothing watched yet. Videos you play appear here, newest first, and continue where you left off."] = "Todavía no has visto nada. Los videos que reproduzcas aparecen aquí, primero los más recientes, y continúan donde los dejaste.";
         table["Now playing"] = "Reproduciendo ahora";
+        table["Now playing. Tab moves through Play, Previous, Next, Open player and Stop. Control+Space plays or pauses from anywhere."] = "Reproduciendo ahora. Tab recorre Reproducir, Anterior, Siguiente, Abrir reproductor y Detener. Control+Espacio reproduce o pausa desde cualquier lugar.";
         table["Now playing: music keeps playing while you browse. Tab moves through Play, Previous, Next, Open player and Stop.\n"] = "Reproduciendo ahora: la música sigue sonando mientras navegas. Tab recorre Reproducir, Anterior, Siguiente, Abrir reproductor y Detener.\n";
         table["Now playing: {0}"] = "Reproduciendo ahora: {0}";
         table["Now playing: {0}, by {1}"] = "Reproduciendo ahora: {0}, de {1}";
@@ -336,6 +357,7 @@ internal static partial class Spanish
         table["Playback stopped."] = "Reproducción detenida.";
         table["Player"] = "Reproductor";
         table["Player initialization failed: {0}"] = "No se pudo iniciar el reproductor: {0}";
+        table["Player. K or Space plays or pauses, Left and Right move through the video, and Up and Down change the volume. Alt+A or the Applications key lists every action, and Escape leaves the player."] = "Reproductor. K o Espacio reproducen o pausan, Izquierda y Derecha se mueven por el video, y Arriba y Abajo cambian el volumen. Alt+A o la tecla de aplicaciones muestran todas las acciones, y Escape sale del reproductor.";
         table["Playing"] = "Reproduciendo";
         table["Playing {0}"] = "Reproduciendo {0}";
         table["Playing {0}."] = "Reproduciendo {0}.";
@@ -350,12 +372,14 @@ internal static partial class Spanish
         table["Position"] = "Posición";
         table["Preferred video _quality:"] = "_Calidad de video preferida:";
         table["Preferred video quality"] = "Calidad de video preferida";
+        table["Press F1 for help."] = "Pulsa F1 para la ayuda.";
         table["Press slash to search, or Control+1 for featured videos."] = "Pulsa la barra diagonal para buscar, o Control+1 para ver los videos destacados.";
         table["Previous"] = "Anterior";
         table["Problem"] = "Problema";
         table["Problem: {0}"] = "Problema: {0}";
         table["Queue"] = "Cola";
         table["Queue actions"] = "Acciones de la cola";
+        table["Queue. Enter plays the video now, and Delete takes it out of the queue. Escape returns to the player controls."] = "Cola. Intro reproduce el video ahora, y Suprimir lo quita de la cola. Escape vuelve a los controles del reproductor.";
         table["R_oom:"] = "_Sala:";
         table["Read captions aloud as they appear (C in the player)"] = "Leer los subtítulos en voz alta a medida que aparecen (C en el reproductor)";
         table["Read captions: off"] = "Leer subtítulos: desactivado";
@@ -402,6 +426,7 @@ internal static partial class Spanish
         table["Say what was skipped"] = "Decir qué se saltó";
         table["Search YouTube or paste a link"] = "Busca en YouTube o pega un enlace";
         table["Search box"] = "Cuadro de búsqueda";
+        table["Search box. Type words or paste a YouTube link, then press Enter. Escape clears the box, and Escape again goes back to the list."] = "Cuadro de búsqueda. Escribe palabras o pega un enlace de YouTube y pulsa Intro. Escape vacía el cuadro, y Escape otra vez vuelve a la lista.";
         table["Search cancelled."] = "Búsqueda cancelada.";
         table["Search failed: {0}"] = "La búsqueda falló: {0}";
         table["Search for"] = "Buscar";
@@ -412,12 +437,15 @@ internal static partial class Spanish
         table["Searching for videos."] = "Buscando videos.";
         table["Searching..."] = "Buscando...";
         table["Sections"] = "Secciones";
+        table["Sections. Left and Right arrows switch sections, or Control+1 to 4 go straight to one."] = "Secciones. Las flechas Izquierda y Derecha cambian de sección, o Control+1 a 4 van directamente a una.";
+        table["Sections. Left and Right arrows switch sections, or Control+1 to 8 go straight to one."] = "Secciones. Las flechas Izquierda y Derecha cambian de sección, o Control+1 a 8 van directamente a una.";
         table["Sending the report..."] = "Enviando el informe...";
         table["Sending your suggestion..."] = "Enviando tu sugerencia...";
         table["Settings"] = "Configuración";
         table["Settings (F2)"] = "Configuración (F2)";
-        table["Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. "] = "Configuración tiene seis páginas: Reproducción, Sonido, Voz y braille, Biblioteca, SponsorBlock y no me gusta, y Actualizaciones y ayuda. ";
+        table["Settings has seven pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, and Updates and help. "] = "Configuración tiene siete páginas: Reproducción, Sonido, Voz y braille, Biblioteca, SponsorBlock y no me gusta, Enlaces y navegador, y Actualizaciones y ayuda. ";
         table["Settings pages"] = "Páginas de configuración";
+        table["Settings, {0}. Tab moves between settings, and Control+Tab goes to the next page. Escape closes and saves."] = "Configuración, {0}. Tab se mueve entre las opciones, y Control+Tab va a la página siguiente. Escape cierra y guarda.";
         table["Sh_uffle"] = "_Aleatorio";
         table["Share link copied, from the beginning."] = "Enlace para compartir copiado, desde el principio.";
         table["Share link copied, starts at {0}."] = "Enlace para compartir copiado, empieza en {0}.";
@@ -523,8 +551,10 @@ internal static partial class Spanish
         table["Unsubscribed from {0}."] = "Cancelaste la suscripción a {0}.";
         table["Up and Down change the _volume by:"] = "Arriba y Abajo cambian el _volumen en:";
         table["Up and Down change the volume by"] = "Arriba y Abajo cambian el volumen en";
+        table["Up and Down move through the list; the first letter of a title jumps to it."] = "Arriba y Abajo se mueven por la lista; la primera letra de un título salta a él.";
         table["Up next"] = "A continuación";
         table["Up next, autoplay off: {0}, by {1}"] = "A continuación, reproducción automática desactivada: {0}, de {1}";
+        table["Up next. Enter plays the selected video, and the Applications key lists more. Escape returns to the player controls."] = "A continuación. Intro reproduce el video seleccionado, y la tecla de aplicaciones muestra más. Escape vuelve a los controles del reproductor.";
         table["Up next: {0}"] = "A continuación: {0}";
         table["Up next: {0}, by {1}"] = "A continuación: {0}, de {1}";
         table["Update check: {0}"] = "Búsqueda de actualizaciones: {0}";
@@ -561,6 +591,8 @@ internal static partial class Spanish
         table["What's New"] = "Novedades";
         table["What's new:\n{0}\n\n"] = "Novedades:\n{0}\n\n";
         table["While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. "] = "Mientras algo suena: Control+Espacio reproduce o pausa, Control+Mayús+N y Control+Mayús+P van a la siguiente y a la anterior, y funcionan las teclas multimedia del teclado. ";
+        table["Windows did not allow TimePlayer to register for links: {0}"] = "Windows no permitió que TimePlayer se registrara para los enlaces: {0}";
+        table["Without the extension: choose \"Copy the browser bookmark\", add a bookmark in your browser and paste it as the address. On a YouTube page, choose that bookmark."] = "Sin la extensión: elige «Copiar el marcador del navegador», agrega un marcador en tu navegador y pégalo como dirección. En una página de YouTube, elige ese marcador.";
         table["You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files."] = "Todavía no estás suscrito a ningún canal.\nPulsa Control+S en un video para suscribirte a su canal, o elige «Cómo obtener mis suscripciones de YouTube» arriba para traerlas desde YouTube. Importar suscripciones también lee archivos de NewPipe, LibreTube y FreeTube.";
         table["You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions."] = "Todavía no tienes suscripciones.\nPulsa Control+S en cualquier video para suscribirte a su canal, o pulsa Control+4 e importa tus suscripciones.";
         table["You will not be asked again; this can be changed in Settings, Updates and help."] = "No se te volverá a preguntar; puedes cambiarlo en Configuración, Actualizaciones y ayuda.";
@@ -588,6 +620,7 @@ internal static partial class Spanish
         table["_Download..."] = "_Descargar...";
         table["_Faster"] = "Más _rápido";
         table["_Filler and tangents"] = "_Relleno y divagaciones";
+        table["_How to add the Play in TimePlayer extension:"] = "Cómo a_gregar la extensión Reproducir en TimePlayer:";
         table["_How to get my YouTube data..."] = "_Cómo obtener mis datos de YouTube...";
         table["_How to get my YouTube subscriptions..."] = "_Cómo obtener mis suscripciones de YouTube...";
         table["_Import from Google Takeout..."] = "_Importar desde Google Takeout...";
@@ -610,6 +643,7 @@ internal static partial class Spanish
         table["_Queue"] = "_Cola";
         table["_Read captions aloud"] = "_Leer subtítulos en voz alta";
         table["_Region for Featured and the music charts:"] = "_Región para Destacados y los éxitos musicales:";
+        table["_Register TimePlayer for links again"] = "_Registrar TimePlayer para enlaces de nuevo";
         table["_Remove from queue"] = "_Quitar de la cola";
         table["_Remove from this list"] = "_Quitar de esta lista";
         table["_Rename..."] = "Cambiar el _nombre...";

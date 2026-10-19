@@ -42,6 +42,9 @@ AppMutex=TimePlayerRunning
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
+; Romanian isn't one of Inno Setup's official translations; this is the one from its repository.
+Name: "romanian"; MessagesFile: "Languages\Romanian.isl"
+Name: "ukrainian"; MessagesFile: "compiler:Languages\Ukrainian.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"

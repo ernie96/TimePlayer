@@ -3,6 +3,15 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.10.0
+
+- Quieter, with help when you want it. F1 now says, in a sentence or two, where you are and the keys that matter most there, without opening a window; Control+F1 opens the full help for that place. TimePlayer says "Press F1 for help" when it starts, and an empty section just says it's empty: F1 tells you how to fill it.
+- In lists, the first letter of a title now jumps to it. Before, the first letter of "New", "Watched" or "Playlist" was used.
+- A new Settings page, Links and browser, has step-by-step help for adding the Play in TimePlayer browser extension, a button to copy the extension's folder location, the browser bookmark, the Control+C sharing choice, and "Register TimePlayer for links again" if links stop opening in TimePlayer.
+- The installer speaks Romanian and Ukrainian too, as well as English and Spanish.
+- Fixed: the Featured section's name was always in English.
+- The user guide and README are up to date again (the guide still said Control+2 for Featured; it's Control+1).
+
 ## 1.9.0
 
 - Report a problem: press Control+Shift+B (or Settings, Updates and help, Report a problem), say what went wrong, and send it, with TimePlayer's log if you like. It goes privately to TimePlayer's developer; no account is needed, and your Windows user name is taken out of the log.

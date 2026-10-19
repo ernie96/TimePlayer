@@ -299,7 +299,7 @@
                            Visibility="{Binding IsSectionEmpty, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                 <!-- The list for every section except Queue -->
-                <ListBox x:Name="ResultsListBox"
+                <ListBox x:Name="ResultsListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Title"
                          Grid.Row="3"
                          Style="{StaticResource AccessibleListBoxStyle}"
                          ItemsSource="{Binding SearchResults}"
@@ -323,7 +323,7 @@
                 </ListBox>
 
                 <!-- Queue section -->
-                <ListBox x:Name="QueueListBox"
+                <ListBox x:Name="QueueListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Title"
                          Grid.Row="3"
                          Style="{StaticResource AccessibleListBoxStyle}"
                          ItemsSource="{Binding PlaybackQueue}"
@@ -440,7 +440,7 @@
                             <Grid>
                                 <TextBlock Text="{l:T 'Related videos appear here once the video starts.'}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
                                            Visibility="{Binding UpNext.Count, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
-                                <ListBox x:Name="UpNextListBox"
+                                <ListBox x:Name="UpNextListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Title"
                                          Style="{StaticResource AccessibleListBoxStyle}"
                                          ItemsSource="{Binding UpNext}"
                                          SelectedItem="{Binding SelectedUpNext}"
@@ -491,7 +491,7 @@
                             <Grid>
                                 <TextBlock Text="{l:T 'The queue is empty. Control+Q on any video adds it.'}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
                                            Visibility="{Binding PlaybackQueue.Count, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
-                                <ListBox x:Name="PlayerQueueListBox"
+                                <ListBox x:Name="PlayerQueueListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Title"
                                          Style="{StaticResource AccessibleListBoxStyle}"
                                          ItemsSource="{Binding PlaybackQueue}"
                                          SelectedItem="{Binding SelectedQueueItem}"
@@ -593,7 +593,7 @@
                            TextTrimming="CharacterEllipsis" AutomationProperties.LiveSetting="Polite"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
                     <TextBlock Text="{Binding DownloadStatusText}" Foreground="#38BDF8" FontSize="12" Margin="0,0,16,0"/>
-                    <TextBlock Text="{l:T 'F1: keys for where you are   F6: next area   /: search'}" Foreground="#8E8E96" FontSize="12"/>
+                    <TextBlock Text="{l:T 'F1: help   Control+F1: more help   F6: next area   /: search'}" Foreground="#8E8E96" FontSize="12"/>
                 </StackPanel>
             </Grid>
         </Border>

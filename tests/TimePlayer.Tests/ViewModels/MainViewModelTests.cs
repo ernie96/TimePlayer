@@ -652,6 +652,13 @@ public class MainViewModelTests
                     NullLogger<TimePlayer.Core.Updates.UpdateService>.Instance);
                 var main = new TimePlayer.Wpf.Views.MainWindow(vm, _accessibility, updates, _configService,
                     NullLogger<TimePlayer.Wpf.Views.MainWindow>.Instance);
+                // The first letter of a title jumps to it (items speak "New", "Playlist:" and so on first).
+                foreach (var listName in new[] { "ResultsListBox", "QueueListBox", "UpNextListBox", "PlayerQueueListBox" })
+                {
+                    var list = (System.Windows.Controls.ListBox)main.FindName(listName);
+                    Assert.True(list.IsTextSearchEnabled, listName);
+                    Assert.Equal("Title", System.Windows.Controls.TextSearch.GetTextPath(list));
+                }
                 var settings = new TimePlayer.Wpf.Views.SettingsWindow(vm);
                 Assert.Equal(settingsTitle, settings.Title);
                 // Every choice list on every page has its choices and shows the current one.
@@ -974,14 +981,19 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public async Task WhatsNew_WithoutSubscriptions_ExplainsHowToStart()
+    public async Task WhatsNew_WithoutSubscriptions_SaysSoBriefly_AndF1ExplainsHowToStart()
     {
         await using var vm = CreateViewModel();
 
         await vm.ShowSectionByNumberAsync(3);
 
         Assert.Empty(vm.SearchResults);
-        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("no subscriptions yet") && a.message.Contains("Control+S"));
+        // Moving around stays quiet: only what's there is spoken...
+        Assert.Contains(_accessibility.Announcements, a => a.message == "You have no subscriptions yet.");
+        // ...and F1 says how to fill it.
+        var help = TimePlayer.Wpf.Views.QuickHelp.List(vm.CurrentSection, 0, vm.SectionEmptyText);
+        Assert.Contains("Control+S", help);
+        Assert.EndsWith("Control+F1 for more help.", help);
         Assert.Equal(0, _discovery.FeedRequests);
     }
 

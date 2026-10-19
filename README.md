@@ -6,8 +6,9 @@ It is designed from the ground up for assistive technologies (screen readers lik
 
 ## Download
 
-- **Installer:** [TimePlayer_setup.exe](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer_setup.exe) installs for your user, with no administrator rights needed.
+- **Installer:** [TimePlayer_setup.exe](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer_setup.exe) installs for your user, with no administrator rights needed. It speaks English, Spanish, Romanian and Ukrainian.
 - **Portable:** [TimePlayer.zip](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer.zip): extract anywhere you can write to.
+- **Browser extension:** [TimePlayer-browser-extension.zip](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer-browser-extension.zip) (also installed with the app; see Settings, Links and browser).
 
 TimePlayer keeps itself up to date: it checks for a new release at startup and offers to install it.
 The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELOG.md](CHANGELOG.md) lists what changed in each version.
@@ -18,8 +19,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 
 - **No account, no keys.** No Google sign-in, API key or cookies. Everything an account would keep (subscriptions,
   likes, playlists, Watch Later, history) is stored as plain JSON on your computer.
-- **Built for screen readers and the keyboard.** NVDA, JAWS and Narrator; F1 explains the keys wherever you are;
-  speech is kept short, and captions are read aloud only when you ask (`C`).
+- **Built for screen readers and the keyboard.** NVDA, JAWS and Narrator. The interface stays quiet: F1 says in a
+  sentence or two where you are and what to press, Control+F1 opens the full help for that place, and captions are
+  read aloud only when you ask (`C`).
 - **Library**: Search, Featured, What's New (subscription feed), Channels, History with resume, Watch Later, Queue,
   For You (local recommendations) and Playlists (Liked videos, your own and saved YouTube playlists).
 - **Player**: Up next with autoplay, comments with threaded replies, description, captions, speed, share links that
@@ -31,9 +33,12 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   They change TimePlayer's sound only. Music mode (`Ctrl+M`) turns video off and uses its own sound preset.
 - **Braille progress**: an NVDA add-on shows playback position as a "lower g" (⠶) on the braille display; the routing
   keys seek to that point and `Ctrl+Shift+D` toggles it.
-- **English, Romanian and Ukrainian**: every spoken message, screen, menu and F1 help, with each language's plural
-  forms; it follows the Windows language or Settings, Speech and braille, Language. Thanks to Stacy Carter for
+- **English, Spanish, Romanian and Ukrainian**: every spoken message, screen, menu and help text, with each language's
+  plural forms; it follows the Windows language or Settings, Speech and braille, Language. Thanks to Stacy Carter for
   Ukrainian support.
+- **Links from anywhere**: a browser extension, a bookmark, `timeplayer://` links, the command line and Control+Shift+V
+  open YouTube and YouTube Music links in TimePlayer.
+- **Report a problem** (Control+Shift+B) or **suggest a feature** (Control+Shift+F) from inside the app, with no account.
 - **Updates itself** from GitHub Releases, with every download checked against an Ed25519 signature.
 
 ## How it works
@@ -48,7 +53,7 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 - **Playback** uses **mpv** in its own process, controlled over its JSON IPC pipe and drawn inside TimePlayer's window.
   Playback only counts as started once mpv reports it is playing; otherwise the next source is tried.
 - **Subscription feeds** come from YouTube's public per-channel RSS feeds, as NewPipe's fast mode does.
-- **Speech**: announcements go through UI Automation notifications; captions use the NVDA Controller Client when NVDA
+- **Speech**: announcements go through a UI Automation live region; captions use the NVDA Controller Client when NVDA
   runs, so a new caption interrupts an old one instead of queueing behind it.
 
 ---
@@ -72,8 +77,10 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 ├── TimePlayer.sln
 ├── LICENSE                          # 0BSD
 ├── CHANGELOG.md                     # Release notes, read out in the update prompt
-├── build/                           # package.ps1, Inno Setup script, user guide, update signer
+├── browser-extension/               # "Play in TimePlayer" for Chrome, Edge and Brave
+├── build/                           # package.ps1, Inno Setup script and languages, user guide, update signer
 ├── docs/                            # Dependencies, instance directories, third-party notices
+├── report-relay/                    # Cloudflare Worker that files problem reports and suggestions
 ├── src/
 │   ├── TimePlayer.Core/             # net10.0 class library
 │   │   ├── Accessibility/           # Spoken text, braille progress track, NVDA add-on and bridge
@@ -88,7 +95,7 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 │   └── TimePlayer.Wpf/              # net10.0-windows WPF application
 │       ├── Accessibility/           # UI Automation announcements, caption speech
 │       ├── ViewModels/              # MainViewModel (library, player, playlists, sharing)
-│       └── Views/                   # Main window, settings, F1 help, update flow
+│       └── Views/                   # Main window, settings, F1 and Control+F1 help, report form, update flow
 │
 └── tests/TimePlayer.Tests/          # xUnit tests
 ```
@@ -123,7 +130,8 @@ dotnet run --project src/TimePlayer.Wpf
 
 ## Keyboard Navigation
 
-**F1 explains the keys for wherever focus is** (search box, a section's list, the player, Up next, comments, settings).
+**F1 says where you are and the keys that matter most there**, in a sentence or two (search box, a section's list, the
+player, Up next, comments, Settings). **Control+F1** opens the full help for that place in a window.
 **F6 / Shift+F6** move between the main areas: search box, section tabs and list; or player controls, side panel and top bar.
 
 ### Library
@@ -133,10 +141,11 @@ dotnet run --project src/TimePlayer.Wpf
 | `Ctrl+1` ... `Ctrl+8` | Video: Featured, For You, What's New, Channels, Playlists, Watch Later, History, Queue. Music: Charts, Recently played, Playlists, Queue |
 | `/`, `Ctrl+F`, `Ctrl+E` | Search from anywhere; results open as their own page |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous section |
+| First letter | Jump to the next title starting with it |
 | `Enter` | Play the video, or open the channel |
 | `Ctrl+Q` / `Ctrl+L` / `Ctrl+S` / `Ctrl+G` | Queue, Watch Later, subscribe, go to channel |
 | `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
-| `Ctrl+C` | Copy a share link (`https://youtu.be/...`) |
+| `Ctrl+C` | Copy a link to share: asks YouTube link or TimePlayer link (Settings, Links and browser, can fix the choice) |
 | `Ctrl+D` | Download: audio (MP3) or video (MP4), open the downloads folder, cancel |
 | `Delete` | Remove from History, Watch Later, Channels, a playlist or the Queue; in For You, not interested |
 | `Shift+Delete` | Don't recommend this channel |
@@ -144,7 +153,9 @@ dotnet run --project src/TimePlayer.Wpf
 | `Applications` / `Shift+F10` | Every action for the item |
 | `Alt+Left`, `Backspace`, `Escape` | Back from search results, a channel or a playlist page |
 | `F5` | Refresh the section |
-| `F2` | Settings: Playback, Speech and braille, Library, SponsorBlock and dislikes, Updates and help (`Ctrl+Tab` between pages; Escape closes and saves) |
+| `F2` | Settings: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, Updates and help (`Ctrl+Tab` between pages; Escape closes and saves) |
+| `Ctrl+Shift+V` | Play a YouTube link from the clipboard |
+| `Ctrl+Shift+B` / `Ctrl+Shift+F` | Report a problem / suggest a feature |
 
 Lists keep loading as you reach the end: search results, channel pages, playlists and comments are not limited to the first 20.
 
@@ -187,7 +198,8 @@ On first start with NVDA installed, TimePlayer asks once whether you use a brail
 
 TimePlayer speaks results of what you do (a count of results, "Paused", a new position after seeking) and stays quiet
 otherwise: buffering, loading related videos and comments in the background, and caption lines are not announced
-unless you turn on "Read captions aloud" (`C`).
+unless you turn on "Read captions aloud" (`C`). At startup it only says "Press F1 for help". An empty section says
+what it is ("Watch Later is empty."); how to fill it is in F1.
 
 ## Library, Subscriptions and Feeds
 
@@ -225,12 +237,12 @@ stream source.
 TimePlayer can play YouTube links that come from your browser, email, chat or any other app. Only one TimePlayer runs at a time: a link from elsewhere goes to the open window.
 
 - **Copied links:** copy a YouTube link anywhere, then press Control+Shift+V in TimePlayer.
-- **The browser extension** (Chrome, Edge, Brave and other Chromium browsers) adds "Play in TimePlayer" after each YouTube link on other websites (Reddit, webmail, forums), or can make those links open in TimePlayer directly. On YouTube itself, use its toolbar button, Alt+Shift+P, or "Play this page in TimePlayer" in the context menu. To install it, open `chrome://extensions` (or `edge://extensions`), turn on Developer mode, choose "Load unpacked" and pick the `browser-extension` folder. Settings, Updates and help, "Open the browser extension folder" opens it, and it's also `TimePlayer-browser-extension.zip` on the releases page.
-- **A bookmark** does the same without an extension: Settings, Updates and help, "Copy the browser bookmark", then add a bookmark with that as its address. Choose it on a YouTube page.
-- **`timeplayer://` links:** TimePlayer registers itself for links like `timeplayer://open?url=https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ`, which any web page, document or app can use. The first time, the browser asks whether to open TimePlayer.
+- **The browser extension** (Chrome, Edge, Brave and other Chromium browsers) adds "Play in TimePlayer" after each YouTube link on other websites (Reddit, webmail, forums), or can make those links open in TimePlayer directly. On YouTube itself, use its toolbar button, Alt+Shift+P, or "Play this page in TimePlayer" in the context menu. Settings, Links and browser, has the steps: copy the extension folder's location, open `chrome://extensions` (or `edge://extensions`), turn on Developer mode, choose "Load unpacked" and paste the location. It's also `TimePlayer-browser-extension.zip` on the releases page.
+- **A bookmark** does the same without an extension: Settings, Links and browser, "Copy the browser bookmark", then add a bookmark with that as its address. Choose it on a YouTube page.
+- **`timeplayer://` links:** TimePlayer registers itself for links like `timeplayer://open?url=https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ`, which any web page, document or app can use. The first time, the browser asks whether to open TimePlayer. If links stop opening (for example after moving a portable copy), Settings, Links and browser, "Register TimePlayer for links again" fixes it.
 - **The command line:** `TimePlayer.exe "https://youtu.be/dQw4w9WgXcQ"`, which also covers shortcuts and scripts.
 
-- **Sharing:** Control+C and Control+Shift+C ask whether to copy a YouTube link (opens anywhere) or a TimePlayer link (opens straight in TimePlayer for people who have it). "Control+C shares" in Settings, Updates and help can always use one instead.
+- **Sharing:** Control+C and Control+Shift+C ask whether to copy a YouTube link (opens anywhere) or a TimePlayer link (opens straight in TimePlayer for people who have it). "Control+C shares" in Settings, Links and browser, can always use one instead.
 
 YouTube Music links (music.youtube.com) open in Music. Only YouTube videos and playlists are accepted; anything else in a link is ignored. "Let browsers and other apps open YouTube links in TimePlayer" in Settings turns the `timeplayer://` links off.
 
@@ -270,11 +282,11 @@ labelled "feature request". See `report-relay/README.md` for setup.
 
 1. Set `<Version>` in `Directory.Build.props` and add a `## <version>` section to `CHANGELOG.md`. That section becomes the release notes users hear in the update prompt.
 2. Commit, then tag and push: `git tag v1.2.0` and `git push origin main v1.2.0`.
-3. The **Release** workflow tests, builds, signs and publishes `TimePlayer_setup.exe` and `TimePlayer.zip` (each with a `.sig`), the NVDA add-on and `SHA256SUMS.txt`. Installed copies offer the update at their next start.
+3. The **Release** workflow tests, builds, signs and publishes `TimePlayer_setup.exe` and `TimePlayer.zip` (each with a `.sig`), the NVDA add-on, the browser extension zip and `SHA256SUMS.txt`. Installed copies offer the update at their next start.
 
 Updates are signed with Ed25519. The private key is the `UPDATE_SIGNING_KEY` repository secret, with a copy kept outside the repository at `%APPDATA%\TimePlayer-release\update-signing.key`; its public half is `UpdateService.PublicKey`. The app refuses any update that does not verify, so keep that key safe: losing it means shipping a new public key in a release that users install by hand.
 
-To build locally instead, `pwsh build/package.ps1` writes the same files to `release/`. It bundles mpv and yt-dlp from `%LOCALAPPDATA%\TimePlayer\bin` (or `-ToolsFrom <folder>`) and needs Inno Setup 6 for the installer (`winget install JRSoftware.InnoSetup`). `build/README.txt` is the plain-text guide shipped to users.
+To build locally instead, `pwsh build/package.ps1` writes the same files to `release/`. It bundles mpv and yt-dlp from `%LOCALAPPDATA%\TimePlayer\bin` (or `-ToolsFrom <folder>`) and needs Inno Setup 6 for the installer (`winget install JRSoftware.InnoSetup`). Romanian isn't one of Inno Setup's own languages, so its translation is kept in `build/Languages`. `build/README.txt` is the plain-text guide shipped to users.
 
 ---
 

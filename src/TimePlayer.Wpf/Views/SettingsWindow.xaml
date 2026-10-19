@@ -43,7 +43,7 @@
 
         <TextBlock Grid.Row="0" Style="{StaticResource NoteText}">
             <Run Text="{Binding VersionText, Mode=OneWay}" Foreground="#E4E4E7"/>
-            <Run Text="{l:T '. Control+Tab moves between pages. Changes apply right away and are saved when you close this window.'}"/>
+            <Run Text="{l:T '. F1 for help. Changes apply right away and are saved when you close this window.'}"/>
         </TextBlock>
 
         <TabControl x:Name="Pages" Grid.Row="1" Background="Transparent" BorderThickness="0" Padding="0"
@@ -217,22 +217,36 @@
                 </ScrollViewer>
             </TabItem>
 
+            <!-- ===== Links and browser ===== -->
+            <TabItem Header="{l:T 'Links and browser'}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
+                    <StackPanel>
+                        <CheckBox Content="{l:T 'Let browsers and other apps open YouTube links in TimePlayer'}" IsChecked="{Binding OpenLinksFromOtherApps}"/>
+                        <WrapPanel Margin="0,0,0,8">
+                            <Button Content="{l:T '_Register TimePlayer for links again'}" Command="{Binding RegisterLinksAgainCommand}" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="{l:T 'Open the browser e_xtension folder'}" Command="{Binding OpenBrowserExtensionFolderCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Copy the extension folder\'s _location'}" Command="{Binding CopyExtensionFolderLocationCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Copy the _browser bookmark'}" Command="{Binding CopyBrowserBookmarkCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                        </WrapPanel>
+                        <Label Content="{l:T '_How to add the Play in TimePlayer extension:'}" Target="{Binding ElementName=ExtensionStepsBox}" Foreground="#E4E4E7" Padding="0,0,0,4"/>
+                        <TextBox x:Name="ExtensionStepsBox" AutomationProperties.Name="{l:T 'How to add the Play in TimePlayer extension'}"
+                                 Text="{Binding ExtensionSteps, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" Height="230" Background="#141416" Margin="0,0,0,10"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <Label Content="{l:T 'Control+C _shares:'}" Target="{Binding ElementName=ShareLinkBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="ShareLinkBox" AutomationProperties.Name="{l:T 'Control+C shares'}" ItemsSource="{Binding ShareLinkChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding ShareLinkKind}" MinWidth="180"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
             <!-- ===== Updates and help ===== -->
             <TabItem Header="{l:T 'Updates and help'}">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
                         <CheckBox Content="{l:T 'Check for TimePlayer updates at startup'}" IsChecked="{Binding CheckForAppUpdatesAtStartup}"/>
                         <CheckBox Content="{l:T 'Tell me at startup how many times TimePlayer has run'}" IsChecked="{Binding AnnounceRunCount}"/>
-                        <CheckBox Content="{l:T 'Let browsers and other apps open YouTube links in TimePlayer'}" IsChecked="{Binding OpenLinksFromOtherApps}"/>
-                        <StackPanel Style="{StaticResource Row}">
-                            <Label Content="{l:T 'Control+C _shares:'}" Target="{Binding ElementName=ShareLinkBox}" Style="{StaticResource SettingLabel}"/>
-                            <ComboBox x:Name="ShareLinkBox" AutomationProperties.Name="{l:T 'Control+C shares'}" ItemsSource="{Binding ShareLinkChoices}" DisplayMemberPath="Label"
-                                      SelectedValuePath="Value" SelectedValue="{Binding ShareLinkKind}" MinWidth="180"/>
-                        </StackPanel>
-                        <WrapPanel Margin="0,0,0,8">
-                            <Button Content="{l:T 'Copy the _browser bookmark'}" Command="{Binding CopyBrowserBookmarkCommand}" Style="{StaticResource SmallButtonStyle}"/>
-                            <Button Content="{l:T 'Open the browser e_xtension folder'}" Command="{Binding OpenBrowserExtensionFolderCommand}" Style="{StaticResource SmallButtonStyle}"/>
-                        </WrapPanel>
                         <CheckBox Content="{l:T 'Add my runs to the total for everyone (only adds 1 per start, nothing about you)'}" IsChecked="{Binding ShareRunCount}"/>
                         <WrapPanel Margin="0,0,0,8">
                             <Button Content="{l:T 'Check for TimePlayer _updates'}" Click="CheckAppUpdates_Click" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
@@ -252,8 +266,13 @@
             </TabItem>
         </TabControl>
 
-        <Button Grid.Row="2" Content="{l:T 'Close'}" IsCancel="True" Style="{StaticResource AccentButtonStyle}"
-                HorizontalAlignment="Right" MinWidth="100" Margin="0,12,0,0" Click="Close_Click"
-                AutomationProperties.AcceleratorKey="Escape"/>
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <!-- F1 help is spoken from here: the main window's announcements may not be heard while this window is in front. -->
+            <TextBlock x:Name="HelpLiveRegion" Foreground="#A1A1AA" FontSize="12" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,120,0"
+                       AutomationProperties.LiveSetting="Assertive"/>
+            <Button Content="{l:T 'Close'}" IsCancel="True" Style="{StaticResource AccentButtonStyle}"
+                    HorizontalAlignment="Right" MinWidth="100" Click="Close_Click"
+                    AutomationProperties.AcceleratorKey="Escape"/>
+        </Grid>
     </Grid>
 </Window>
