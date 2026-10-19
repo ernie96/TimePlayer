@@ -30,3 +30,6 @@ release/
 
 # Cloudflare Wrangler local state
 .wrangler/
+
+# Reference documents kept locally, not published
+*.pdf
