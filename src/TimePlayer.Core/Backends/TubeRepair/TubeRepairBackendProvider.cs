@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Net;
 using System.Xml.Linq;
 using Microsoft.Extensions.Logging;
@@ -340,70 +339,4 @@ public sealed class TubeRepairBackendProvider : IBackendProvider, IVideoCatalogP
         }
     }
 
-    public async Task<Result<List<SearchResult>>> GetStandardFeedAsync(
-        string feedName = "most_popular",
-        int page = 1,
-        CancellationToken cancellationToken = default)
-    {
-        int maxResults = 20;
-        int startIndex = Math.Max(1, ((page - 1) * maxResults) + 1);
-        var requestUri = $"{BaseUrl}feeds/api/standardfeeds/{Uri.EscapeDataString(feedName)}?start-index={startIndex}&max-results={maxResults}";
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(Timeout);
-
-        try
-        {
-            using var req = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            req.Headers.TryAddWithoutValidation("User-Agent", "TimePlayer/1.0 (Windows NT 10.0; Win64; x64)");
-            using var resp = await _httpClient.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
-            if (!resp.IsSuccessStatusCode)
-            {
-                return Result<List<SearchResult>>.Failure("HTTP_ERROR", $"Standard feed '{feedName}' returned status {resp.StatusCode}");
-            }
-
-            var xml = await resp.Content.ReadAsStringAsync(cts.Token);
-            var items = TubeRepairFeedParser.ParseVideoFeed(xml);
-            return Result<List<SearchResult>>.Success(items);
-        }
-        catch (Exception ex)
-        {
-            return Result<List<SearchResult>>.Failure("STANDARD_FEED_ERROR", ex.Message, ex.ToString(), ex);
-        }
-    }
-
-    public async Task<Result<List<SearchResult>>> GetUserUploadsAsync(
-        string channelId,
-        int page = 1,
-        CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(channelId))
-            return Result<List<SearchResult>>.Failure("EMPTY_CHANNEL_ID", "Channel ID cannot be empty.");
-
-        int maxResults = 20;
-        int startIndex = Math.Max(1, ((page - 1) * maxResults) + 1);
-        var requestUri = $"{BaseUrl}feeds/api/users/{Uri.EscapeDataString(channelId)}/uploads?start-index={startIndex}&max-results={maxResults}";
-
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        cts.CancelAfter(Timeout);
-
-        try
-        {
-            using var req = new HttpRequestMessage(HttpMethod.Get, requestUri);
-            req.Headers.TryAddWithoutValidation("User-Agent", "TimePlayer/1.0 (Windows NT 10.0; Win64; x64)");
-            using var resp = await _httpClient.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
-            if (!resp.IsSuccessStatusCode)
-            {
-                return Result<List<SearchResult>>.Failure("HTTP_ERROR", $"User uploads returned status {resp.StatusCode}");
-            }
-
-            var xml = await resp.Content.ReadAsStringAsync(cts.Token);
-            var items = TubeRepairFeedParser.ParseVideoFeed(xml);
-            return Result<List<SearchResult>>.Success(items);
-        }
-        catch (Exception ex)
-        {
-            return Result<List<SearchResult>>.Failure("USER_UPLOADS_ERROR", ex.Message, ex.ToString(), ex);
-        }
-    }
 }

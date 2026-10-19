@@ -1,5 +1,3 @@
-using System.Diagnostics;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Common.Process;

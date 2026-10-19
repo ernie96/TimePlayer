@@ -11,5 +11,4 @@ public record InstanceHealthMeasurement
     public bool IsSuccessful { get; init; }
     public int? StatusCode { get; init; }
     public string? ErrorMessage { get; init; }
-    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
 }

@@ -1,7 +1,7 @@
 namespace TimePlayer.Core.Models;
 
 /// <summary>
-/// Media stream candidate discovered from Piped, Invidious, or yt-dlp.
+/// Media stream candidate discovered from TubeRepair, Invidious, InnerTube or yt-dlp.
 /// Represents audio-only, video-only (DASH), or progressive (combined) streams.
 /// </summary>
 public record StreamCandidate

@@ -18,10 +18,8 @@ public class ConfigurationTests
         Assert.Equal(0.25, config.Playback.MinSpeed);
         Assert.Equal(3.0, config.Playback.MaxSpeed);
         Assert.Equal(0.25, config.Playback.SpeedStep);
-        Assert.NotEmpty(config.Backend.PipedSeedInstances);
         Assert.NotEmpty(config.Backend.InvidiousSeedInstances);
-        Assert.True(config.Accessibility.AnnouncePlaybackChanges);
-        Assert.True(config.Accessibility.HighContrastFocusVisuals);
+        Assert.NotEmpty(config.Backend.InvidiousSeedInstances);
     }
 
     [Fact]

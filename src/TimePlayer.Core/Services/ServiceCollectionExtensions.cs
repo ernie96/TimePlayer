@@ -1,7 +1,6 @@
 using System.Net;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
 
@@ -60,6 +59,7 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Community.ISponsorBlockService, Community.SponsorBlockService>();
         services.TryAddSingleton<Community.IDislikeService, Community.DislikeService>();
         services.TryAddSingleton<Community.IRunCounter, Community.RunCounter>();
+        services.TryAddSingleton<Community.IBugReportService, Community.BugReportService>();
         services.TryAddSingleton<Library.IRecommendationService, Library.RecommendationService>();
         services.TryAddSingleton<Library.IDownloadService, Library.DownloadService>();
         services.TryAddSingleton<Updates.IUpdateService, Updates.UpdateService>();

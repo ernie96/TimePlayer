@@ -1,7 +1,5 @@
 using System.Text.Json;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 using TimePlayer.Core.Playback.Mpv;
@@ -14,12 +12,10 @@ public class MpvPlaybackEngineTests
 {
     private readonly FakeMpvManager _mpvManager = new();
     private readonly FakeMpvIpcClient _ipcClient = new();
-    private readonly ConfigurationService _configService;
     private readonly FakeMpvProcess _fakeProcess = new();
 
     public MpvPlaybackEngineTests()
     {
-        _configService = new ConfigurationService(Options.Create(new AppConfig()));
     }
 
     private MpvPlaybackEngine CreateEngine()
@@ -27,7 +23,6 @@ public class MpvPlaybackEngineTests
         var engine = new MpvPlaybackEngine(
             _mpvManager,
             _ipcClient,
-            _configService,
             NullLogger<MpvPlaybackEngine>.Instance)
         {
             ProcessFactory = _ => _fakeProcess

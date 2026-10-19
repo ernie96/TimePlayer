@@ -142,11 +142,6 @@ public record YtDlpThumbnail
 /// </summary>
 public record YtDlpFormat
 {
-    [JsonPropertyName("format_id")]
-    public string? FormatId { get; init; }
-
-    [JsonPropertyName("format_note")]
-    public string? FormatNote { get; init; }
 
     [JsonPropertyName("ext")]
     public string? Ext { get; init; }
@@ -177,12 +172,6 @@ public record YtDlpFormat
 
     [JsonPropertyName("abr")]
     public double? AudioBitrateKbps { get; init; }
-
-    [JsonPropertyName("filesize")]
-    public long? FileSizeBytes { get; init; }
-
-    [JsonPropertyName("filesize_approx")]
-    public long? ApproximateFileSizeBytes { get; init; }
 
     [JsonPropertyName("protocol")]
     public string? Protocol { get; init; }

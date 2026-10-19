@@ -1,4 +1,3 @@
-using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 

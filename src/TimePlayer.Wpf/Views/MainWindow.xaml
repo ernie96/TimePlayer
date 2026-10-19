@@ -39,14 +39,14 @@
                             <MenuItem Header="{l:T '_Like or unlike'}" InputGestureText="Ctrl+K"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.ToggleLikeForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="{l:T 'Add to _playlist...'}" InputGestureText="Ctrl+P"
+                            <MenuItem Header="{l:T 'Add to playlis_t...'}" InputGestureText="Ctrl+P"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.ShowAddToPlaylistMenuCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             <MenuItem Header="{l:T '_Subscribe or unsubscribe'}" InputGestureText="Ctrl+S"
                                       Command="{Binding PlacementTarget.Tag.ToggleSubscriptionForItemCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             <MenuItem Header="{l:T 'Go to _channel'}" InputGestureText="Ctrl+G"
                                       Command="{Binding PlacementTarget.Tag.OpenChannelCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
-                            <MenuItem Header="{l:T 'Copy share _link'}" InputGestureText="Ctrl+C"
+                            <MenuItem Header="{l:T 'Cop_y share link'}" InputGestureText="Ctrl+C"
                                       Command="{Binding PlacementTarget.Tag.CopyLinkCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             <MenuItem Header="{l:T '_Download audio'}" InputGestureText="Ctrl+D"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"

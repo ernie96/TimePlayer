@@ -29,14 +29,6 @@ public record PlaybackError
         IsRecoverable = true
     };
 
-    public static PlaybackError ProcessDied(int? exitCode) => new()
-    {
-        ErrorType = PlaybackErrorType.ProcessTerminated,
-        UserMessage = "The playback engine closed unexpectedly. Restarting engine.",
-        TechnicalDetails = $"Engine exit code: {exitCode?.ToString() ?? "Unknown"}",
-        IsRecoverable = true
-    };
-
     public static PlaybackError IpcTimeout(string pipeName) => new()
     {
         ErrorType = PlaybackErrorType.IpcTimeout,

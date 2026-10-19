@@ -13,7 +13,7 @@ public static class KeyboardHelp
     public static string SearchBox =>
         T("Type words or paste a YouTube link, then press Enter. Results open as their own page; Alt+Left goes back.\n") +
         T("Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n") +
-        T("From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard.\n") +
+        T("From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard. Control+Shift+B reports a problem to TimePlayer's developer, and Control+Shift+F suggests a feature.\n") +
         T("A YouTube playlist link opens the playlist.");
 
     public static string Sections =>

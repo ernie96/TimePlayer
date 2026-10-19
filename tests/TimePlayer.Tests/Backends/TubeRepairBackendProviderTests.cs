@@ -139,52 +139,6 @@ public class TubeRepairBackendProviderTests
     }
 
     [Fact]
-    public async Task GetStandardFeedAsync_FetchesPopularFeed()
-    {
-        var handler = new MockHttpMessageHandler(req =>
-        {
-            Assert.Contains("/feeds/api/standardfeeds/most_popular", req.RequestUri!.ToString());
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(SampleAtomFeed, Encoding.UTF8, "application/atom+xml")
-            };
-        });
-
-        var client = new HttpClient(handler);
-        var config = new ConfigurationService(Options.Create(new AppConfig()));
-        var provider = new TubeRepairBackendProvider(client, config, NullLogger<TubeRepairBackendProvider>.Instance);
-
-        var result = await provider.GetStandardFeedAsync("most_popular");
-
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value);
-        Assert.Equal("k2OhavWYZ6w", result.Value[0].Id);
-    }
-
-    [Fact]
-    public async Task GetUserUploadsAsync_FetchesUserUploadsFeed()
-    {
-        var handler = new MockHttpMessageHandler(req =>
-        {
-            Assert.Contains("/feeds/api/users/UCxPiInO4_sDJf3A8WqTJJoA/uploads", req.RequestUri!.ToString());
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content = new StringContent(SampleAtomFeed, Encoding.UTF8, "application/atom+xml")
-            };
-        });
-
-        var client = new HttpClient(handler);
-        var config = new ConfigurationService(Options.Create(new AppConfig()));
-        var provider = new TubeRepairBackendProvider(client, config, NullLogger<TubeRepairBackendProvider>.Instance);
-
-        var result = await provider.GetUserUploadsAsync("UCxPiInO4_sDJf3A8WqTJJoA");
-
-        Assert.True(result.IsSuccess);
-        Assert.Single(result.Value);
-        Assert.Equal("k2OhavWYZ6w", result.Value[0].Id);
-    }
-
-    [Fact]
     public async Task SearchAsync_SanitizesMalformedXmlWithDuplicateAttributesAndMissingFeedClosure()
     {
         // Notice duplicate type='video/3gpp' and unclosed <feed> tag (exactly what live TubeRepair produces)

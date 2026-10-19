@@ -1,0 +1,38 @@
+{
+  "extensionName": {
+    "message": "Reproducir en TimePlayer"
+  },
+  "extensionDescription": {
+    "message": "Abre los enlaces de YouTube en TimePlayer, el reproductor de YouTube accesible para Windows."
+  },
+  "playInTimePlayer": {
+    "message": "Reproducir en TimePlayer"
+  },
+  "playLink": {
+    "message": "Reproducir el enlace en TimePlayer"
+  },
+  "playPage": {
+    "message": "Reproducir esta página en TimePlayer"
+  },
+  "notYouTube": {
+    "message": "Esta página no es un video ni una lista de YouTube."
+  },
+  "modeLegend": {
+    "message": "Enlaces de YouTube en otros sitios web"
+  },
+  "modeAfter": {
+    "message": "Agregar un enlace Reproducir en TimePlayer después de cada uno"
+  },
+  "modeReplace": {
+    "message": "Abrirlos en TimePlayer en lugar del navegador"
+  },
+  "modeOff": {
+    "message": "Dejarlos como están"
+  },
+  "saved": {
+    "message": "Guardado. Vuelve a cargar las páginas abiertas para aplicarlo."
+  },
+  "optionsHelp": {
+    "message": "En YouTube, usa el botón de la barra de herramientas, Alt+Mayús+P o el menú contextual. La primera vez, el navegador pregunta si quieres abrir TimePlayer; puedes permitirlo siempre."
+  }
+}

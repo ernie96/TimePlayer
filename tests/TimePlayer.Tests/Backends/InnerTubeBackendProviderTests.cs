@@ -2,7 +2,6 @@ using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using TimePlayer.Core.Backends.InnerTube;
-using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Models;
 using TimePlayer.Tests.Helpers;

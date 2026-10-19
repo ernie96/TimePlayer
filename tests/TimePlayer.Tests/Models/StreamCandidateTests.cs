@@ -69,12 +69,12 @@ public class StreamCandidateTests
             SelectedAudioStream = audioStream,
             DirectPlaybackUrl = videoStream.Url,
             AudioTrackUrl = audioStream.Url,
-            SourceProvider = BackendProviderType.Piped
+            SourceProvider = BackendProviderType.Invidious
         };
 
         Assert.Equal("dQw4w9WgXcQ", resolution.VideoId.Value);
         Assert.Equal(videoStream.Url, resolution.DirectPlaybackUrl);
         Assert.Equal(audioStream.Url, resolution.AudioTrackUrl);
-        Assert.Equal(BackendProviderType.Piped, resolution.SourceProvider);
+        Assert.Equal(BackendProviderType.Invidious, resolution.SourceProvider);
     }
 }

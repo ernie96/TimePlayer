@@ -1,0 +1,38 @@
+{
+  "extensionName": {
+    "message": "Redă în TimePlayer"
+  },
+  "extensionDescription": {
+    "message": "Deschide linkurile YouTube în TimePlayer, playerul YouTube accesibil pentru Windows."
+  },
+  "playInTimePlayer": {
+    "message": "Redă în TimePlayer"
+  },
+  "playLink": {
+    "message": "Redă linkul în TimePlayer"
+  },
+  "playPage": {
+    "message": "Redă această pagină în TimePlayer"
+  },
+  "notYouTube": {
+    "message": "Această pagină nu este un videoclip sau o listă de redare YouTube."
+  },
+  "modeLegend": {
+    "message": "Linkurile YouTube de pe alte site-uri"
+  },
+  "modeAfter": {
+    "message": "Adaugă un link Redă în TimePlayer după fiecare"
+  },
+  "modeReplace": {
+    "message": "Deschide-le în TimePlayer în loc de browser"
+  },
+  "modeOff": {
+    "message": "Lasă-le așa cum sunt"
+  },
+  "saved": {
+    "message": "Salvat. Reîncărcați paginile deschise pentru a aplica."
+  },
+  "optionsHelp": {
+    "message": "Pe YouTube, folosiți butonul din bara de instrumente, Alt+Shift+P sau meniul contextual. Prima dată, browserul întreabă dacă să deschidă TimePlayer; îl puteți lăsa să permită mereu."
+  }
+}

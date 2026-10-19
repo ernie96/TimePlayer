@@ -1,0 +1,38 @@
+{
+  "extensionName": {
+    "message": "Play in TimePlayer"
+  },
+  "extensionDescription": {
+    "message": "Opens YouTube links in TimePlayer, the accessible YouTube player for Windows."
+  },
+  "playInTimePlayer": {
+    "message": "Play in TimePlayer"
+  },
+  "playLink": {
+    "message": "Play link in TimePlayer"
+  },
+  "playPage": {
+    "message": "Play this page in TimePlayer"
+  },
+  "notYouTube": {
+    "message": "This page isn't a YouTube video or playlist."
+  },
+  "modeLegend": {
+    "message": "YouTube links on other websites"
+  },
+  "modeAfter": {
+    "message": "Add a Play in TimePlayer link after each one"
+  },
+  "modeReplace": {
+    "message": "Open them in TimePlayer instead of the browser"
+  },
+  "modeOff": {
+    "message": "Leave them as they are"
+  },
+  "saved": {
+    "message": "Saved. Reload open pages to apply."
+  },
+  "optionsHelp": {
+    "message": "On YouTube itself, use the toolbar button, Alt+Shift+P, or the context menu. The first time, the browser asks whether to open TimePlayer; you can let it always allow this."
+  }
+}

@@ -11,17 +11,19 @@ namespace TimePlayer.Core.Localization;
 public static class Loc
 {
     /// <summary>Language codes TimePlayer speaks, with their own names; "" means "as Windows".</summary>
-    public static IReadOnlyList<(string Code, string Name)> Languages { get; } = new[]
+    /// <summary>Code, the language's own name, and its English name (translated where it's shown).</summary>
+    public static IReadOnlyList<(string Code, string Name, string EnglishName)> Languages { get; } = new[]
     {
-        ("", "Automatic (Windows language)"),
-        ("en", "English"),
-        ("ro", "Română"),
-        ("uk", "Українська"),
+        ("", "Automatic (Windows language)", "Automatic (Windows language)"),
+        ("en", "English", "English"),
+        ("ro", "Română", "Romanian"),
+        ("uk", "Українська", "Ukrainian"),
+        ("es", "Español", "Spanish"),
     };
 
     private static IReadOnlyDictionary<string, string>? _table;
 
-    /// <summary>The language in use: "en", "ro" or "uk".</summary>
+    /// <summary>The language in use: "en", "ro", "uk" or "es".</summary>
     public static string Current { get; private set; } = "en";
 
     /// <summary>
@@ -38,15 +40,17 @@ public static class Loc
         {
             "ro" => "ro",
             "uk" => "uk",
+            "es" => "es",
             _ => "en"
         };
         _table = Current switch
         {
             "ro" => Romanian.Table,
             "uk" => Ukrainian.Table,
+            "es" => Spanish.Table,
             _ => null
         };
-        Culture = CultureInfo.GetCultureInfo(Current switch { "ro" => "ro-RO", "uk" => "uk-UA", _ => "en-US" });
+        Culture = CultureInfo.GetCultureInfo(Current switch { "ro" => "ro-RO", "uk" => "uk-UA", "es" => "es-419", _ => "en-US" });
     }
 
     /// <summary>The translation of an English text.</summary>
@@ -59,7 +63,7 @@ public static class Loc
 
     /// <summary>
     /// A count with the right noun form: <c>Plural(n, "{0} video", "{0} videos")</c>. Translations hold
-    /// their forms separated by "|" in the language's order (Romanian: one|few|other, Ukrainian: one|few|many).
+    /// their forms separated by "|" in the language's order (Romanian: one|few|other, Ukrainian: one|few|many, Spanish: one|other).
     /// </summary>
     public static string Plural(long count, string englishOne, string englishOther)
     {
@@ -98,6 +102,4 @@ public static class Loc
         }
     }
 
-    /// <summary>The YouTube interface language to ask for (search results, titles where translated, captions).</summary>
-    public static string YouTubeLanguage => Current;
 }

@@ -1,9 +1,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using TimePlayer.Core.Common;
-using TimePlayer.Core.Configuration;
-using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Models;
 
 namespace TimePlayer.Core.Playback.Mpv;
@@ -27,7 +24,6 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
 
     private readonly IMpvManager _mpvManager;
     private readonly IMpvIpcClient _ipcClient;
-    private readonly IConfigurationService _configService;
     private readonly ILogger<MpvPlaybackEngine> _logger;
 
     internal Func<ProcessStartInfo, IMpvProcess> ProcessFactory { get; set; } = psi => new DefaultMpvProcess(psi);
@@ -59,12 +55,10 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
     public MpvPlaybackEngine(
         IMpvManager mpvManager,
         IMpvIpcClient ipcClient,
-        IConfigurationService configService,
         ILogger<MpvPlaybackEngine> logger)
     {
         _mpvManager = mpvManager ?? throw new ArgumentNullException(nameof(mpvManager));
         _ipcClient = ipcClient ?? throw new ArgumentNullException(nameof(ipcClient));
-        _configService = configService ?? throw new ArgumentNullException(nameof(configService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         _ipcClient.EventReceived += OnMpvEventReceived;

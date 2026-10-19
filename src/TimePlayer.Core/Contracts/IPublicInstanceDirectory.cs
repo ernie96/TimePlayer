@@ -3,7 +3,7 @@ using TimePlayer.Core.Models;
 namespace TimePlayer.Core.Contracts;
 
 /// <summary>
-/// Contract for discovering and persisting public backend instances (Piped, Invidious).
+/// Contract for discovering and persisting public backend instances (Invidious).
 /// </summary>
 public interface IPublicInstanceDirectory
 {

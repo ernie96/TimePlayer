@@ -9,17 +9,11 @@
     <converters:CountToVisibilityConverter x:Key="CountToVisibilityConverter"/>
 
     <!-- Palette -->
-    <SolidColorBrush x:Key="WindowBrush" Color="#18181B"/>
-    <SolidColorBrush x:Key="PanelBrush" Color="#1C1C1F"/>
-    <SolidColorBrush x:Key="BarBrush" Color="#202023"/>
     <SolidColorBrush x:Key="ListBrush" Color="#141416"/>
     <SolidColorBrush x:Key="BorderBrushSubtle" Color="#27272A"/>
     <SolidColorBrush x:Key="BorderBrushStrong" Color="#3F3F46"/>
     <SolidColorBrush x:Key="TextBrush" Color="#F4F4F5"/>
-    <SolidColorBrush x:Key="MutedTextBrush" Color="#A1A1AA"/>
-    <SolidColorBrush x:Key="FaintTextBrush" Color="#8E8E96"/>
     <SolidColorBrush x:Key="AccentBrush" Color="#38BDF8"/>
-    <SolidColorBrush x:Key="AccentFillBrush" Color="#0369A1"/>
 
     <!-- High-contrast focus outline for every focusable control -->
     <Style x:Key="AccessibleFocusVisualStyle">

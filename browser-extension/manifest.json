@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extensionName__",
+  "description": "__MSG_extensionDescription__",
+  "version": "1.0.0",
+  "default_locale": "en",
+  "permissions": ["contextMenus", "storage", "activeTab"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_title": "__MSG_playPage__" },
+  "commands": {
+    "play-page": {
+      "suggested_key": { "default": "Alt+Shift+P" },
+      "description": "__MSG_playPage__"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": ["*://*.youtube.com/*", "*://youtube.com/*"],
+      "js": ["links.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": { "page": "options.html", "open_in_tab": false }
+}

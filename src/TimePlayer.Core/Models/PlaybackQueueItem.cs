@@ -11,7 +11,6 @@ public record PlaybackQueueItem
     public required string ChannelTitle { get; init; }
     public TimeSpan Duration { get; init; }
     public string? ThumbnailUrl { get; init; }
-    public DateTimeOffset AddedAt { get; init; } = DateTimeOffset.UtcNow;
     public bool IsPlayed { get; init; }
 
     /// <summary>
@@ -36,15 +35,6 @@ public record PlaybackQueueItem
         ChannelTitle = result.ChannelTitle,
         Duration = result.Duration ?? TimeSpan.Zero,
         ThumbnailUrl = result.ThumbnailUrl
-    };
-
-    public static PlaybackQueueItem FromVideoDetails(VideoDetails details) => new()
-    {
-        VideoId = details.Id,
-        Title = details.Title,
-        ChannelTitle = details.Channel.Name,
-        Duration = details.Duration,
-        ThumbnailUrl = details.ThumbnailUrl
     };
 
     public override string ToString() => AccessibleLabel;

@@ -2,15 +2,6 @@ using System.Text.Json.Serialization;
 
 namespace TimePlayer.Core.Backends.InnerTube;
 
-public record InnerTubeSearchRequest
-{
-    [JsonPropertyName("context")]
-    public required InnerTubeContext Context { get; init; }
-
-    [JsonPropertyName("query")]
-    public required string Query { get; init; }
-}
-
 public record InnerTubePlayerRequest
 {
     [JsonPropertyName("context")]
@@ -94,8 +85,6 @@ public record InnerTubeVideoDetails
     [JsonPropertyName("viewCount")]
     public string? ViewCount { get; init; }
 
-    [JsonPropertyName("shortDescription")]
-    public string? ShortDescription { get; init; }
 }
 
 public record InnerTubeStreamingData
@@ -133,8 +122,6 @@ public record InnerTubeFormat
     [JsonPropertyName("audioQuality")]
     public string? AudioQuality { get; init; }
 
-    [JsonPropertyName("approxDurationMs")]
-    public string? ApproxDurationMs { get; init; }
 }
 
 public record InnerTubeCaptions
@@ -157,14 +144,9 @@ public record InnerTubeCaptionTrack
     [JsonPropertyName("name")]
     public InnerTubeTextHolder? Name { get; init; }
 
-    [JsonPropertyName("vssId")]
-    public string? VssId { get; init; }
-
     [JsonPropertyName("languageCode")]
     public string? LanguageCode { get; init; }
 
-    [JsonPropertyName("isTranslatable")]
-    public bool? IsTranslatable { get; init; }
 }
 
 public record InnerTubeTextHolder

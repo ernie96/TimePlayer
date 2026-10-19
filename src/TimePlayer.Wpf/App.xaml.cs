@@ -28,6 +28,9 @@ public partial class App : Application
     // Lets the installer and uninstaller (AppMutex in TimePlayer.iss) see that TimePlayer is open
     // and ask the user to close it, instead of leaving a locked TimePlayer.exe behind.
     private Mutex? _runningMutex;
+    private readonly CancellationTokenSource _stopListening = new();
+    private MainWindow? _mainWindow;
+    private readonly List<string> _linksBeforeWindow = new();
 
     public App()
     {
@@ -43,14 +46,24 @@ public partial class App : Application
         // One TimePlayer at a time. A second copy would play over the first, and while any copy is open
         // the installer refuses to update (it checks this mutex), so updates failed silently.
         _runningMutex = new Mutex(initiallyOwned: true, "TimePlayerRunning", out bool createdNew);
+        // A YouTube link from a browser (timeplayer://) or another app ("TimePlayer.exe <link>").
+        var link = e.Args.Select(TimePlayer.Core.Models.IncomingLink.Normalize).FirstOrDefault(l => l is not null);
         if (!createdNew)
         {
-            SingleInstance.BringOtherCopyToFront();
+            if (link is null || !SingleInstance.SendLinkToOtherCopy(link))
+                SingleInstance.BringOtherCopyToFront();
             _runningMutex.Dispose();
             _runningMutex = null;
             Shutdown();
             return;
         }
+
+        // Listen straight away: a second link clicked while this copy is still starting would otherwise
+        // find nobody listening and be lost. Links that come before the window are opened once it's up.
+        _ = SingleInstance.ListenForLinksAsync(
+            received => Dispatcher.BeginInvoke(() => ReceiveLink(received)),
+            error => _logger?.LogWarning(error, "Links from other apps: the pipe failed; trying again."),
+            _stopListening.Token);
 
         var services = new ServiceCollection();
         ConfigureServices(services);
@@ -93,8 +106,39 @@ public partial class App : Application
             });
         }
 
+        var config = _serviceProvider.GetRequiredService<IConfigurationService>();
+        try
+        {
+            LinkProtocol.Apply(config.CurrentConfig.OpenLinksFromOtherApps);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            _logger.LogWarning(ex, "Could not register timeplayer:// links.");
+        }
+
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
+        _mainWindow = mainWindow;
+
+        if (link is not null)
+            _linksBeforeWindow.Insert(0, link);
+        // The latest link wins, as if each had been clicked in turn.
+        if (_linksBeforeWindow.Count > 0)
+            mainWindow.OpenLinkFromOtherApp(_linksBeforeWindow[^1]);
+        _linksBeforeWindow.Clear();
+    }
+
+    private void ReceiveLink(string received)
+    {
+        if (TimePlayer.Core.Models.IncomingLink.Normalize(received) is not { } clean)
+        {
+            _logger?.LogInformation("Ignored a link from another app that isn't a YouTube video or playlist.");
+            return;
+        }
+        if (_mainWindow is null)
+            _linksBeforeWindow.Add(clean);
+        else
+            _mainWindow.OpenLinkFromOtherApp(clean);
     }
 
     private void ConfigureServices(IServiceCollection services)
@@ -115,8 +159,9 @@ public partial class App : Application
         services.AddLogging(loggingBuilder =>
         {
             loggingBuilder.ClearProviders();
-            loggingBuilder.AddConfiguration(configuration.GetSection("Logging"));
-            loggingBuilder.AddConsole();
+            loggingBuilder.SetMinimumLevel(LogLevel.Information);
+            loggingBuilder.AddFilter("Microsoft", LogLevel.Warning);
+            loggingBuilder.AddFilter("System", LogLevel.Warning);
             loggingBuilder.AddProvider(new Logging.FileLoggerProvider(AppPaths.LogsFolder));
         });
 
@@ -184,6 +229,7 @@ public partial class App : Application
                 _logger?.LogWarning(ex, "Error while shutting down services.");
             }
         }
+        _stopListening.Cancel();
         if (_runningMutex is { } mutex)
         {
             try { mutex.ReleaseMutex(); } catch (ApplicationException) { }

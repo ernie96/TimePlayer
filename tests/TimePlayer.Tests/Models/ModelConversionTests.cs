@@ -17,7 +17,6 @@ public class ModelConversionTests
             {
                 Id = "UCuAXFkgsw1L7xaCfnd5JJOw",
                 Name = "Rick Astley",
-                SubscriberCount = 15_000_000,
                 IsVerified = true
             },
             Duration = TimeSpan.FromSeconds(212),
@@ -71,24 +70,6 @@ public class ModelConversionTests
         };
 
         Assert.Contains("(Played)", item.AccessibleLabel);
-    }
-
-    [Fact]
-    public void ChannelInfo_AccessibleDescription_FormatsVerifiedAndSubscribers()
-    {
-        var channel = new ChannelInfo
-        {
-            Id = "chan123",
-            Name = "Tech Explained",
-            SubscriberCount = 2_400_000,
-            IsVerified = true
-        };
-
-        var desc = channel.AccessibleDescription;
-
-        Assert.Contains("Tech Explained", desc);
-        Assert.Contains("2.4 million subscribers", desc);
-        Assert.Contains("verified channel", desc);
     }
 
     [Fact]

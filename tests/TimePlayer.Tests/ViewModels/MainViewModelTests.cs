@@ -6,7 +6,6 @@ using TimePlayer.Core.Backends.Invidious;
 using TimePlayer.Core.Backends.InnerTube;
 using TimePlayer.Core.Backends.TubeRepair;
 using TimePlayer.Core.Backends.YtDlp;
-using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Library;
@@ -24,10 +23,10 @@ public class MainViewModelTests
     private sealed class MockHealthService : IInstanceHealthService
     {
         public Task<InstanceHealthMeasurement> ProbeInstanceAsync(PublicInstance instance, CancellationToken cancellationToken = default) =>
-            Task.FromResult(new InstanceHealthMeasurement { InstanceUri = instance.BaseUri, ProviderType = BackendProviderType.Piped, IsSuccessful = true });
+            Task.FromResult(new InstanceHealthMeasurement { InstanceUri = instance.BaseUri, ProviderType = BackendProviderType.Invidious, IsSuccessful = true });
 
         public Task<PublicInstance?> SelectBestInstanceAsync(BackendProviderType providerType, CancellationToken cancellationToken = default) =>
-            Task.FromResult<PublicInstance?>(new PublicInstance { BaseUri = new Uri("https://piped.video"), ProviderType = BackendProviderType.Piped });
+            Task.FromResult<PublicInstance?>(new PublicInstance { BaseUri = new Uri("https://piped.video"), ProviderType = BackendProviderType.Invidious });
 
         public void RecordSuccess(PublicInstance instance, TimeSpan latency) { }
         public void RecordFailure(PublicInstance instance, string reason) { }
@@ -302,42 +301,6 @@ public class MainViewModelTests
         // Close settings
         vm.CloseSettings();
         Assert.False(vm.IsSettingsDialogOpen);
-    }
-
-    [Fact]
-    public async Task CancelSearch_CancelsOngoingSearchAndAnnounces()
-    {
-        await using var vm = CreateViewModel();
-
-        vm.SearchQuery = "ambient sleep music";
-        vm.IsSearching = true;
-
-        vm.CancelSearch();
-
-        Assert.False(vm.IsSearching);
-        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Search cancelled."));
-    }
-
-    [Fact]
-    public async Task ClearSearch_CancelsSearchAndClearsResults()
-    {
-        await using var vm = CreateViewModel();
-
-        vm.SearchQuery = "some query";
-        vm.CurrentSection = BrowseSection.Search;
-        vm.SearchResults.Add(new SearchResult
-        {
-            Id = "dQw4w9WgXcQ",
-            Title = "Rick",
-            ChannelTitle = "VEVO",
-            Duration = TimeSpan.FromMinutes(3)
-        });
-
-        vm.ClearSearch();
-
-        Assert.Empty(vm.SearchQuery);
-        Assert.Empty(vm.SearchResults);
-        Assert.Contains(_accessibility.Announcements, a => a.message.Contains("Search cleared"));
     }
 
     [Fact]
@@ -671,6 +634,7 @@ public class MainViewModelTests
     [InlineData("en", "Settings")]
     [InlineData("ro", "Setări")]
     [InlineData("uk", "Налаштування")]
+    [InlineData("es", "Configuración")]
     public void Windows_BuildInEveryLanguage(string language, string settingsTitle)
     {
         Exception? failure = null;
@@ -690,6 +654,22 @@ public class MainViewModelTests
                     NullLogger<TimePlayer.Wpf.Views.MainWindow>.Instance);
                 var settings = new TimePlayer.Wpf.Views.SettingsWindow(vm);
                 Assert.Equal(settingsTitle, settings.Title);
+                // Every choice list on every page has its choices and shows the current one.
+                // Let pending bindings run first (they wait for the dispatcher).
+                var frame = new System.Windows.Threading.DispatcherFrame();
+                settings.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.ApplicationIdle, () => frame.Continue = false);
+                System.Windows.Threading.Dispatcher.PushFrame(frame);
+                var boxes = LogicalDescendants(settings).OfType<System.Windows.Controls.ComboBox>().ToList();
+                Assert.True(boxes.Count >= 8, $"only {boxes.Count} combo boxes found");
+                foreach (var box in boxes)
+                {
+                    var name = System.Windows.Automation.AutomationProperties.GetName(box);
+                    Assert.False(string.IsNullOrWhiteSpace(name), $"{box.Name} has no spoken name");
+                    Assert.True(box.Items.Count > 1, $"{name}: {box.Items.Count} choices");
+                    Assert.True(box.SelectedItem is not null, $"{name}: nothing chosen");
+                }
+                var languages = boxes.Single(b => b.Name == "LanguageBox");
+                Assert.Equal(TimePlayer.Core.Localization.Loc.Languages.Count, languages.Items.Count);
                 settings.Close();
                 main.Close();
             }
@@ -707,6 +687,16 @@ public class MainViewModelTests
         Assert.True(thread.Join(TimeSpan.FromSeconds(60)), "Building the windows hung.");
         if (failure is not null)
             throw failure;
+    }
+
+    private static IEnumerable<System.Windows.DependencyObject> LogicalDescendants(System.Windows.DependencyObject root)
+    {
+        foreach (var child in System.Windows.LogicalTreeHelper.GetChildren(root).OfType<System.Windows.DependencyObject>())
+        {
+            yield return child;
+            foreach (var deeper in LogicalDescendants(child))
+                yield return deeper;
+        }
     }
 
     [Fact]

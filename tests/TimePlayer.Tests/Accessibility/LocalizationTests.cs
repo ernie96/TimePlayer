@@ -40,6 +40,9 @@ public class LocalizationTests : IDisposable
     [InlineData("uk", 5, 2)]
     [InlineData("en", 1, 0)]
     [InlineData("en", 2, 1)]
+    [InlineData("es", 1, 0)]
+    [InlineData("es", 0, 1)]
+    [InlineData("es", 21, 1)]
     public void PluralRules(string language, long count, int form)
     {
         Loc.Use(language);
@@ -62,6 +65,12 @@ public class LocalizationTests : IDisposable
         Assert.Equal("2 хвилини, 1 секунда", AccessibleTextFormatter.FormatTimeSpoken(TimeSpan.FromSeconds(121)));
         Assert.Equal("Пропущено «Song»: воно недоступне.", Loc.T("Skipped {0}: {1}.", "Song", Loc.T("it isn't available")));
 
+        Loc.Use("es");
+        Assert.Equal("1 video", Loc.Plural(1, "{0} video", "{0} videos"));
+        Assert.Equal("25 videos", Loc.Plural(25, "{0} video", "{0} videos"));
+        Assert.Equal("hace 3 años", AccessibleTextFormatter.TranslateAge("3 years ago"));
+        Assert.Equal("2 minutos, 1 segundo", AccessibleTextFormatter.FormatTimeSpoken(TimeSpan.FromSeconds(121)));
+
         Loc.Use("en");
         Assert.Equal("2 minutes, 1 second", AccessibleTextFormatter.FormatTimeSpoken(TimeSpan.FromSeconds(121)));
     }
@@ -77,12 +86,13 @@ public class LocalizationTests : IDisposable
     [Theory]
     [InlineData("Romanian")]
     [InlineData("Ukrainian")]
+    [InlineData("Spanish")]
     public void EveryTranslation_KeepsItsPlaceholders_AndFormats(string language)
     {
         var placeholder = new Regex(@"\{(\d+)(?:[,:][^}]*)?\}");
         foreach (var (english, translated) in Table(language))
         {
-            if (english.Contains('|') && translated.Split('|').Length == 3)
+            if (english.Contains('|') && translated.Split('|').Length is 2 or 3)
             {
                 foreach (var form in translated.Split('|'))
                     _ = string.Format(CultureInfo.InvariantCulture, form, 7);
@@ -97,12 +107,15 @@ public class LocalizationTests : IDisposable
     }
 
     [Fact]
-    public void BothLanguages_TranslateTheSameTexts()
+    public void EveryLanguage_TranslatesTheSameTexts()
     {
         var ro = Table("Romanian").Keys.ToHashSet();
-        var uk = Table("Ukrainian").Keys.ToHashSet();
-        Assert.Empty(ro.Except(uk));
-        Assert.Empty(uk.Except(ro));
+        foreach (var other in new[] { "Ukrainian", "Spanish" })
+        {
+            var keys = Table(other).Keys.ToHashSet();
+            Assert.Empty(ro.Except(keys));
+            Assert.Empty(keys.Except(ro));
+        }
         Assert.True(ro.Count > 600);
     }
 
@@ -139,12 +152,33 @@ public class LocalizationTests : IDisposable
         used.RemoveWhere(k => Regex.IsMatch(k, @"^(Control|Ctrl|Shift)\+\w+$") || !Regex.IsMatch(k, "[A-Za-z]{2}"));
 
         Assert.True(used.Count > 500, $"only {used.Count} texts found; the scan is broken");
-        foreach (var language in new[] { "Romanian", "Ukrainian" })
+        foreach (var language in new[] { "Romanian", "Ukrainian", "Spanish" })
         {
             var missing = used.Where(k => !Table(language).ContainsKey(k)).OrderBy(k => k).ToList();
             Assert.True(missing.Count == 0, $"{language} is missing {missing.Count}: " + string.Join(" | ", missing.Take(10)));
         }
     }
+
+    /// <summary>Speech voices for one alphabet often read another as nothing, so each language is also named in the current one.</summary>
+    [Fact]
+    public void LanguageChoices_AreNamedSoEveryVoiceCanReadThem()
+    {
+        Loc.Use("en");
+        var english = TimePlayer.Wpf.ViewModels.MainViewModel.BuildLanguageChoices().Select(c => c.Label).ToList();
+        Assert.Equal(new[] { "Automatic (Windows language)", "English", "Română (Romanian)", "Українська (Ukrainian)", "Español (Spanish)" }, english);
+
+        Loc.Use("uk");
+        var ukrainian = TimePlayer.Wpf.ViewModels.MainViewModel.BuildLanguageChoices().Select(c => c.Label).ToList();
+        Assert.Contains("Українська", ukrainian);
+        Assert.Contains("English (англійська)", ukrainian);
+        Assert.Equal(5, ukrainian.Count);
+
+        Loc.Use("es");
+        Assert.Contains("Español", BuildLanguageChoicesLabels());
+    }
+
+    private static List<string> BuildLanguageChoicesLabels() =>
+        TimePlayer.Wpf.ViewModels.MainViewModel.BuildLanguageChoices().Select(c => c.Label).ToList();
 
     [Fact]
     public void Language_FollowsWindows_WhenSetToAutomatic()
@@ -155,6 +189,9 @@ public class LocalizationTests : IDisposable
             CultureInfo.CurrentUICulture = new CultureInfo("uk-UA");
             Loc.Use("");
             Assert.Equal("uk", Loc.Current);
+            CultureInfo.CurrentUICulture = new CultureInfo("es-MX");
+            Loc.Use("");
+            Assert.Equal("es", Loc.Current);
             CultureInfo.CurrentUICulture = new CultureInfo("de-DE");
             Loc.Use(null);
             Assert.Equal("en", Loc.Current); // not translated yet: English

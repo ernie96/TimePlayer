@@ -11,19 +11,6 @@ namespace TimePlayer.Tests.Services;
 
 public class PublicInstanceDirectoryTests
 {
-    private static readonly string SamplePipedMarkdown = """
-        # Public instances
-        It's highly **NOT** recommended to be using frontends...
-
-        Instance Name | Instance API URL | Instance Location(s) | CDN | Registered Users
-        --- | --- | --- | --- | ---
-        kavin.rocks (Official) | https://pipedapi.kavin.rocks | 🇺🇸, 🇮🇳 | Cloudflare | Yes
-        privacy.com.de | https://api.piped.privacy.com.de | 🇩🇪 | No | Yes
-        Insecure Instance | http://insecure.piped.example.com | 🇫🇷 | No | No
-        Invalid Row Without URL | Just text | N/A | No | No
-        Duplicate Official | https://pipedapi.kavin.rocks/ | 🇺🇸 | Cloudflare | Yes
-        """;
-
     private static readonly string SampleInvidiousJson = """
         [
           [
@@ -69,18 +56,6 @@ public class PublicInstanceDirectoryTests
         """;
 
     [Fact]
-    public void ParsePipedMarkdownDirectory_ExtractsOnlyValidHttpsInstances()
-    {
-        var instances = PublicInstanceDirectory.ParsePipedMarkdownDirectory(SamplePipedMarkdown);
-
-        Assert.Equal(2, instances.Count);
-        Assert.Contains(instances, i => i.BaseUri == new Uri("https://pipedapi.kavin.rocks/"));
-        Assert.Contains(instances, i => i.BaseUri == new Uri("https://api.piped.privacy.com.de/"));
-        // Insecure instance must NOT be present
-        Assert.DoesNotContain(instances, i => i.BaseUri.Scheme == "http");
-    }
-
-    [Fact]
     public void ParseInvidiousDirectoryJson_FiltersForApiEnabledAndHttpsAndNotDown()
     {
         var instances = PublicInstanceDirectory.ParseInvidiousDirectoryJson(SampleInvidiousJson);
@@ -105,11 +80,11 @@ public class PublicInstanceDirectoryTests
                 new()
                 {
                     BaseUri = new Uri("https://cached.piped.example/"),
-                    ProviderType = BackendProviderType.Piped,
+                    ProviderType = BackendProviderType.Invidious,
                     IsWorking = true
                 }
             };
-            await cache.SaveSnapshotAsync(BackendProviderType.Piped, canned);
+            await cache.SaveSnapshotAsync(BackendProviderType.Invidious, canned);
 
             var handler = MockHttpMessageHandler.Throws(new InvalidOperationException("Network should not be called on cache hit!"));
             var httpClient = new HttpClient(handler);
@@ -121,7 +96,7 @@ public class PublicInstanceDirectoryTests
                 cache,
                 NullLogger<PublicInstanceDirectory>.Instance);
 
-            var results = await directory.GetInstancesAsync(BackendProviderType.Piped, forceRefresh: false);
+            var results = await directory.GetInstancesAsync(BackendProviderType.Invidious, forceRefresh: false);
 
             Assert.Single(results);
             Assert.Equal("https://cached.piped.example/", results[0].BaseUri.AbsoluteUri);
@@ -146,7 +121,7 @@ public class PublicInstanceDirectoryTests
             {
                 Backend = new BackendConfig
                 {
-                    PipedSeedInstances = new[] { "https://seed1.piped.rocks", "https://seed2.piped.rocks" }
+                    InvidiousSeedInstances = new[] { "https://seed1.invidious.example", "https://seed2.invidious.example" }
                 }
             }));
 
@@ -156,11 +131,11 @@ public class PublicInstanceDirectoryTests
                 cache,
                 NullLogger<PublicInstanceDirectory>.Instance);
 
-            var results = await directory.GetInstancesAsync(BackendProviderType.Piped, forceRefresh: true);
+            var results = await directory.GetInstancesAsync(BackendProviderType.Invidious, forceRefresh: true);
 
             Assert.Equal(2, results.Count);
-            Assert.Contains(results, r => r.BaseUri == new Uri("https://seed1.piped.rocks/"));
-            Assert.Contains(results, r => r.BaseUri == new Uri("https://seed2.piped.rocks/"));
+            Assert.Contains(results, r => r.BaseUri == new Uri("https://seed1.invidious.example/"));
+            Assert.Contains(results, r => r.BaseUri == new Uri("https://seed2.invidious.example/"));
         }
         finally
         {

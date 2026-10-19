@@ -1,0 +1,38 @@
+{
+  "extensionName": {
+    "message": "Відтворити в TimePlayer"
+  },
+  "extensionDescription": {
+    "message": "Відкриває посилання YouTube у TimePlayer, доступному програвачі YouTube для Windows."
+  },
+  "playInTimePlayer": {
+    "message": "Відтворити в TimePlayer"
+  },
+  "playLink": {
+    "message": "Відтворити посилання в TimePlayer"
+  },
+  "playPage": {
+    "message": "Відтворити цю сторінку в TimePlayer"
+  },
+  "notYouTube": {
+    "message": "Ця сторінка не є відео чи плейлистом YouTube."
+  },
+  "modeLegend": {
+    "message": "Посилання YouTube на інших сайтах"
+  },
+  "modeAfter": {
+    "message": "Додавати посилання «Відтворити в TimePlayer» після кожного"
+  },
+  "modeReplace": {
+    "message": "Відкривати їх у TimePlayer замість браузера"
+  },
+  "modeOff": {
+    "message": "Залишати як є"
+  },
+  "saved": {
+    "message": "Збережено. Перезавантажте відкриті сторінки, щоб застосувати."
+  },
+  "optionsHelp": {
+    "message": "На самому YouTube використовуйте кнопку на панелі інструментів, Alt+Shift+P або контекстне меню. Першого разу браузер запитає, чи відкрити TimePlayer; можна дозволити це завжди."
+  }
+}

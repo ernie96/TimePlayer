@@ -1,6 +1,3 @@
-using System.IO;
-using System.Reflection;
-
 namespace TimePlayer.Core.Accessibility;
 
 public enum NvdaAddonInstallResult

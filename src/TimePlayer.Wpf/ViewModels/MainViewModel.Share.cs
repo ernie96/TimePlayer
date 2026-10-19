@@ -162,6 +162,62 @@ public sealed partial class MainViewModel
             _ = _configService.UpdateConfigAsync(current with { Runs = current.Runs with { Share = value } });
     }
 
+    [ObservableProperty]
+    private bool _openLinksFromOtherApps = true;
+
+    partial void OnOpenLinksFromOtherAppsChanged(bool value)
+    {
+        try
+        {
+            LinkProtocol.Apply(value);
+        }
+        catch (Exception ex) when (ex is UnauthorizedAccessException or System.Security.SecurityException or IOException)
+        {
+            _logger.LogWarning(ex, "Could not change the timeplayer:// link registration.");
+        }
+        var current = _configService.CurrentConfig;
+        if (current.OpenLinksFromOtherApps != value)
+            _ = _configService.UpdateConfigAsync(current with { OpenLinksFromOtherApps = value });
+    }
+
+    /// <summary>A bookmark that sends the YouTube page you're on to TimePlayer.</summary>
+    public const string BrowserBookmark =
+        "javascript:location.href='timeplayer://open?url='+encodeURIComponent(location.href)";
+
+    [RelayCommand]
+    public void CopyBrowserBookmark()
+    {
+        try
+        {
+            Clipboard.SetText(BrowserBookmark);
+            _accessibility.Announce(T("Bookmark copied. In your browser, add a new bookmark named Play in TimePlayer and paste this as its address. On a YouTube page, choose that bookmark to play the page in TimePlayer."), AnnouncementPriority.High);
+        }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.ExternalException)
+        {
+            _logger.LogWarning(ex, "Could not copy the bookmark.");
+            _accessibility.Announce(T("Could not copy to the clipboard. Try again."), AnnouncementPriority.High);
+        }
+    }
+
+    [RelayCommand]
+    public void OpenBrowserExtensionFolder()
+    {
+        var folder = Path.Combine(AppContext.BaseDirectory, "browser-extension");
+        if (!Directory.Exists(folder))
+        {
+            _accessibility.Announce(T("The browser extension isn't included in this copy of TimePlayer. It's on the TimePlayer releases page."), AnnouncementPriority.High);
+            return;
+        }
+        try
+        {
+            Process.Start(new ProcessStartInfo("explorer.exe", $"\"{folder}\"") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not open the browser extension folder.");
+        }
+    }
+
     public string VersionText => T("TimePlayer {0}", AppPaths.Version) + (AppPaths.IsPortable ? T(", portable") : string.Empty);
 
     [RelayCommand]
@@ -220,8 +276,13 @@ public sealed partial class MainViewModel
             CopyPlaylistLink(item.LibraryPlaylistId, item.Id);
             return;
         }
-        if (CopyToClipboard(ShareLink(item)))
-            _accessibility.Announce(item.Kind == SearchResultKind.Channel ? T("Channel link copied.") : T("Share link copied."), AnnouncementPriority.Medium);
+        if (item.Kind == SearchResultKind.Channel)
+        {
+            if (CopyToClipboard(ShareLink(item)))
+                _accessibility.Announce(T("Channel link copied."), AnnouncementPriority.Medium);
+            return;
+        }
+        ShareVideoLink(ShareLink(item), T("Share link copied."), T("TimePlayer link copied."));
     }
 
     /// <summary>The open playlist's link (toolbar button on playlist pages).</summary>
@@ -238,8 +299,7 @@ public sealed partial class MainViewModel
         var ytId = playlist?.YouTubeId ?? (playlist is null ? youTubeId : null);
         if (ytId is not null)
         {
-            if (CopyToClipboard($"https://www.youtube.com/playlist?list={ytId}"))
-                _accessibility.Announce(T("Playlist link copied."), AnnouncementPriority.Medium);
+            ShareVideoLink($"https://www.youtube.com/playlist?list={ytId}", T("Playlist link copied."), T("TimePlayer playlist link copied."));
             return;
         }
         if (playlist is null || playlist.Videos.Count == 0)
@@ -262,11 +322,14 @@ public sealed partial class MainViewModel
     {
         if (CurrentVideoForSharing() is not { } video) return;
         var at = CurrentTime >= TimeSpan.FromSeconds(1) ? CurrentTime : (TimeSpan?)null;
-        if (CopyToClipboard(ShareLink(video, at)))
+        if (at is { } t)
         {
-            _accessibility.Announce(at is { } t
-                ? T("Share link copied, starts at {0}.", AccessibleTextFormatter.FormatTimeSpoken(t))
-                : T("Share link copied."), AnnouncementPriority.Medium);
+            var spoken = AccessibleTextFormatter.FormatTimeSpoken(t);
+            ShareVideoLink(ShareLink(video, at), T("Share link copied, starts at {0}.", spoken), T("TimePlayer link copied, starts at {0}.", spoken));
+        }
+        else
+        {
+            ShareVideoLink(ShareLink(video), T("Share link copied."), T("TimePlayer link copied."));
         }
     }
 
@@ -274,8 +337,64 @@ public sealed partial class MainViewModel
     public void CopyShareLinkCurrent()
     {
         if (CurrentVideoForSharing() is not { } video) return;
-        if (CopyToClipboard(ShareLink(video)))
-            _accessibility.Announce(T("Share link copied, from the beginning."), AnnouncementPriority.Medium);
+        ShareVideoLink(ShareLink(video), T("Share link copied, from the beginning."), T("TimePlayer link copied, from the beginning."));
+    }
+
+    // --- YouTube or TimePlayer link ---
+
+    public const string ShareAsk = "ask";
+    public const string ShareYouTube = "youtube";
+    public const string ShareTimePlayer = "timeplayer";
+
+    public IReadOnlyList<ChoiceOption<string>> ShareLinkChoices { get; } = new[]
+    {
+        new ChoiceOption<string>(ShareAsk, T("Ask each time")),
+        new ChoiceOption<string>(ShareYouTube, T("YouTube link")),
+        new ChoiceOption<string>(ShareTimePlayer, T("TimePlayer link")),
+    };
+
+    [ObservableProperty]
+    private string _shareLinkKind = ShareAsk;
+
+    partial void OnShareLinkKindChanged(string value)
+    {
+        var current = _configService.CurrentConfig;
+        if (current.ShareLinks != value)
+            _ = _configService.UpdateConfigAsync(current with { ShareLinks = value });
+    }
+
+    /// <summary>Raised when the person should choose between a YouTube and a TimePlayer link.</summary>
+    public event EventHandler<ShareLinkRequest>? RequestShareChoice;
+
+    /// <summary>
+    /// Shares a video or playlist link: as it is, as a timeplayer:// link that opens straight in
+    /// TimePlayer (for people who have it), or after asking which, as set in Settings.
+    /// </summary>
+    private void ShareVideoLink(string youTubeLink, string youTubeMessage, string timePlayerMessage)
+    {
+        var request = new ShareLinkRequest(youTubeLink, youTubeMessage, timePlayerMessage);
+        switch (ShareLinkKind)
+        {
+            case ShareYouTube:
+                CopyChosenLink(request, timePlayer: false);
+                break;
+            case ShareTimePlayer:
+                CopyChosenLink(request, timePlayer: true);
+                break;
+            default:
+                if (RequestShareChoice is { } ask)
+                    ask(this, request);
+                else
+                    CopyChosenLink(request, timePlayer: false);
+                break;
+        }
+    }
+
+    public void CopyChosenLink(ShareLinkRequest request, bool timePlayer)
+    {
+        var link = timePlayer ? IncomingLink.ToProtocolLink(request.YouTubeLink) : request.YouTubeLink;
+        if (CopyToClipboard(link))
+            _accessibility.Announce(timePlayer ? request.TimePlayerMessage : request.YouTubeMessage, AnnouncementPriority.Medium);
     }
 
     private bool CopyToClipboard(string text)
@@ -293,3 +412,6 @@ public sealed partial class MainViewModel
         }
     }
 }
+
+/// <summary>A link waiting for the person to choose YouTube or TimePlayer, with what to say for each.</summary>
+public sealed record ShareLinkRequest(string YouTubeLink, string YouTubeMessage, string TimePlayerMessage);

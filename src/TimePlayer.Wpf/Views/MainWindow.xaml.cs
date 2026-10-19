@@ -36,12 +36,15 @@ public partial class MainWindow : Window
     private readonly UpdateFlow _updateFlow;
     private readonly IConfigurationService _config;
     private readonly IRunCounter? _runCounter;
+    private readonly IBugReportService? _bugReports;
     private readonly ILogger _logger;
 
     public MainWindow(MainViewModel viewModel, IAccessibilityService accessibility, IUpdateService updates,
-        IConfigurationService config, ILogger<MainWindow> logger, IRunCounter? runCounter = null)
+        IConfigurationService config, ILogger<MainWindow> logger, IRunCounter? runCounter = null,
+        IBugReportService? bugReports = null)
     {
         _runCounter = runCounter;
+        _bugReports = bugReports;
         _logger = logger;
         InitializeComponent();
 
@@ -58,6 +61,7 @@ public partial class MainWindow : Window
 
         Loaded += MainWindow_Loaded;
         PreviewKeyDown += MainWindow_PreviewKeyDown;
+        PreviewKeyUp += MainWindow_PreviewKeyUp;
         MpvHost.HandleCreated += MpvHost_HandleCreated;
 
         _viewModel.RequestFocusSearch += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
@@ -69,6 +73,7 @@ public partial class MainWindow : Window
         _viewModel.RequestFocusPlayer += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => PlayPauseButton.Focus());
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _viewModel.RequestAddToPlaylistMenu += (_, item) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ShowAddToPlaylistMenu(item));
+        _viewModel.RequestShareChoice += (_, request) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ShowShareChoiceMenu(request));
         _viewModel.Confirm = (title, message) =>
             MessageBox.Show(this, message, title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
         _viewModel.AskForText = (title, prompt, initial) => TextPromptWindow.Ask(this, title, prompt, initial);
@@ -126,6 +131,10 @@ public partial class MainWindow : Window
                 _ = _viewModel.LoadTestVideoAsync();
             if (_settingsWindow.AppUpdateCheckRequested)
                 _ = _updateFlow.RunAsync(this, manual: true);
+            if (_settingsWindow.BugReportRequested)
+                Dispatcher.BeginInvoke(ShowBugReport);
+            if (_settingsWindow.FeatureRequestRequested)
+                Dispatcher.BeginInvoke(ShowFeatureRequest);
         }
         finally
         {
@@ -176,6 +185,52 @@ public partial class MainWindow : Window
             if (_config.CurrentConfig.Update.CheckAtStartup)
                 await _updateFlow.RunAsync(this, manual: false);
         }, DispatcherPriority.ApplicationIdle);
+    }
+
+    /// <summary>Control+Shift+B: tell TimePlayer's developer about a problem.</summary>
+    private void ShowBugReport()
+    {
+        if (_bugReports is null)
+            return;
+        BugReportWindow.Show(this, _bugReports, _accessibility);
+    }
+
+    /// <summary>Control+Shift+F: suggest something for TimePlayer.</summary>
+    private void ShowFeatureRequest()
+    {
+        if (_bugReports is null)
+            return;
+        BugReportWindow.Show(this, _bugReports, _accessibility, feature: true);
+    }
+
+    /// <summary>A link from a browser or another app: bring TimePlayer to the front and open it.</summary>
+    public void OpenLinkFromOtherApp(string link)
+    {
+        if (WindowState == WindowState.Minimized)
+            WindowState = WindowState.Normal;
+        Activate();
+        if (!IsLoaded)
+        {
+            // Started by the link: wait until the window (and the player) are ready.
+            RoutedEventHandler? opened = null;
+            opened = (_, _) =>
+            {
+                Loaded -= opened;
+                Dispatcher.BeginInvoke(() => OpenLinkFromOtherApp(link), DispatcherPriority.ApplicationIdle);
+            };
+            Loaded += opened;
+            return;
+        }
+        _accessibility.Announce(T("Opening a link from another app."), AnnouncementPriority.Medium);
+        _ = OpenWhenPlayerReadyAsync(link);
+    }
+
+    /// <summary>The player (mpv) starts in the background; on a slow computer a link can arrive first.</summary>
+    private async Task OpenWhenPlayerReadyAsync(string link)
+    {
+        for (var waited = 0; !_viewModel.IsEngineInitialized && waited < 15_000; waited += 100)
+            await Task.Delay(100);
+        await _viewModel.OpenLinkAsync(link);
     }
 
     /// <summary>Counts this start, asks once whether to add it to everyone's total, and says the count.</summary>
@@ -287,7 +342,7 @@ public partial class MainWindow : Window
             menu.Items.Add(menuItem);
         }
         bool isPlayer = item is null;
-        Add(_viewModel.CanConvertDownloads ? T("Download _audio (MP3)") : T("Download _audio (M4A)"),
+        Add(_viewModel.CanConvertDownloads ? T("Download audio (_MP3)") : T("Download audio (M_4A)"),
             () => _ = isPlayer ? _viewModel.DownloadAudioCurrentAsync() : _viewModel.DownloadAudioForItemAsync(item));
         Add(T("Download _video (MP4)"),
             () => _ = isPlayer ? _viewModel.DownloadVideoCurrentAsync() : _viewModel.DownloadVideoForItemAsync(item));
@@ -359,7 +414,7 @@ public partial class MainWindow : Window
         menu.Items.Add(Item(_viewModel.LikeButtonText, T("Ctrl+K"), _viewModel.ToggleLikeCurrent));
         menu.Items.Add(Item(_viewModel.SubscribeButtonText, T("Ctrl+S"), _viewModel.ToggleSubscribeCurrentChannel));
         menu.Items.Add(Item(_viewModel.WatchLaterButtonText, T("Ctrl+L"), _viewModel.ToggleWatchLaterCurrent));
-        menu.Items.Add(Item(T("Add to _playlist..."), T("Ctrl+P"), () => _viewModel.ShowAddToPlaylistMenu(null)));
+        menu.Items.Add(Item(T("Add to playlis_t..."), T("Ctrl+P"), () => _viewModel.ShowAddToPlaylistMenu(null)));
         menu.Items.Add(Item(T("Go to _channel"), T("Ctrl+G"), () => _ = _viewModel.OpenCurrentChannelAsync()));
         menu.Items.Add(Item(T("Copy share _link at this point"), T("Ctrl+C"), _viewModel.CopyShareLinkAtCurrentTime));
         menu.Items.Add(Item(T("_Download..."), T("Ctrl+D"), () => ShowDownloadMenu(PlayerActionsButton, null)));
@@ -416,6 +471,22 @@ public partial class MainWindow : Window
     private static bool IsSearchKey(Key key, ModifierKeys mods) =>
         (mods == ModifierKeys.None && key is Key.Oem2 or Key.Divide) ||
         (mods == ModifierKeys.Control && key is Key.F or Key.E);
+
+    /// <summary>Control+C: a YouTube link anyone can open, or a TimePlayer link that opens in TimePlayer.</summary>
+    private void ShowShareChoiceMenu(ShareLinkRequest request)
+    {
+        UIElement anchor = Keyboard.FocusedElement as UIElement ?? (UIElement)PlayerActionsButton;
+        var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
+        AutomationProperties.SetName(menu, T("Copy which link?"));
+        var youTube = new MenuItem { Header = T("_YouTube link, opens anywhere") };
+        youTube.Click += (_, _) => _viewModel.CopyChosenLink(request, timePlayer: false);
+        var timePlayer = new MenuItem { Header = T("_TimePlayer link, opens in TimePlayer for people who have it") };
+        timePlayer.Click += (_, _) => _viewModel.CopyChosenLink(request, timePlayer: true);
+        menu.Items.Add(youTube);
+        menu.Items.Add(timePlayer);
+        menu.Opened += (_, _) => youTube.Focus();
+        menu.IsOpen = true;
+    }
 
     /// <summary>Ctrl+P: your playlists, then "New playlist...". Liked videos has its own key, Ctrl+K.</summary>
     private void ShowAddToPlaylistMenu(SearchResult? item)
@@ -549,6 +620,21 @@ public partial class MainWindow : Window
 
     // ===================== Keyboard =====================
 
+    private bool _actionsMenuOnAppsKeyUp;
+
+    /// <summary>
+    /// The Applications key opens the player's Actions menu on release. Opened on the press, the release
+    /// that follows makes Windows ask for a context menu again, and the open menu closed at once.
+    /// </summary>
+    private void MainWindow_PreviewKeyUp(object sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Apps || !_actionsMenuOnAppsKeyUp)
+            return;
+        _actionsMenuOnAppsKeyUp = false;
+        e.Handled = true;
+        ShowPlayerActionsMenu();
+    }
+
     private void MainWindow_PreviewKeyDown(object sender, KeyEventArgs e)
     {
         var focused = Keyboard.FocusedElement;
@@ -597,6 +683,20 @@ public partial class MainWindow : Window
         if (key == Key.V && mods == (ModifierKeys.Control | ModifierKeys.Shift))
         {
             _ = _viewModel.PasteAndPlayAsync();
+            e.Handled = true;
+            return;
+        }
+
+        if (key == Key.B && mods == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            ShowBugReport();
+            e.Handled = true;
+            return;
+        }
+
+        if (key == Key.F && mods == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            ShowFeatureRequest();
             e.Handled = true;
             return;
         }
@@ -706,7 +806,13 @@ public partial class MainWindow : Window
         }
 
         bool onListItem = focused is ListBoxItem or TreeViewItem;
-        if (!onListItem && ((key == Key.Apps && mods == ModifierKeys.None) || (key == Key.F10 && mods == ModifierKeys.Shift)))
+        if (!onListItem && key == Key.Apps && mods == ModifierKeys.None)
+        {
+            // Opened when the key comes up (MainWindow_PreviewKeyUp).
+            _actionsMenuOnAppsKeyUp = true;
+            return true;
+        }
+        if (!onListItem && key == Key.F10 && mods == ModifierKeys.Shift)
         {
             ShowPlayerActionsMenu();
             return true;

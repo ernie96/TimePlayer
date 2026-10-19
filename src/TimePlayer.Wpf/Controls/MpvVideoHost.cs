@@ -15,7 +15,6 @@ public sealed class MpvVideoHost : HwndHost
     private const int WsClipSiblings = 0x04000000;
 
     private const int WmEraseBkgnd = 0x0014;
-    private const int WmPaint = 0x000F;
 
     private static readonly string ClassName = $"TimePlayerVideoHost_{Guid.NewGuid():N}";
     private static bool _classRegistered;

@@ -108,9 +108,6 @@ internal sealed class InvidiousVideoResponse
     [JsonPropertyName("hlsUrl")]
     public string? HlsUrl { get; set; }
 
-    [JsonPropertyName("dashUrl")]
-    public string? DashUrl { get; set; }
-
     [JsonPropertyName("videoThumbnails")]
     public List<InvidiousThumbnail>? VideoThumbnails { get; set; }
 
@@ -186,11 +183,6 @@ internal sealed class InvidiousAdaptiveFormat
     [JsonPropertyName("audioQuality")]
     public string? AudioQuality { get; set; }
 
-    [JsonPropertyName("audioSampleRate")]
-    public string? AudioSampleRate { get; set; }
-
-    [JsonPropertyName("audioChannels")]
-    public int? AudioChannels { get; set; }
 }
 
 internal sealed class InvidiousCaption

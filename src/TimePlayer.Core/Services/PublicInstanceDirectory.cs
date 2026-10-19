@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
@@ -9,7 +8,7 @@ using TimePlayer.Core.Models;
 namespace TimePlayer.Core.Services;
 
 /// <summary>
-/// Discovers public API instances for Piped and Invidious from official project directories,
+/// Discovers public API instances for Invidious from official project directories,
 /// validates entries, and manages local persistence fallback.
 /// </summary>
 public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
@@ -61,7 +60,6 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
             _logger.LogInformation("Fetching live directory for {Provider}...", providerType);
             var discovered = providerType switch
             {
-                BackendProviderType.Piped => await FetchPipedInstancesAsync(config.PipedInstancesDirectoryUrl, cancellationToken),
                 BackendProviderType.Invidious => await FetchInvidiousInstancesAsync(config.InvidiousInstancesDirectoryUrl, cancellationToken),
                 _ => new List<PublicInstance>()
             };
@@ -115,63 +113,6 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
         CancellationToken cancellationToken = default)
     {
         return _cache.SaveSnapshotAsync(providerType, instances, cancellationToken);
-    }
-
-    /// <summary>
-    /// Parses TeamPiped documentation markdown table of public instances.
-    /// URL: https://raw.githubusercontent.com/TeamPiped/documentation/main/content/docs/public-instances/index.md
-    /// Table format: Instance Name | Instance API URL | Instance Location(s) | CDN | Registered Users
-    /// </summary>
-    public static List<PublicInstance> ParsePipedMarkdownDirectory(string markdownContent)
-    {
-        var results = new List<PublicInstance>();
-        if (string.IsNullOrWhiteSpace(markdownContent))
-            return results;
-
-        var lines = markdownContent.Split('\n', StringSplitOptions.TrimEntries);
-        var urlRegex = new Regex(@"https://[^\s|]+", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-        foreach (var line in lines)
-        {
-            if (!line.Contains('|'))
-                continue;
-
-            // Skip header and separator lines
-            if (line.Contains("---") || line.Contains("Instance API URL", StringComparison.OrdinalIgnoreCase))
-                continue;
-
-            var columns = line.Split('|', StringSplitOptions.TrimEntries);
-            if (columns.Length < 2)
-                continue;
-
-            // Find any column that contains an https URL (usually column 1 or 2)
-            string? candidateUrl = null;
-            foreach (var col in columns)
-            {
-                var match = urlRegex.Match(col);
-                if (match.Success)
-                {
-                    candidateUrl = match.Value;
-                    break;
-                }
-            }
-
-            if (candidateUrl != null && InstanceUrlValidator.TrySanitizeBaseUri(candidateUrl, out var cleanUri, out _))
-            {
-                if (!results.Any(r => r.BaseUri == cleanUri))
-                {
-                    results.Add(new PublicInstance
-                    {
-                        BaseUri = cleanUri,
-                        ProviderType = BackendProviderType.Piped,
-                        IsWorking = true,
-                        HealthScore = 75.0
-                    });
-                }
-            }
-        }
-
-        return results;
     }
 
     /// <summary>
@@ -252,14 +193,6 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
         return results;
     }
 
-    private async Task<List<PublicInstance>> FetchPipedInstancesAsync(string directoryUrl, CancellationToken cancellationToken)
-    {
-        using var response = await _httpClient.GetAsync(directoryUrl, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        var markdown = await response.Content.ReadAsStringAsync(cancellationToken);
-        return ParsePipedMarkdownDirectory(markdown);
-    }
-
     private async Task<List<PublicInstance>> FetchInvidiousInstancesAsync(string directoryUrl, CancellationToken cancellationToken)
     {
         using var response = await _httpClient.GetAsync(directoryUrl, cancellationToken);
@@ -270,9 +203,7 @@ public sealed class PublicInstanceDirectory : IPublicInstanceDirectory
 
     private static List<PublicInstance> GetSeedInstances(BackendProviderType providerType, BackendConfig config)
     {
-        var seeds = providerType == BackendProviderType.Piped
-            ? config.PipedSeedInstances
-            : config.InvidiousSeedInstances;
+        var seeds = providerType == BackendProviderType.Invidious ? config.InvidiousSeedInstances : Array.Empty<string>();
 
         var list = new List<PublicInstance>();
         foreach (var seed in seeds)

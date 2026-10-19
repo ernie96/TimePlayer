@@ -58,6 +58,11 @@ Name: "{autodesktop}\TimePlayer"; Filename: "{app}\TimePlayer.exe"; Tasks: deskt
 [Run]
 Filename: "{app}\TimePlayer.exe"; Description: "{cm:LaunchProgram,TimePlayer}"; Flags: nowait postinstall skipifsilent
 
+[Registry]
+; TimePlayer registers itself for timeplayer:// links when it starts (Settings can turn that off);
+; this only removes the entry again on uninstall.
+Root: HKA; Subkey: "Software\Classes\timeplayer"; Flags: uninsdeletekey dontcreatekey
+
 [UninstallDelete]
 ; yt-dlp updates itself and writes these next to it.
 Type: files; Name: "{app}\bin\yt-dlp-version.json"

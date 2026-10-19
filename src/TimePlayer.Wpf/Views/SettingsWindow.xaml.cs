@@ -16,6 +16,20 @@ public partial class SettingsWindow : Window
 
     public bool PlayTestPatternRequested { get; private set; }
     public bool AppUpdateCheckRequested { get; private set; }
+    public bool BugReportRequested { get; private set; }
+    public bool FeatureRequestRequested { get; private set; }
+
+    private void SuggestFeature_Click(object sender, RoutedEventArgs e)
+    {
+        FeatureRequestRequested = true;
+        Close();
+    }
+
+    private void ReportProblem_Click(object sender, RoutedEventArgs e)
+    {
+        BugReportRequested = true;
+        Close();
+    }
 
     private void CheckAppUpdates_Click(object sender, RoutedEventArgs e)
     {

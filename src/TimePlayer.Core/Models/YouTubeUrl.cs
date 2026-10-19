@@ -94,18 +94,21 @@ public sealed record YouTubeUrl
         throw new FormatException($"'{input}' is not a valid YouTube URL or video ID.");
     }
 
-    public static bool TryExtractVideoId(string? input, out YouTubeVideoId videoId, out TimeSpan? startTime)
+    /// <summary>
+    /// Whether typed or pasted text should be opened as a link rather than searched for: any YouTube link,
+    /// or a bare video id that doesn't read like a word. "taylorswift" or "minecraft12" are 11 characters
+    /// like an id, but they're searches; real ids nearly always mix capitals, small letters and digits.
+    /// </summary>
+    public static bool LooksLikeLink(string? text)
     {
-        if (TryParse(input, out var parsed))
-        {
-            videoId = parsed.VideoId;
-            startTime = parsed.StartTime;
-            return true;
-        }
-
-        videoId = default;
-        startTime = null;
-        return false;
+        if (string.IsNullOrWhiteSpace(text))
+            return false;
+        var trimmed = text.Trim();
+        if (trimmed.Contains('/') || trimmed.Contains('.') || trimmed.Contains('?'))
+            return IsPlaylistLink(trimmed) || TryParse(trimmed, out _);
+        return YouTubeVideoId.TryParse(trimmed, out _) &&
+               trimmed.Any(char.IsUpper) && trimmed.Any(char.IsLower) &&
+               trimmed.Any(c => char.IsDigit(c) || c is '-' or '_');
     }
 
     /// <summary>The id after "list=" in a YouTube link, for opening playlists.</summary>

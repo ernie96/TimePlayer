@@ -172,19 +172,6 @@ public sealed class InvidiousBackendProvider : IBackendProvider, IVideoCatalogPr
             playlistId, response.Value.Title ?? string.Empty, response.Value.Author, videos, next));
     }
 
-    /// <summary>Trending videos; <paramref name="type"/> is null, "music", "gaming" or "movies".</summary>
-    public async Task<Result<IReadOnlyList<SearchResult>>> GetTrendingAsync(
-        string? type,
-        string? region,
-        CancellationToken cancellationToken = default)
-    {
-        var query = new List<string>();
-        if (!string.IsNullOrWhiteSpace(type)) query.Add($"type={Uri.EscapeDataString(type)}");
-        if (!string.IsNullOrWhiteSpace(region)) query.Add($"region={Uri.EscapeDataString(region)}");
-        var path = "api/v1/trending" + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
-        return await GetVideoListAsync(path, cancellationToken);
-    }
-
     /// <summary>The instance's "popular" page (recent uploads popular with its users).</summary>
     public Task<Result<IReadOnlyList<SearchResult>>> GetPopularAsync(CancellationToken cancellationToken = default) =>
         GetVideoListAsync("api/v1/popular", cancellationToken);

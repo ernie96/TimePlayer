@@ -74,10 +74,6 @@ public class ResultTests
         Assert.Contains("timed out", timeout.UserMessage);
         Assert.Contains("timeplayer-pipe-1", timeout.TechnicalDetails);
 
-        var died = PlaybackError.ProcessDied(139);
-        Assert.Equal(PlaybackErrorType.ProcessTerminated, died.ErrorType);
-        Assert.Contains("Restarting engine", died.UserMessage);
-        Assert.Contains("139", died.TechnicalDetails);
 
         var unreachable = PlaybackError.StreamUnreachable("https://bad.stream");
         Assert.Equal(PlaybackErrorType.StreamUnreachable, unreachable.ErrorType);

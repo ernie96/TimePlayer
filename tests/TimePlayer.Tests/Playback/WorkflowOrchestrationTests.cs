@@ -1,13 +1,7 @@
-using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
-using TimePlayer.Core.Backends.TubeRepair;
-using TimePlayer.Core.Backends.Invidious;
-using TimePlayer.Core.Backends.InnerTube;
-using TimePlayer.Core.Backends.YtDlp;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
-using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
 using TimePlayer.Tests.Helpers;

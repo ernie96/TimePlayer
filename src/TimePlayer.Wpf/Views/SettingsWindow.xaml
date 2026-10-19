@@ -223,9 +223,21 @@
                     <StackPanel>
                         <CheckBox Content="{l:T 'Check for TimePlayer updates at startup'}" IsChecked="{Binding CheckForAppUpdatesAtStartup}"/>
                         <CheckBox Content="{l:T 'Tell me at startup how many times TimePlayer has run'}" IsChecked="{Binding AnnounceRunCount}"/>
+                        <CheckBox Content="{l:T 'Let browsers and other apps open YouTube links in TimePlayer'}" IsChecked="{Binding OpenLinksFromOtherApps}"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <Label Content="{l:T 'Control+C _shares:'}" Target="{Binding ElementName=ShareLinkBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="ShareLinkBox" AutomationProperties.Name="{l:T 'Control+C shares'}" ItemsSource="{Binding ShareLinkChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding ShareLinkKind}" MinWidth="180"/>
+                        </StackPanel>
+                        <WrapPanel Margin="0,0,0,8">
+                            <Button Content="{l:T 'Copy the _browser bookmark'}" Command="{Binding CopyBrowserBookmarkCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Open the browser e_xtension folder'}" Command="{Binding OpenBrowserExtensionFolderCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                        </WrapPanel>
                         <CheckBox Content="{l:T 'Add my runs to the total for everyone (only adds 1 per start, nothing about you)'}" IsChecked="{Binding ShareRunCount}"/>
                         <WrapPanel Margin="0,0,0,8">
                             <Button Content="{l:T 'Check for TimePlayer _updates'}" Click="CheckAppUpdates_Click" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="{l:T 'Report a _problem... (Control+Shift+B)'}" Click="ReportProblem_Click" Style="{StaticResource SmallButtonStyle}"/>
+                            <Button Content="{l:T 'Suggest a _feature... (Control+Shift+F)'}" Click="SuggestFeature_Click" Style="{StaticResource SmallButtonStyle}"/>
                             <Button Content="{l:T 'Update the YouTube _downloader'}" Command="{Binding CheckForUpdatesCommand}" Style="{StaticResource SmallButtonStyle}"/>
                             <Button Content="{l:T 'Run dia_gnostics'}" Command="{Binding RunDiagnosticsCommand}" Style="{StaticResource SmallButtonStyle}"/>
                             <Button Content="{l:T 'Play _test pattern'}" Click="PlayTestPattern_Click" Style="{StaticResource SmallButtonStyle}"/>

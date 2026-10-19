@@ -1,4 +1,3 @@
-using TimePlayer.Core.Common;
 using TimePlayer.Core.Models;
 using Xunit;
 

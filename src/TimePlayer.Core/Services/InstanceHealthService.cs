@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Models;
 
@@ -16,7 +15,6 @@ public sealed class InstanceHealthService : IInstanceHealthService
 {
     private readonly HttpClient _httpClient;
     private readonly IPublicInstanceDirectory _directory;
-    private readonly IConfigurationService _configService;
     private readonly ILogger<InstanceHealthService> _logger;
 
     private sealed class RuntimeState
@@ -33,12 +31,10 @@ public sealed class InstanceHealthService : IInstanceHealthService
     public InstanceHealthService(
         HttpClient httpClient,
         IPublicInstanceDirectory directory,
-        IConfigurationService configService,
         ILogger<InstanceHealthService> logger)
     {
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _directory = directory ?? throw new ArgumentNullException(nameof(directory));
-        _configService = configService ?? throw new ArgumentNullException(nameof(configService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -50,7 +46,6 @@ public sealed class InstanceHealthService : IInstanceHealthService
 
         var probeUri = instance.ProviderType switch
         {
-            BackendProviderType.Piped => new Uri(instance.BaseUri, "trending?region=US"),
             BackendProviderType.Invidious => new Uri(instance.BaseUri, "api/v1/stats"),
             _ => instance.BaseUri
         };
@@ -301,11 +296,6 @@ public sealed class InstanceHealthService : IInstanceHealthService
         try
         {
             using var doc = JsonDocument.Parse(content);
-            if (providerType == BackendProviderType.Piped)
-            {
-                // Piped /trending returns an array of video items
-                return doc.RootElement.ValueKind == JsonValueKind.Array;
-            }
             if (providerType == BackendProviderType.Invidious)
             {
                 // Invidious /api/v1/stats returns an object with "version" or "software"

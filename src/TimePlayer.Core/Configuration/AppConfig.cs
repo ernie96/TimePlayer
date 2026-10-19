@@ -7,7 +7,7 @@ namespace TimePlayer.Core.Configuration;
 /// </summary>
 public record AppConfig
 {
-    /// <summary>"" follows Windows; otherwise "en", "ro" or "uk". Takes effect at the next start.</summary>
+    /// <summary>"" follows Windows; otherwise "en", "ro", "uk" or "es". Takes effect at the next start.</summary>
     public string Language { get; init; } = string.Empty;
 
     public PlaybackConfig Playback { get; init; } = new();
@@ -19,6 +19,10 @@ public record AppConfig
     public DislikeConfig Dislikes { get; init; } = new();
     public AudioConfig Audio { get; init; } = new();
     public RunsConfig Runs { get; init; } = new();
+    /// <summary>Let browsers and other apps open YouTube links in TimePlayer (timeplayer:// links).</summary>
+    public bool OpenLinksFromOtherApps { get; init; } = true;
+    /// <summary>Which link Control+C shares: "ask" each time, "youtube" or "timeplayer" (a timeplayer:// link).</summary>
+    public string ShareLinks { get; init; } = "ask";
 }
 
 /// <summary>How many times TimePlayer has started, and whether those starts are added to everyone's total.</summary>
@@ -134,10 +138,6 @@ public record PlaybackConfig
 
 public record BackendConfig
 {
-    public BackendProviderType PrimaryProvider { get; init; } = BackendProviderType.TubeRepair;
-    public BackendProviderType SecondaryProvider { get; init; } = BackendProviderType.Invidious;
-    public BackendProviderType TertiaryProvider { get; init; } = BackendProviderType.InnerTube;
-    public BackendProviderType FallbackProvider { get; init; } = BackendProviderType.YtDlpLocal;
 
     /// <summary>
     /// Exact TubeRepair legacy YouTube-compatible API server.
@@ -154,16 +154,6 @@ public record BackendConfig
 
     public string InvidiousInstancesDirectoryUrl { get; init; } =
         "https://api.invidious.io/instances.json?sort_by=health";
-
-    public string PipedInstancesDirectoryUrl { get; init; } =
-        "https://raw.githubusercontent.com/TeamPiped/documentation/main/content/docs/public-instances/index.md";
-
-    public IReadOnlyList<string> PipedSeedInstances { get; init; } = new[]
-    {
-        "https://api.piped.private.coffee",
-        "https://pipedapi.ducks.party",
-        "https://pipedapi.leptons.xyz"
-    };
 
     public IReadOnlyList<string> InvidiousSeedInstances { get; init; } = new[]
     {
@@ -186,11 +176,6 @@ public record BackendConfig
 
 public record AccessibilityConfig
 {
-    public bool AnnouncePlaybackChanges { get; init; } = true;
-    public bool AnnounceVolumeChanges { get; init; } = true;
-    public bool AnnounceSeekChanges { get; init; } = true;
-    public bool AnnounceSpeedChanges { get; init; } = true;
-    public bool HighContrastFocusVisuals { get; init; } = true;
     public int BrailleDisplayCellCount { get; init; } = 40;
     public bool EnableBrailleProgress { get; init; } = true;
     /// <summary>Read captions aloud through the screen reader as they appear.</summary>

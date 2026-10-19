@@ -1,0 +1,19 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Play in TimePlayer</title>
+  <style>body { font: 14px system-ui, sans-serif; min-width: 320px; padding: 8px; } label { display: block; margin: 6px 0; }</style>
+</head>
+<body>
+  <fieldset>
+    <legend id="legend"></legend>
+    <label><input type="radio" name="mode" value="after"> <span data-msg="modeAfter"></span></label>
+    <label><input type="radio" name="mode" value="replace"> <span data-msg="modeReplace"></span></label>
+    <label><input type="radio" name="mode" value="off"> <span data-msg="modeOff"></span></label>
+  </fieldset>
+  <p id="status" role="status"></p>
+  <p data-msg="optionsHelp"></p>
+  <script src="options.js"></script>
+</body>
+</html>

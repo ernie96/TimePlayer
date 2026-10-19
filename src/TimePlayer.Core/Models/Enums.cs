@@ -23,12 +23,7 @@ public enum BackendProviderType
     /// <summary>
     /// Local bundled yt-dlp executable (final fallback).
     /// </summary>
-    YtDlpLocal = 4,
-
-    /// <summary>
-    /// Obsolete Piped API.
-    /// </summary>
-    Piped = 99
+    YtDlpLocal = 4
 }
 
 /// <summary>

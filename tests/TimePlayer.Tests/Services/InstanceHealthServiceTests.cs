@@ -28,36 +28,6 @@ public class InstanceHealthServiceTests
     }
 
     [Fact]
-    public async Task ProbeInstanceAsync_PipedTrendingArray_ReturnsSuccess()
-    {
-        var json = """[ { "id": "1", "title": "Video 1" }, { "id": "2", "title": "Video 2" } ]""";
-        var handler = MockHttpMessageHandler.StringResponse(json);
-        var httpClient = new HttpClient(handler);
-        var config = new ConfigurationService(Options.Create(new AppConfig()));
-        var directory = new StubDirectory();
-
-        var service = new InstanceHealthService(
-            httpClient,
-            directory,
-            config,
-            NullLogger<InstanceHealthService>.Instance);
-
-        var instance = new PublicInstance
-        {
-            BaseUri = new Uri("https://pipedapi.kavin.rocks"),
-            ProviderType = BackendProviderType.Piped
-        };
-
-        var measurement = await service.ProbeInstanceAsync(instance);
-
-        Assert.True(measurement.IsSuccessful);
-        Assert.Equal(200, measurement.StatusCode);
-        Assert.True(measurement.Latency >= TimeSpan.Zero);
-        Assert.Single(handler.Requests);
-        Assert.EndsWith("trending?region=US", handler.Requests[0].RequestUri?.ToString());
-    }
-
-    [Fact]
     public async Task ProbeInstanceAsync_InvidiousStatsObject_ReturnsSuccess()
     {
         var json = """{ "version": "2.0", "software": { "name": "invidious", "version": "2026.10" } }""";
@@ -69,7 +39,6 @@ public class InstanceHealthServiceTests
         var service = new InstanceHealthService(
             httpClient,
             directory,
-            config,
             NullLogger<InstanceHealthService>.Instance);
 
         var instance = new PublicInstance
@@ -96,13 +65,12 @@ public class InstanceHealthServiceTests
         var service = new InstanceHealthService(
             httpClient,
             directory,
-            config,
             NullLogger<InstanceHealthService>.Instance);
 
         var instance = new PublicInstance
         {
             BaseUri = new Uri("https://piped.rate.limited"),
-            ProviderType = BackendProviderType.Piped
+            ProviderType = BackendProviderType.Invidious
         };
 
         var measurement = await service.ProbeInstanceAsync(instance);
@@ -115,7 +83,7 @@ public class InstanceHealthServiceTests
     [Fact]
     public async Task ProbeInstanceAsync_InvalidJsonShape_ReturnsFailure()
     {
-        // Piped expects JSON array; here we return HTML/string
+        // Invidious answers a JSON object; here it returns HTML
         var handler = MockHttpMessageHandler.StringResponse("<html><body>Welcome</body></html>", HttpStatusCode.OK, "text/html");
         var httpClient = new HttpClient(handler);
         var config = new ConfigurationService(Options.Create(new AppConfig()));
@@ -124,13 +92,12 @@ public class InstanceHealthServiceTests
         var service = new InstanceHealthService(
             httpClient,
             directory,
-            config,
             NullLogger<InstanceHealthService>.Instance);
 
         var instance = new PublicInstance
         {
             BaseUri = new Uri("https://piped.badjson.com"),
-            ProviderType = BackendProviderType.Piped
+            ProviderType = BackendProviderType.Invidious
         };
 
         var measurement = await service.ProbeInstanceAsync(instance);
@@ -142,8 +109,8 @@ public class InstanceHealthServiceTests
     [Fact]
     public async Task SelectBestInstanceAsync_SkipsFailingInstanceAndPicksHealthy()
     {
-        var inst1 = new PublicInstance { BaseUri = new Uri("https://failing.example.com/"), ProviderType = BackendProviderType.Piped, LatencyMs = 50 };
-        var inst2 = new PublicInstance { BaseUri = new Uri("https://working.example.com/"), ProviderType = BackendProviderType.Piped, LatencyMs = 120 };
+        var inst1 = new PublicInstance { BaseUri = new Uri("https://failing.example.com/"), ProviderType = BackendProviderType.Invidious, LatencyMs = 50 };
+        var inst2 = new PublicInstance { BaseUri = new Uri("https://working.example.com/"), ProviderType = BackendProviderType.Invidious, LatencyMs = 120 };
 
         var directory = new StubDirectory { Instances = new List<PublicInstance> { inst1, inst2 } };
 
@@ -155,7 +122,7 @@ public class InstanceHealthServiceTests
 
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("[{\"id\":\"vid1\"}]", System.Text.Encoding.UTF8, "application/json")
+                Content = new StringContent("{\"software\":{\"name\":\"invidious\"}}", System.Text.Encoding.UTF8, "application/json")
             };
         });
 
@@ -165,10 +132,9 @@ public class InstanceHealthServiceTests
         var service = new InstanceHealthService(
             httpClient,
             directory,
-            config,
             NullLogger<InstanceHealthService>.Instance);
 
-        var selected = await service.SelectBestInstanceAsync(BackendProviderType.Piped);
+        var selected = await service.SelectBestInstanceAsync(BackendProviderType.Invidious);
 
         Assert.NotNull(selected);
         Assert.Equal(new Uri("https://working.example.com/"), selected.BaseUri);

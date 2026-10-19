@@ -3,6 +3,23 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.9.0
+
+- Report a problem: press Control+Shift+B (or Settings, Updates and help, Report a problem), say what went wrong, and send it, with TimePlayer's log if you like. It goes privately to TimePlayer's developer; no account is needed, and your Windows user name is taken out of the log.
+- Suggest a feature: press Control+Shift+F (or Settings, Updates and help, Suggest a feature) and describe your idea. It also goes privately to TimePlayer's developer.
+- TimePlayer speaks Spanish. Choose it in Settings, Speech and braille, or let it follow Windows.
+- Open YouTube links in TimePlayer from other apps. A browser extension (Chrome, Edge and other Chromium browsers) adds "Play in TimePlayer" after YouTube links on websites such as Reddit or webmail, or makes them open in TimePlayer directly; on YouTube, use its toolbar button, Alt+Shift+P or the context menu. Its idea comes from the Open in RedditForBlind extension.
+- Without the extension: a bookmark (Settings, Updates and help, "Copy the browser bookmark"), timeplayer:// links, or "TimePlayer.exe <link>". Control+Shift+V still plays a copied link.
+- A link from elsewhere goes to the TimePlayer that's already open and brings it to the front. Only YouTube videos and playlists are accepted from outside, and Settings can turn timeplayer:// links off.
+- YouTube Music links (music.youtube.com) work everywhere links do, and switch TimePlayer to Music.
+- Sharing with Control+C or Control+Shift+C now asks: a YouTube link, which opens anywhere, or a TimePlayer link, which opens straight in TimePlayer for people who have it. Settings, Updates and help, "Control+C shares" can skip the question.
+- Fixed: searching for a word that happens to be 11 letters long, such as "taylorswift", tried to play it as a video instead of searching.
+- Fixed: in the player, the Applications key opened the Actions menu and closed it again at once. It now stays open, like Alt+A.
+- Fixed: Ukrainian seemed to be missing from Settings, Language, because many English voices read Cyrillic letters as nothing. Each language is now also named in the language TimePlayer is using, for example "Українська (Ukrainian)".
+- Menus and Settings pages no longer have two items on the same underlined letter, in any language (in English: Add to playlis_t and Cop_y share link in the list menu, and Download audio (_MP3) and (M_4A)).
+- Fixed: the OK and Cancel buttons when naming a playlist were always in English.
+- Tidier inside: about 1,900 lines of code nothing used are gone, including the old Piped backend, unused settings and the console logger, which a window app never shows.
+
 ## 1.8.0
 
 - TimePlayer can tell you at startup how many times it has been run on your computer. Turn this off in Settings, Updates and help.

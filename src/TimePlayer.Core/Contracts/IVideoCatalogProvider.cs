@@ -4,7 +4,7 @@ using TimePlayer.Core.Models;
 namespace TimePlayer.Core.Contracts;
 
 /// <summary>
-/// Contract for video catalog providers (Piped, Invidious, local yt-dlp).
+/// Contract for video catalog providers (TubeRepair, Invidious, InnerTube, local yt-dlp).
 /// Searches YouTube catalog with pagination and loads full video metadata.
 /// </summary>
 public interface IVideoCatalogProvider

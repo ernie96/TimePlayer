@@ -3,6 +3,8 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Media;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Wpf.Views;
 
 /// <summary>A one-line text question (playlist names). Enter accepts, Escape cancels.</summary>
@@ -25,9 +27,9 @@ public sealed class TextPromptWindow : Window
         AutomationProperties.SetName(_input, prompt.TrimEnd(':'));
         var label = new Label { Content = prompt, Target = _input, Foreground = Foreground, Padding = new Thickness(0) };
 
-        var ok = new Button { Content = "OK", IsDefault = true, MinWidth = 80, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(8, 4, 8, 4) };
+        var ok = new Button { Content = T("OK"), IsDefault = true, MinWidth = 80, Margin = new Thickness(0, 0, 8, 0), Padding = new Thickness(8, 4, 8, 4) };
         ok.Click += (_, _) => DialogResult = true;
-        var cancel = new Button { Content = "Cancel", IsCancel = true, MinWidth = 80, Padding = new Thickness(8, 4, 8, 4) };
+        var cancel = new Button { Content = T("Cancel"), IsCancel = true, MinWidth = 80, Padding = new Thickness(8, 4, 8, 4) };
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
         buttons.Children.Add(ok);

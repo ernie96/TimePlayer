@@ -27,3 +27,6 @@ release/
 
 # NVDA controller client (LGPL) is redistributed with the app
 !lib/x64/
+
+# Cloudflare Wrangler local state
+.wrangler/

@@ -1,7 +1,7 @@
 namespace TimePlayer.Core.Models;
 
 /// <summary>
-/// Status, health, and latency measurements for a public Piped or Invidious instance.
+/// Status, health, and latency measurements for a public Invidious instance.
 /// </summary>
 public record PublicInstance
 {
@@ -14,7 +14,6 @@ public record PublicInstance
     public int ConsecutiveFailures { get; init; }
     public string? SoftwareVersion { get; init; }
     public string? ErrorMessage { get; init; }
-    public bool IsCustom { get; init; }
 
     /// <summary>
     /// Computes overall priority score for automatic selection. Lower is better.

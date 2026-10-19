@@ -34,15 +34,6 @@ public class KeyChordTests
     }
 
     [Fact]
-    public void ToAccessibleSpeech_ProvidesSpokenWords()
-    {
-        var chord = KeyChord.Parse("Ctrl+Shift+P");
-        var speech = chord.ToAccessibleSpeech();
-
-        Assert.Equal("Control plus Shift plus P", speech);
-    }
-
-    [Fact]
     public void Equals_IsCaseInsensitiveForKeys()
     {
         var chord1 = KeyChord.Parse("Ctrl+K");

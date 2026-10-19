@@ -220,6 +220,22 @@ preset for music mode, and a custom sound (10-band equalizer from 31 Hz to 16 kH
 quarter of a second. Music mode sets mpv's `vid=no`, so video isn't decoded; whether less data is downloaded depends on the
 stream source.
 
+## Opening links from other apps
+
+TimePlayer can play YouTube links that come from your browser, email, chat or any other app. Only one TimePlayer runs at a time: a link from elsewhere goes to the open window.
+
+- **Copied links:** copy a YouTube link anywhere, then press Control+Shift+V in TimePlayer.
+- **The browser extension** (Chrome, Edge, Brave and other Chromium browsers) adds "Play in TimePlayer" after each YouTube link on other websites (Reddit, webmail, forums), or can make those links open in TimePlayer directly. On YouTube itself, use its toolbar button, Alt+Shift+P, or "Play this page in TimePlayer" in the context menu. To install it, open `chrome://extensions` (or `edge://extensions`), turn on Developer mode, choose "Load unpacked" and pick the `browser-extension` folder. Settings, Updates and help, "Open the browser extension folder" opens it, and it's also `TimePlayer-browser-extension.zip` on the releases page.
+- **A bookmark** does the same without an extension: Settings, Updates and help, "Copy the browser bookmark", then add a bookmark with that as its address. Choose it on a YouTube page.
+- **`timeplayer://` links:** TimePlayer registers itself for links like `timeplayer://open?url=https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ`, which any web page, document or app can use. The first time, the browser asks whether to open TimePlayer.
+- **The command line:** `TimePlayer.exe "https://youtu.be/dQw4w9WgXcQ"`, which also covers shortcuts and scripts.
+
+- **Sharing:** Control+C and Control+Shift+C ask whether to copy a YouTube link (opens anywhere) or a TimePlayer link (opens straight in TimePlayer for people who have it). "Control+C shares" in Settings, Updates and help can always use one instead.
+
+YouTube Music links (music.youtube.com) open in Music. Only YouTube videos and playlists are accepted; anything else in a link is ignored. "Let browsers and other apps open YouTube links in TimePlayer" in Settings turns the `timeplayer://` links off.
+
+Windows doesn't let desktop apps take over ordinary youtube.com links, so a YouTube link clicked in an email still opens the browser. The extension or Control+Shift+V cover that.
+
 ## SponsorBlock and Return YouTube Dislike
 
 - **SponsorBlock** ([sponsor.ajay.app](https://sponsor.ajay.app)): segments are fetched through the hash-prefix endpoint, so
@@ -234,12 +250,21 @@ stream source.
 
 ## Translating TimePlayer
 
-Text is written in English in the code and looked up through `Loc.T("...")` (and `Loc.Plural(n, "{0} video", "{0} videos")`
-for counts); XAML uses `{l:T 'text'}`. The translations live in `src/TimePlayer.Core/Localization/Romanian.Strings.cs` and
-`Ukrainian.Strings.cs`, one line per text, keyed by the English. Plural entries hold the language's forms separated by `|`
-(Romanian one|few|"de" form, Ukrainian one|few|many). Anything without a translation stays in English. The test
-`EveryTextInTheCode_HasBothTranslations` fails when new English text has no translation, and
+TimePlayer speaks English, Romanian, Ukrainian and Spanish. Text is written in English in the code and looked up through
+`Loc.T("...")` (and `Loc.Plural(n, "{0} video", "{0} videos")` for counts); XAML uses `{l:T 'text'}`. The translations live in
+`src/TimePlayer.Core/Localization/Romanian.Strings.cs`, `Ukrainian.Strings.cs` and `Spanish.Strings.cs`, one line per text,
+keyed by the English. Plural entries hold the language's forms separated by `|` (Romanian one|few|"de" form, Ukrainian
+one|few|many, Spanish one|other). Anything without a translation stays in English. The test
+`EveryTextInTheCode_HasBothTranslations` fails when new English text has no translation in every language, and
 `EveryTranslation_KeepsItsPlaceholders_AndFormats` catches a broken `{0}`.
+
+## Reporting problems
+
+Control+Shift+B (or Settings, Updates and help, Report a problem) opens a short form: what went wrong, an optional
+email or name for an answer, and optionally TimePlayer's log, with the Windows user name taken out. Reports go to
+a small relay (`report-relay/`, a Cloudflare Worker), which files each as an issue in the private repository
+ernie96/TimePlayer-reports. Control+Shift+F (Suggest a feature) uses the same form without the log; suggestions are
+labelled "feature request". See `report-relay/README.md` for setup.
 
 ## Making a release
 

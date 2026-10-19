@@ -134,21 +134,6 @@ public sealed record KeyChord : IEquatable<KeyChord>
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Gets a screen reader friendly readable announcement of the shortcut.
-    /// E.g. "Control plus Shift plus P" instead of "Ctrl+Shift+P".
-    /// </summary>
-    public string ToAccessibleSpeech()
-    {
-        var parts = new List<string>();
-        if (Modifiers.HasFlag(KeyModifiers.Ctrl)) parts.Add("Control");
-        if (Modifiers.HasFlag(KeyModifiers.Alt)) parts.Add("Alt");
-        if (Modifiers.HasFlag(KeyModifiers.Shift)) parts.Add("Shift");
-        if (Modifiers.HasFlag(KeyModifiers.Win)) parts.Add("Windows");
-        parts.Add(Key);
-        return string.Join(" plus ", parts);
-    }
-
     public bool Equals(KeyChord? other)
     {
         if (other is null) return false;

@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using TimePlayer.Core.Common;
 
 namespace TimePlayer.Core.Backends.YtDlp;

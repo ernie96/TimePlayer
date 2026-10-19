@@ -81,6 +81,12 @@ try {
 } finally { $zip.Dispose() }
 Write-Host "NVDA add-on $addonVersion packaged."
 
+# 5b. Browser extension: in the app folder (Settings opens it, for "Load unpacked") and as its own zip.
+$extensionSource = Join-Path $root 'browser-extension'
+Copy-Item $extensionSource (Join-Path $staging 'browser-extension') -Recurse -Force
+Compress-Archive -Path (Join-Path $extensionSource '*') -DestinationPath (Join-Path $release 'TimePlayer-browser-extension.zip') -CompressionLevel Optimal -Force
+Write-Host "Browser extension packaged."
+
 # 6. Portable zip.
 # Fixed asset names: the updater and the README's "latest" links look for exactly these.
 $zipPath = Join-Path $release 'TimePlayer.zip'

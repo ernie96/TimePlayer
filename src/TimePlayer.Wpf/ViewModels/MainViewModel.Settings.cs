@@ -28,10 +28,23 @@ public sealed partial class MainViewModel
     /// <summary>Every country Windows knows, by English name, for Featured and the charts.</summary>
     public IReadOnlyList<ChoiceOption<string>> RegionChoices { get; } = BuildRegionChoices();
 
-    /// <summary>TimePlayer's languages; each is named in its own language so it can be found by someone who reads only that one.</summary>
-    public IReadOnlyList<ChoiceOption<string>> LanguageChoices { get; } =
+    /// <summary>
+    /// TimePlayer's languages, each named in its own language (for someone who reads only that one) and in
+    /// the one TimePlayer speaks now: "Українська (Ukrainian)". Many speech voices say nothing at all for
+    /// another alphabet, so "Українська" alone sounded like an empty item.
+    /// </summary>
+    public IReadOnlyList<ChoiceOption<string>> LanguageChoices { get; } = BuildLanguageChoices();
+
+    public static IReadOnlyList<ChoiceOption<string>> BuildLanguageChoices() =>
         TimePlayer.Core.Localization.Loc.Languages
-            .Select(l => new ChoiceOption<string>(l.Code, l.Code.Length == 0 ? T(l.Name) : l.Name))
+            .Select(l =>
+            {
+                var here = T(l.EnglishName);
+                var label = l.Code.Length == 0 ? here
+                    : string.Equals(here, l.Name, StringComparison.CurrentCultureIgnoreCase) ? l.Name
+                    : $"{l.Name} ({here})";
+                return new ChoiceOption<string>(l.Code, label);
+            })
             .ToList();
 
     [ObservableProperty] private string _language = string.Empty;

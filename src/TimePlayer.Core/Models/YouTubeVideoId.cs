@@ -45,8 +45,6 @@ public readonly partial record struct YouTubeVideoId : IEquatable<YouTubeVideoId
     public static YouTubeVideoId Parse(string input) => new(input);
 
     public string ToWatchUrl() => $"https://www.youtube.com/watch?v={Value}";
-    public string ToShortUrl() => $"https://youtu.be/{Value}";
-    public string ToEmbedUrl() => $"https://www.youtube.com/embed/{Value}";
 
     public override string ToString() => Value;
 

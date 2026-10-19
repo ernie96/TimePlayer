@@ -7,7 +7,6 @@ using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Accessibility;
 using TimePlayer.Core.Backends.YtDlp;
-using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Community;
@@ -149,8 +148,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     [ObservableProperty]
     private QualityPreference _selectedQuality = QualityPreference.Auto;
 
-    public IReadOnlyList<QualityPreference> AvailableQualities { get; } = Enum.GetValues<QualityPreference>();
-
     // Braille Display Progress Indicator
     [ObservableProperty]
     private string _brailleDisplayLine = string.Empty;
@@ -273,6 +270,10 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _checkForAppUpdatesAtStartup = _configService.CurrentConfig.Update.CheckAtStartup;
         _announceRunCount = _configService.CurrentConfig.Runs.Announce;
         _shareRunCount = _configService.CurrentConfig.Runs.Share == true;
+        _openLinksFromOtherApps = _configService.CurrentConfig.OpenLinksFromOtherApps;
+        _shareLinkKind = _configService.CurrentConfig.ShareLinks is ShareYouTube or ShareTimePlayer
+            ? _configService.CurrentConfig.ShareLinks
+            : ShareAsk;
 
         // Player engine events
         _playerEngine.StateChanged += OnEngineStateChanged;
@@ -343,18 +344,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
 
         // A playlist link opens the playlist; a video link (even one inside a playlist) plays the video.
-        if (YouTubeUrl.IsPlaylistLink(query) && YouTubeUrl.TryGetPlaylistId(query, out var listId))
-        {
-            await OpenYouTubePlaylistAsync(listId);
+        if (await OpenLinkAsync(query))
             return;
-        }
-
-        // Direct YouTube URL playback check
-        if (YouTubeUrl.TryParse(query, out var ytUrl))
-        {
-            await PlayDirectUrlAsync(ytUrl.NormalizedWatchUrl);
-            return;
-        }
 
         // Cancel previous in-flight search if any
         _searchCts?.Cancel();
@@ -435,30 +426,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     }
 
     [RelayCommand]
-    public void CancelSearch()
-    {
-        if (IsSearching)
-        {
-            _searchCts?.Cancel();
-            IsSearching = false;
-            _accessibility.Announce(T("Search cancelled."), AnnouncementPriority.Medium);
-        }
-    }
-
-    [RelayCommand]
-    public void ClearSearch()
-    {
-        _searchCts?.Cancel();
-        SearchQuery = string.Empty;
-        _lastSearchResults.Clear();
-        if (CurrentSection == BrowseSection.Search)
-            SearchResults.Clear();
-        SelectedSearchResult = null;
-        _accessibility.Announce(T("Search cleared."), AnnouncementPriority.Low);
-        RequestFocusSearch?.Invoke(this, EventArgs.Empty);
-    }
-
-    [RelayCommand]
     public void ClearError()
     {
         ErrorMessage = null;
@@ -504,23 +471,39 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             return;
         }
 
-        if (YouTubeUrl.IsPlaylistLink(text) && YouTubeUrl.TryGetPlaylistId(text, out var listId))
-        {
-            SearchQuery = text;
-            await OpenYouTubePlaylistAsync(listId);
-        }
-        else if (YouTubeUrl.TryParse(text, out var ytUrl))
-        {
-            SearchQuery = ytUrl.NormalizedWatchUrl;
-            _accessibility.Announce(T("Loading video..."), AnnouncementPriority.Medium);
-            await PlayDirectUrlAsync(ytUrl.NormalizedWatchUrl);
-        }
-        else
+        if (!await OpenLinkAsync(text))
         {
             SearchQuery = text;
             _accessibility.Announce(T("Pasted into search box."), AnnouncementPriority.Low);
             RequestFocusSearch?.Invoke(this, EventArgs.Empty);
         }
+    }
+
+    /// <summary>Opens a YouTube playlist link, or plays a video link. False when it is neither.</summary>
+    public async Task<bool> OpenLinkAsync(string text)
+    {
+        if (!YouTubeUrl.LooksLikeLink(text))
+            return false;
+
+        // A song or album from YouTube Music belongs in Music.
+        if (!MusicMode && IncomingLink.IsYouTubeMusic(text) &&
+            (YouTubeUrl.IsPlaylistLink(text) || YouTubeUrl.TryParse(text, out _)))
+            ToggleMusicMode();
+
+        if (YouTubeUrl.IsPlaylistLink(text) && YouTubeUrl.TryGetPlaylistId(text, out var listId))
+        {
+            SearchQuery = text;
+            await OpenYouTubePlaylistAsync(listId);
+            return true;
+        }
+        if (YouTubeUrl.TryParse(text, out var ytUrl))
+        {
+            // PlayDirectUrlAsync says "Loading video...".
+            SearchQuery = ytUrl.NormalizedWatchUrl;
+            await PlayDirectUrlAsync(ytUrl.NormalizedWatchUrl);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -1552,8 +1535,6 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             : T("Braille progress track disabled. Screen reader standard display active.");
         _accessibility.Announce(message, AnnouncementPriority.High);
     }
-
-    public int ActiveBrailleCellIndex => _brailleTrack.CalculateCellIndex(CurrentTime, Duration > TimeSpan.Zero ? Duration : (CurrentVideo?.Duration ?? TimeSpan.Zero));
 
 
     private void UpdateBrailleDisplayLine()
