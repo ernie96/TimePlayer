@@ -11,7 +11,7 @@ public static class KeyboardHelp
     public const string SearchBox =
         "Type words or paste a YouTube link, then press Enter.\n" +
         "Escape clears the box. Tab moves to the buttons: Search, Paste link and play (plays a YouTube link from the clipboard) and Settings. F6 moves to the sections.\n" +
-        "Control+1 to Control+9 open Search, Featured, What's New, Channels, History, Watch Later, Queue, For You and Playlists.\n" +
+        "Control+1 to Control+9 open Search, Featured, What's New, Channels, History, Watch Later, Queue, For You and Playlists. Control+M turns music mode on or off.\n" +
         "To find playlists instead of videos, Shift+Tab to the list's Find box (Alt+F) and choose Playlists. A YouTube playlist link opens the playlist.";
 
     public const string Sections =
@@ -84,6 +84,7 @@ public static class KeyboardHelp
         "Alt+U Up next, Alt+C comments, Alt+D description, Alt+Q queue. F6 moves between the controls, those panels and the top bar.\n" +
         "A turns autoplay on or off. C turns reading captions aloud on or off.\n" +
         "S skips the SponsorBlock segment playing now, H jumps to the video's highlight.\n" +
+        "E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n" +
         "Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n" +
         "Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n" +
         "Escape closes the player.";

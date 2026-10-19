@@ -570,6 +570,48 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task Sound_PresetMusicModeAndCustom_ReachThePlayer()
+    {
+        await using var vm = CreateViewModel();
+        Assert.Equal(string.Empty, _playerEngine.AudioFilters);
+
+        vm.VideoSoundPreset = "Bass boost";
+        await Task.Delay(500);
+        Assert.Contains("bass=g=6", _playerEngine.AudioFilters);
+        Assert.Equal("Bass boost", _configService.CurrentConfig.Audio.Preset);
+
+        vm.ToggleMusicMode();
+        await Task.Delay(500);
+        Assert.False(_playerEngine.VideoEnabled);
+        Assert.Contains("extrastereo", _playerEngine.AudioFilters); // the Music preset
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Music mode on: no video, Music sound.");
+
+        // Editing the custom sound makes it what you hear in the current mode.
+        vm.CustomCrossfeed = true;
+        await Task.Delay(500);
+        Assert.Equal("Custom", vm.MusicSoundPreset);
+        Assert.Equal("Bass boost", vm.VideoSoundPreset);
+        Assert.Equal("@timeplayer:lavfi=[bs2b=profile=default]", _playerEngine.AudioFilters);
+
+        vm.ToggleMusicMode();
+        await Task.Delay(500);
+        Assert.True(_playerEngine.VideoEnabled);
+        Assert.Contains("bass=g=6", _playerEngine.AudioFilters);
+    }
+
+    [Fact]
+    public async Task Sound_CyclePreset_SpeaksTheNewPreset()
+    {
+        await using var vm = CreateViewModel();
+        vm.CycleSoundPreset(1);
+        Assert.Equal("Music", vm.VideoSoundPreset);
+        vm.CycleSoundPreset(-1);
+        vm.CycleSoundPreset(-1);
+        Assert.Equal("Custom", vm.VideoSoundPreset);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Custom sound.");
+    }
+
+    [Fact]
     public async Task SponsorBlock_OffInSettings_DoesNotSkip()
     {
         await using var vm = CreateViewModel();

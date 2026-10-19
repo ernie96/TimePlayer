@@ -115,6 +115,21 @@ public class FakePlayerEngine : IPlayerEngine
         return Task.CompletedTask;
     }
 
+    public string AudioFilters { get; private set; } = string.Empty;
+    public bool VideoEnabled { get; private set; } = true;
+
+    public Task SetAudioFiltersAsync(string filterChain, CancellationToken cancellationToken = default)
+    {
+        AudioFilters = filterChain;
+        return Task.CompletedTask;
+    }
+
+    public Task SetVideoEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        VideoEnabled = enabled;
+        return Task.CompletedTask;
+    }
+
     public Task SetMuteAsync(bool isMuted, CancellationToken cancellationToken = default)
     {
         IsMuted = isMuted;

@@ -455,6 +455,12 @@ public partial class MainWindow : Window
             return true;
         }
 
+        if (key == Key.M && mods == ModifierKeys.Control)
+        {
+            _viewModel.ToggleMusicMode();
+            return true;
+        }
+
         if ((key == Key.E || key == Key.F) && mods == ModifierKeys.Control)
         {
             SearchBox.Focus();
@@ -555,6 +561,7 @@ public partial class MainWindow : Window
                 case Key.L when !isList: _viewModel.ToggleWatchLaterCurrent(); return true;
                 case Key.K when !isList: _viewModel.ToggleLikeCurrent(); return true;
                 case Key.P when !isList: _viewModel.ShowAddToPlaylistMenu(null); return true;
+                case Key.M: _viewModel.ToggleMusicMode(); return true;
                 case Key.G when !isList: _ = _viewModel.OpenCurrentChannelAsync(); return true;
                 case Key.Left when !arrowsBelongToControl: _ = _viewModel.SeekLargeBackwardAsync(); return true;
                 case Key.Right when !arrowsBelongToControl: _ = _viewModel.SeekLargeForwardAsync(); return true;
@@ -568,6 +575,7 @@ public partial class MainWindow : Window
             {
                 case Key.N: _ = _viewModel.PlayNextOrUpNextAsync(); return true;
                 case Key.P: _ = _viewModel.PlayPreviousAsync(); return true;
+                case Key.E: _viewModel.CycleSoundPreset(-1); return true;
                 case Key.OemPeriod: _ = _viewModel.SpeedUpAsync(); return true;
                 case Key.OemComma: _ = _viewModel.SpeedDownAsync(); return true;
             }
@@ -597,6 +605,7 @@ public partial class MainWindow : Window
             case Key.C: _viewModel.ToggleSpeakCaptions(); return true;
             case Key.S: _ = _viewModel.SkipCurrentSegmentAsync(); return true;
             case Key.H: _ = _viewModel.JumpToHighlightAsync(); return true;
+            case Key.E: _viewModel.CycleSoundPreset(1); return true;
             case Key.Home when !arrowsBelongToControl && !isList: _ = _viewModel.RestartFromBeginningAsync(); return true;
             case Key.Left when !arrowsBelongToControl: _ = _viewModel.SeekSmallBackwardAsync(); return true;
             case Key.Right when !arrowsBelongToControl: _ = _viewModel.SeekSmallForwardAsync(); return true;

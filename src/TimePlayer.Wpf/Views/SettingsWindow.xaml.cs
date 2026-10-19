@@ -35,7 +35,7 @@ public partial class SettingsWindow : Window
         if (e.Key == Key.F1)
         {
             MessageBox.Show(this,
-                "Settings has five pages: Playback, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. " +
+                "Settings has six pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. " +
                 "Control+Tab and Control+Shift+Tab move between pages; on the page names, Left and Right do too.\n" +
                 "Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. " +
                 "Alt plus the underlined letter jumps to a setting on the current page.\n" +

@@ -166,6 +166,12 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         await _ipcClient.ObservePropertyAsync(PropIdSub, "sub", cancellationToken);
         await _ipcClient.ObservePropertyAsync(PropIdSubText, "sub-text", cancellationToken);
 
+        // A restarted player keeps the user's effects and music mode.
+        if (_audioFilters.Length > 0)
+            await ApplyAudioFiltersAsync(cancellationToken);
+        if (!_videoEnabled)
+            await _ipcClient.SetPropertyAsync("vid", "no", cancellationToken);
+
         SetState(PlaybackState.Stopped);
         _logger.LogInformation("mpv engine initialized and property observers registered.");
     }
@@ -248,6 +254,34 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         var clamped = Math.Clamp(speed, 0.25, 4.0);
         await _ipcClient.SetPropertyAsync("speed", clamped, cancellationToken);
         Speed = clamped;
+    }
+
+    private string _audioFilters = string.Empty;
+    private bool _videoEnabled = true;
+
+    public async Task SetAudioFiltersAsync(string filterChain, CancellationToken cancellationToken = default)
+    {
+        _audioFilters = filterChain ?? string.Empty;
+        if (IsEngineAlive)
+            await ApplyAudioFiltersAsync(cancellationToken);
+    }
+
+    public async Task SetVideoEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        _videoEnabled = enabled;
+        if (IsEngineAlive)
+            await _ipcClient.SetPropertyAsync("vid", enabled ? "auto" : "no", cancellationToken);
+    }
+
+    private async Task ApplyAudioFiltersAsync(CancellationToken cancellationToken)
+    {
+        var response = await _ipcClient.SendCommandAsync(new object[] { "set_property", "af", _audioFilters }, cancellationToken);
+        if (response is not null && !string.Equals(response.Error, "success", StringComparison.OrdinalIgnoreCase))
+        {
+            // A filter mpv can't build would silence playback; fall back to no effects instead.
+            _logger.LogWarning("mpv rejected the audio effects ({Error}); playing without them. Chain: {Chain}", response.Error, _audioFilters);
+            await _ipcClient.SendCommandAsync(new object[] { "set_property", "af", "" }, cancellationToken);
+        }
     }
 
     public async Task SetMuteAsync(bool isMuted, CancellationToken cancellationToken = default)

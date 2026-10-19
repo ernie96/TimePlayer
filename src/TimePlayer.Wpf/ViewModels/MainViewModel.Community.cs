@@ -28,6 +28,8 @@ public sealed partial class SegmentCategorySetting : ObservableObject
     /// <summary>For screen readers: the label without its access-key marker.</summary>
     public string SpokenLabel => Label.Replace("_", string.Empty);
 
+    public override string ToString() => SpokenLabel;
+
     [ObservableProperty]
     private SegmentAction _action;
 

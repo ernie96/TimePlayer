@@ -26,6 +26,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   start at the current time, and audio or video downloads.
 - **SponsorBlock**: sponsor reads and other marked segments are skipped or announced (`S` skips, `H` jumps to the
   highlight), each category configurable in Settings. **Return YouTube Dislike** adds estimated dislike counts.
+- **Sound and music mode**: equalizer, bass, clarity, stereo width, room, crossfeed, compressor and volume leveling,
+  with presets (Music, Bass boost, Headphones, Voice and podcasts, Night, Concert hall, Loudness) and a custom setting.
+  They change TimePlayer's sound only. Music mode (`Ctrl+M`) turns video off and uses its own sound preset.
 - **Braille progress**: an NVDA add-on shows playback position as a "lower g" (⠶) on the braille display; the routing
   keys seek to that point and `Ctrl+Shift+D` toggles it.
 - **Updates itself** from GitHub Releases, with every download checked against an Ed25519 signature.
@@ -156,6 +159,8 @@ Lists keep loading as you reach the end: search results, channel pages, playlist
 | `Alt+U`, `Alt+C`, `Alt+D`, `Alt+Q` | Up next, Comments, Description, Queue panels |
 | `A` | Autoplay on/off (plays the first unwatched related video when the queue ends) |
 | `S` / `H` | Skip the SponsorBlock segment playing now / jump to the highlight |
+| `E` / `Shift+E` | Next / previous sound preset |
+| `Ctrl+M` | Music mode on/off (also in the library) |
 | `C` | Read captions aloud on/off (off by default) |
 | `Ctrl+S` / `Ctrl+L` / `Ctrl+G` | Subscribe, Watch Later, go to channel |
 | `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
@@ -200,6 +205,15 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 - **History** with **resume**: videos continue where you left off ("Resuming at 4 minutes 12 seconds. Press Home to start from the beginning"),
   and lists say "Watched" or "Resume at ..." before the title.
 - **Watch Later** list and **channel pages** reachable from any video.
+
+## Sound and music mode
+
+Effects run inside TimePlayer's own player as an mpv `af` chain of FFmpeg filters (`equalizer`, `bass`, `aexciter`,
+`extrastereo`, `bs2b`, `aecho`, `acompressor`, `dynaudnorm`, ending in `alimiter` whenever anything boosts), so other apps
+and Windows are untouched; nothing is installed into Windows' audio system. Settings, Sound has a preset for videos, a
+preset for music mode, and a custom sound (10-band equalizer from 31 Hz to 16 kHz, -12 to +12 dB). Changes apply within a
+quarter of a second. Music mode sets mpv's `vid=no`, so video isn't decoded; whether less data is downloaded depends on the
+stream source.
 
 ## SponsorBlock and Return YouTube Dislike
 

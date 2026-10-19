@@ -3,6 +3,14 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.4.0
+
+- Sound effects for TimePlayer only, never the rest of Windows: equalizer, bass boost, clarity, stereo width, room ambience, headphone crossfeed, a compressor and volume leveling.
+- Sound presets: Music, Bass boost, Headphones, Voice and podcasts, Night, Concert hall and Loudness, plus your own Custom sound. In the player, E and Shift+E switch presets.
+- Music mode, Control+M: no video, which saves processing power and battery, and its own sound preset.
+- Settings has a new Sound page.
+- Fixed: in Settings, screen readers said "TimePlayer.Wpf.ViewModels.SegmentCategorySetting, data item" before each SponsorBlock choice. They now read just the setting.
+
 ## 1.3.0
 
 - SponsorBlock: sponsor reads are skipped automatically, and other marked parts such as self-promotion are announced with how long they last. S skips the part playing now, H jumps to the video's highlight. Each kind can be set to skip, tell you, or do nothing.

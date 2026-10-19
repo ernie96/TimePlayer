@@ -69,6 +69,15 @@ NewPipe, LibreTube, FreeTube and OPML subscription files can be imported in Chan
 (Control+4), and Export subscriptions saves a file NewPipe can read.
 
 
+Sound and music mode
+--------------------
+
+Settings (F2), Sound, has effects for TimePlayer's sound only: presets such as Music, Bass
+boost, Headphones, Voice and podcasts, Night and Concert hall, and a custom sound with a
+10-band equalizer. In the player, E and Shift+E switch presets.
+Control+M turns music mode on or off: no video, and its own sound preset.
+
+
 SponsorBlock and dislikes
 -------------------------
 

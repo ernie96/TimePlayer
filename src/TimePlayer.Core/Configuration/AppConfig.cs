@@ -14,6 +14,20 @@ public record AppConfig
     public UpdateConfig Update { get; init; } = new();
     public SponsorBlockConfig SponsorBlock { get; init; } = new();
     public DislikeConfig Dislikes { get; init; } = new();
+    public AudioConfig Audio { get; init; } = new();
+}
+
+/// <summary>Audio effects and music mode. They change TimePlayer's sound only, never the rest of Windows.</summary>
+public record AudioConfig
+{
+    /// <summary>Effects for normal playback: a preset name, or "Custom" for <see cref="Custom"/>.</summary>
+    public string Preset { get; init; } = Audio.AudioPresets.Flat;
+    /// <summary>Music mode: no video (saves processing power and battery) and its own effects.</summary>
+    public bool MusicMode { get; init; }
+    /// <summary>Effects while music mode is on: a preset name, or "Custom".</summary>
+    public string MusicPreset { get; init; } = "Music";
+    /// <summary>The user's own effect settings, used wherever "Custom" is chosen.</summary>
+    public Audio.AudioEffectSettings Custom { get; init; } = new();
 }
 
 /// <summary>What to do when a SponsorBlock segment of a category starts.</summary>

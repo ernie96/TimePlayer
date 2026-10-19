@@ -368,6 +368,8 @@
                                     AutomationProperties.Name="{Binding LikeButtonText}" AutomationProperties.AcceleratorKey="Control+K"/>
                             <Button Content="{Binding WatchLaterButtonText}" Command="{Binding ToggleWatchLaterCurrentCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="{Binding WatchLaterButtonText}" AutomationProperties.AcceleratorKey="Control+L"/>
+                            <Button Content="{Binding MusicModeButtonText}" Command="{Binding ToggleMusicModeCommand}" Style="{StaticResource SmallButtonStyle}"
+                                    AutomationProperties.Name="{Binding MusicModeButtonText}" AutomationProperties.AcceleratorKey="Control+M"/>
                             <Button x:Name="PlayerPlaylistButton" Content="Playlist..." Command="{Binding ShowAddToPlaylistMenuCommand}" Style="{StaticResource SmallButtonStyle}"
                                     AutomationProperties.Name="Add to playlist" AutomationProperties.AcceleratorKey="Control+P"/>
                             <Button Content="Channel" Command="{Binding OpenCurrentChannelCommand}" Style="{StaticResource SmallButtonStyle}"

@@ -259,6 +259,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         InitializePlayerPreferences();
         InitializeCommunitySettings();
         InitializeStepSettings();
+        InitializeSoundSettings();
         InitializeViewState();
         InitializeBrailleAddonPreference();
         _checkForAppUpdatesAtStartup = _configService.CurrentConfig.Update.CheckAtStartup;
