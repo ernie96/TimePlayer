@@ -27,7 +27,7 @@ public interface ILibraryService
 
     HistoryEntry? GetHistory(string videoId);
     /// <summary>Records playback progress. Writes to disk at most every few seconds unless <paramref name="flush"/>.</summary>
-    void RecordProgress(SearchResult video, TimeSpan position, TimeSpan duration, bool flush = false);
+    void RecordProgress(SearchResult video, TimeSpan position, TimeSpan duration, bool flush = false, bool isMusic = false);
     void RemoveFromHistory(string videoId);
     void ClearHistory();
     /// <summary>Adds watch history from an export, keeping what's already here.</summary>
@@ -243,7 +243,7 @@ public sealed class LibraryService : ILibraryService
         lock (_gate) return _history.FirstOrDefault(h => h.VideoId == videoId);
     }
 
-    public void RecordProgress(SearchResult video, TimeSpan position, TimeSpan duration, bool flush = false)
+    public void RecordProgress(SearchResult video, TimeSpan position, TimeSpan duration, bool flush = false, bool isMusic = false)
     {
         if (string.IsNullOrWhiteSpace(video.Id) || video.Kind != SearchResultKind.Video)
             return;
@@ -265,7 +265,8 @@ public sealed class LibraryService : ILibraryService
                 DurationSeconds = duration > TimeSpan.Zero ? duration.TotalSeconds : previous?.DurationSeconds ?? 0,
                 PositionSeconds = Math.Max(0, position.TotalSeconds),
                 LastWatchedUtc = now,
-                WatchCount = (previous?.WatchCount ?? 0) + (newSession ? 1 : 0)
+                WatchCount = (previous?.WatchCount ?? 0) + (newSession ? 1 : 0),
+                IsMusic = isMusic || previous?.IsMusic == true
             };
 
             listChanged = index != 0;

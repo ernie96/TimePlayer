@@ -325,10 +325,17 @@ public class WorkflowOrchestrationTests
 
         var result = await coordinator.PlayUrlOrIdAsync("dQw4w9WgXcQ");
 
+        // A direct play reports its failure to the caller only; the event too would make it speak twice.
         Assert.False(result.IsSuccess);
+        Assert.Null(receivedError);
+        Assert.Contains("None of TimePlayer's sources could play this video", result.Error!.Message);
+
+        // Playing from the queue has no caller waiting, so the event carries the problem.
+        await coordinator.EnqueueAsync(new SearchResult { Id = "jNQXAC9IVRw", Title = "Queued", ChannelTitle = "c" });
+        await coordinator.PlayQueueItemAsync(coordinator.Queue[^1].QueueItemId);
         Assert.NotNull(receivedError);
         Assert.Equal(PlaybackErrorType.StreamUnreachable, receivedError.ErrorType);
-        Assert.Contains("Unable to play video after trying TubeRepair, Invidious, InnerTube, and local yt-dlp fallbacks", receivedError.UserMessage);
+        Assert.Contains("None of TimePlayer's sources could play this video", receivedError.UserMessage);
     }
 
     [Fact]

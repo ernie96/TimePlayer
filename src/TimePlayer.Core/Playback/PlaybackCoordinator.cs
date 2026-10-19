@@ -54,6 +54,16 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     /// <summary>A video ended and the queue has nothing after it (the moment for autoplay).</summary>
     public event EventHandler? QueueEnded;
 
+    /// <summary>A queued video couldn't be played; <see cref="QueueSkipEventArgs.WillContinue"/> says whether the next one is being tried.</summary>
+    public event EventHandler<QueueSkipEventArgs>? ItemSkipped;
+
+    /// <summary>After this many unplayable videos in a row, the queue stops instead of skipping on.</summary>
+    public const int MaxConsecutiveSkips = 3;
+
+    /// <summary>Told to users when YouTube itself won't play a video.</summary>
+    public const string UnavailableMessage =
+        "YouTube says this video isn't available. It may have been removed, made private, or blocked where you are.";
+
     public bool CanLoadMoreSearchResults => _lastSearchProvider is not null && !string.IsNullOrEmpty(_nextSearchPageToken);
 
     public PlaybackCoordinator(
@@ -238,21 +248,63 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         // Keep the queue position in step, so auto-advance continues after this video
         // rather than after whatever was current before.
         var queueIndex = _queue.FindIndex(i => i.VideoId.Value == videoId.Value);
-        if (queueIndex >= 0 && queueIndex != _currentIndex)
+        if (queueIndex >= 0 && startTime is null)
+            return await PlayQueueFromAsync(queueIndex, raiseErrors: false, cancellationToken);
+
+        return await PlayVideoIdInternalAsync(videoId, startTime, cancellationToken, raiseErrors: false);
+    }
+
+    /// <summary>
+    /// Plays the queue from <paramref name="index"/>, skipping videos that can't be played (removed,
+    /// private or blocked where the user is) so one bad song doesn't stop a whole playlist.
+    /// </summary>
+    private async Task<Result<bool>> PlayQueueFromAsync(int index, bool raiseErrors, CancellationToken cancellationToken)
+    {
+        Result<bool> last = Result<bool>.Failure(AppError.PlaybackFailed("The queue is empty."));
+        int failures = 0;
+        while (index >= 0 && index < _queue.Count)
         {
-            _currentIndex = queueIndex;
-            _queue[queueIndex] = _queue[queueIndex] with { IsPlayed = true };
+            _currentIndex = index;
+            var item = _queue[index] with { IsPlayed = true };
+            _queue[index] = item;
             QueueChanged?.Invoke(this, Queue);
+
+            last = await PlayVideoIdInternalAsync(item.VideoId, startTime: null, cancellationToken, raiseErrors: false);
+            if (last.IsSuccess)
+                return last;
+
+            failures++;
+            bool willContinue = failures < MaxConsecutiveSkips && index + 1 < _queue.Count;
+            ItemSkipped?.Invoke(this, new QueueSkipEventArgs(item, last.Error?.Message ?? string.Empty, willContinue));
+            if (!willContinue)
+                break;
+            index++;
         }
 
-        return await PlayVideoIdInternalAsync(videoId, startTime, cancellationToken);
+        if (failures >= MaxConsecutiveSkips)
+        {
+            last = Result<bool>.Failure(AppError.PlaybackFailed(
+                $"{failures} videos in a row couldn't be played, so the queue stopped. {last.Error?.Message}"));
+        }
+        if (raiseErrors && last.IsFailure)
+        {
+            ErrorOccurred?.Invoke(this, new PlaybackError
+            {
+                ErrorType = PlaybackErrorType.StreamUnreachable,
+                UserMessage = last.Error?.Message ?? "This video couldn't be played."
+            });
+        }
+        return last;
     }
 
     private async Task<Result<bool>> PlayVideoIdInternalAsync(
         YouTubeVideoId videoId,
         TimeSpan? startTime,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool raiseErrors = true)
     {
+        // Set when a source reports that YouTube won't play this video at all.
+        string? unavailable = null;
         _logger.LogInformation("Starting resilient playback workflow for video ID {Id}...", videoId.Value);
         _playingVideoId = videoId.Value;
         var qualityPref = _configService.CurrentConfig.Playback.PreferredQuality;
@@ -333,6 +385,8 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             StatusChanged?.Invoke(this, "Falling back to InnerTube stream...");
             _logger.LogInformation("Resolving stream via InnerTube for {Id}...", videoId.Value);
             var innerTubeStream = await _innerTube.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
+            if (innerTubeStream.IsFailure && innerTubeStream.Error?.Message?.Contains("unavailable", StringComparison.OrdinalIgnoreCase) == true)
+                unavailable = innerTubeStream.Error.Message;
             if (innerTubeStream.IsSuccess && !string.IsNullOrWhiteSpace(innerTubeStream.Value.DirectPlaybackUrl))
             {
                 StatusChanged?.Invoke(this, "Connecting to InnerTube stream...");
@@ -368,6 +422,10 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             StatusChanged?.Invoke(this, "Resolving stream via local yt-dlp...");
             _logger.LogInformation("Resolving stream via yt-dlp for {Id}...", videoId.Value);
             var ytdlpStream = await _ytdlp.ResolveStreamsAsync(videoId, qualityPref, cancellationToken: cancellationToken);
+            if (ytdlpStream.IsFailure && ytdlpStream.Error?.Code == "VIDEO_NOT_FOUND")
+                unavailable ??= ytdlpStream.Error.Message;
+            else if (ytdlpStream.IsFailure)
+                unavailable = null; // yt-dlp failed for another reason; the direct attempt may still work
             if (ytdlpStream.IsSuccess && !string.IsNullOrWhiteSpace(ytdlpStream.Value.DirectPlaybackUrl))
             {
                 var started = await AttemptPlaybackAsync(
@@ -397,6 +455,11 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         }
 
         // Tier 4 Fallback: Direct watch URL hook via mpv's bundled yt-dlp hook
+        if (unavailable is not null)
+        {
+            _logger.LogWarning("YouTube reports {Id} as unavailable ({Reason}); not trying the direct URL.", videoId.Value, unavailable);
+            return Fail(UnavailableMessage, raiseErrors, "VIDEO_UNAVAILABLE");
+        }
         try
         {
             StatusChanged?.Invoke(this, "Playing via yt-dlp direct watch URL...");
@@ -429,14 +492,15 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 
         // All tiers failed
         _logger.LogError("All playback tiers failed for video ID {Id}.", videoId.Value);
-        var failureErr = new PlaybackError
+        return Fail("None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later.", raiseErrors);
+
+        Result<bool> Fail(string message, bool raise, string code = "PLAYBACK_ENGINE_ERROR")
         {
-            ErrorType = PlaybackErrorType.StreamUnreachable,
-            UserMessage = "Unable to play video after trying TubeRepair, Invidious, InnerTube, and local yt-dlp fallbacks. The video may be private, age-restricted, or blocked."
-        };
-        ErrorOccurred?.Invoke(this, failureErr);
-        StatusChanged?.Invoke(this, "Playback failed across all providers.");
-        return Result<bool>.Failure(AppError.PlaybackFailed(failureErr.UserMessage));
+            if (raise)
+                ErrorOccurred?.Invoke(this, new PlaybackError { ErrorType = PlaybackErrorType.StreamUnreachable, UserMessage = message });
+            StatusChanged?.Invoke(this, "Playback failed.");
+            return Result<bool>.Failure(new AppError { Code = code, Message = message, IsRecoverable = code != "VIDEO_UNAVAILABLE" });
+        }
     }
 
     private async Task<bool> AttemptPlaybackAsync(
@@ -674,13 +738,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             });
         }
 
-        _currentIndex = index;
-        var item = _queue[index];
-
-        _queue[index] = item with { IsPlayed = true };
-        QueueChanged?.Invoke(this, Queue);
-
-        return await PlayVideoIdInternalAsync(item.VideoId, startTime: null, cancellationToken);
+        return await PlayQueueFromAsync(index, raiseErrors: true, cancellationToken);
     }
 
     public Task EnqueueAsync(SearchResult item)
@@ -737,13 +795,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     public async Task PlayNextAsync(CancellationToken cancellationToken = default)
     {
         if (_currentIndex + 1 < _queue.Count)
-        {
-            _currentIndex++;
-            var nextItem = _queue[_currentIndex];
-            _queue[_currentIndex] = nextItem with { IsPlayed = true };
-            QueueChanged?.Invoke(this, Queue);
-            await PlayVideoIdInternalAsync(nextItem.VideoId, startTime: null, cancellationToken);
-        }
+            await PlayQueueFromAsync(_currentIndex + 1, raiseErrors: true, cancellationToken);
     }
 
     public async Task PlayPreviousAsync(CancellationToken cancellationToken = default)
@@ -842,4 +894,19 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 
         return ValueTask.CompletedTask;
     }
+}
+
+/// <summary>A queued video was skipped because it couldn't be played.</summary>
+public sealed class QueueSkipEventArgs : EventArgs
+{
+    public QueueSkipEventArgs(PlaybackQueueItem item, string reason, bool willContinue)
+    {
+        Item = item;
+        Reason = reason;
+        WillContinue = willContinue;
+    }
+
+    public PlaybackQueueItem Item { get; }
+    public string Reason { get; }
+    public bool WillContinue { get; }
 }

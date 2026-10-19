@@ -124,12 +124,13 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- ============ Top bar: search (slash, Control+F or F6 from anywhere) ============ -->
         <Border x:Name="TopBar" Grid.Row="0" Background="#202023" BorderBrush="#2E2E33" BorderThickness="0,0,0,1" Padding="16,10"
                 KeyboardNavigation.TabNavigation="Cycle"
-                Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}">
+                Visibility="{Binding IsLibraryVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -138,7 +139,7 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <TextBlock Grid.Column="0" Text="TimePlayer" FontSize="18" FontWeight="Bold" Foreground="#38BDF8"
+                <TextBlock Grid.Column="0" Text="{Binding ModeName, StringFormat=TimePlayer {0}}" FontSize="18" FontWeight="Bold" Foreground="#38BDF8"
                            VerticalAlignment="Center" Margin="0,0,16,0" AutomationProperties.HeadingLevel="Level1"/>
 
                 <TextBox x:Name="SearchBox"
@@ -189,7 +190,7 @@
         <Grid Grid.Row="2">
 
             <!-- ===== Library view ===== -->
-            <Grid x:Name="LibraryArea" Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityInvertedConverter}}" Margin="16,12"
+            <Grid x:Name="LibraryArea" Visibility="{Binding IsLibraryVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="16,12"
                   KeyboardNavigation.TabNavigation="Cycle">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -338,7 +339,7 @@
             </Grid>
 
             <!-- ===== Player view ===== -->
-            <Grid x:Name="PlayerView" Visibility="{Binding IsPlayerDialogOpen, Converter={StaticResource BooleanToVisibilityConverter}}" Background="#101012">
+            <Grid x:Name="PlayerView" Visibility="{Binding IsPlayerViewVisible, Converter={StaticResource BooleanToVisibilityConverter}}" Background="#101012">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
@@ -353,7 +354,7 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="BackToSearchButton" Grid.Column="0" Content="&lt; Back (Esc)" Command="{Binding ClosePlayerDialogCommand}"
+                        <Button x:Name="BackToSearchButton" Grid.Column="0" Content="&lt; Back (Esc)" Click="BackFromPlayer_Click"
                                 AutomationProperties.Name="Back to the list" AutomationProperties.AcceleratorKey="Escape" Margin="0,0,16,0"/>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center">
                             <TextBlock Text="{Binding CurrentVideoTitle}" FontSize="17" FontWeight="Bold" Foreground="#F4F4F5"
@@ -370,9 +371,32 @@
                 <!-- Video on the left, Up next / Comments / Description / Queue on the right -->
                 <Grid Grid.Row="1">
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition>
+                            <ColumnDefinition.Style>
+                                <Style TargetType="ColumnDefinition">
+                                    <Setter Property="Width" Value="*"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding MusicMode}" Value="True">
+                                            <Setter Property="Width" Value="0"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ColumnDefinition.Style>
+                        </ColumnDefinition>
                         <ColumnDefinition Width="4"/>
-                        <ColumnDefinition Width="420" MinWidth="280"/>
+                        <ColumnDefinition>
+                            <ColumnDefinition.Style>
+                                <Style TargetType="ColumnDefinition">
+                                    <Setter Property="Width" Value="420"/>
+                                    <Setter Property="MinWidth" Value="280"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding MusicMode}" Value="True">
+                                            <Setter Property="Width" Value="*"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ColumnDefinition.Style>
+                        </ColumnDefinition>
                     </Grid.ColumnDefinitions>
 
                     <Grid Grid.Column="0">
@@ -526,8 +550,38 @@
             </Grid>
         </Grid>
 
+        <!-- ============ Now playing (music plays on while you browse) ============ -->
+        <Border x:Name="NowPlayingBar" Grid.Row="3" Background="#1C1C1F" BorderBrush="#2E2E33" BorderThickness="0,1,0,0" Padding="16,8"
+                KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.Name="Now playing"
+                Visibility="{Binding IsNowPlayingBarVisible, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding NowPlayingText}" Foreground="#F4F4F5" FontSize="14" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Foreground="#A1A1AA" FontSize="12">
+                        <Run Text="{Binding CurrentTimeText, Mode=OneWay}"/><Run Text=" / "/><Run Text="{Binding DurationText, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Button x:Name="NowPlayingPlayPause" Content="{Binding PlayPauseButtonText}" Command="{Binding TogglePlayPauseCommand}" Style="{StaticResource AccentButtonStyle}"
+                            MinWidth="80" Margin="0,0,6,0" AutomationProperties.Name="{Binding PlayPauseButtonText}" AutomationProperties.AcceleratorKey="Control+Space"/>
+                    <Button Content="Previous" Command="{Binding PlayPreviousCommand}" IsEnabled="{Binding CanPlayPrevious}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="Previous" AutomationProperties.AcceleratorKey="Control+Shift+P"/>
+                    <Button Content="Next" Command="{Binding PlayNextOrUpNextCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="Next" AutomationProperties.AcceleratorKey="Control+Shift+N"/>
+                    <Button Content="Open player" Command="{Binding ShowPlayerViewCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="Open player" AutomationProperties.AcceleratorKey="Alt+P"/>
+                    <Button Content="Stop" Command="{Binding StopPlaybackSessionCommand}" Style="{StaticResource SmallButtonStyle}"
+                            AutomationProperties.Name="Stop"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
         <!-- ============ Status bar ============ -->
-        <Border Grid.Row="3" Background="#141416" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="14,6">
+        <Border Grid.Row="4" Background="#141416" BorderBrush="#27272A" BorderThickness="0,1,0,0" Padding="14,6">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

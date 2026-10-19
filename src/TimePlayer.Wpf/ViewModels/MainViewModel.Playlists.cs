@@ -371,8 +371,7 @@ public sealed partial class MainViewModel
 
     public async Task OpenYouTubePlaylistAsync(string youTubePlaylistId)
     {
-        if (IsPlayerDialogOpen)
-            await ClosePlayerDialogAsync();
+        await LeavePlayerViewAsync();
         var saved = _library.FindSavedYouTubePlaylist(youTubePlaylistId);
         await OpenPlaylistPageAsync(saved?.Id, youTubePlaylistId, saved?.Name ?? "YouTube playlist");
     }

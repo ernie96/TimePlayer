@@ -75,7 +75,10 @@ Sound and music mode
 Settings (F2), Sound, has effects for TimePlayer's sound only: presets such as Music, Bass
 boost, Headphones, Voice and podcasts, Night and Concert hall, and a custom sound with a
 10-band equalizer. In the player, E and Shift+E switch presets.
-Control+M turns music mode on or off: no video, and its own sound preset.
+Control+M switches between Video and Music. Music has its own sections (Control+1 Charts,
+2 Recently played, 3 Playlists, 4 Queue), no video, and its own sound preset. Songs keep
+playing while you browse: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P
+go to the next and previous, Alt+P opens the player, and Escape returns to the lists.
 
 
 SponsorBlock and dislikes

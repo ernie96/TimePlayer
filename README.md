@@ -127,9 +127,9 @@ dotnet run --project src/TimePlayer.Wpf
 
 | Key | Action |
 |---|---|
-| `Ctrl+1` ... `Ctrl+9` | Search, Featured, What's New, Channels, History, Watch Later, Queue, For You, Playlists |
+| `Ctrl+1` ... `Ctrl+8` | Video: Featured, For You, What's New, Channels, Playlists, Watch Later, History, Queue. Music: Charts, Recently played, Playlists, Queue |
+| `/`, `Ctrl+F`, `Ctrl+E` | Search from anywhere; results open as their own page |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous section |
-| `Ctrl+E` | Search box (`Escape` there clears it) |
 | `Enter` | Play the video, or open the channel |
 | `Ctrl+Q` / `Ctrl+L` / `Ctrl+S` / `Ctrl+G` | Queue, Watch Later, subscribe, go to channel |
 | `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
@@ -139,7 +139,7 @@ dotnet run --project src/TimePlayer.Wpf
 | `Shift+Delete` | Don't recommend this channel |
 | `Alt+Up` / `Alt+Down` | Move a video in your own playlist |
 | `Applications` / `Shift+F10` | Every action for the item |
-| `Alt+Left`, `Backspace`, `Escape` | Back from a channel or playlist page |
+| `Alt+Left`, `Backspace`, `Escape` | Back from search results, a channel or a playlist page |
 | `F5` | Refresh the section |
 | `F2` | Settings: Playback, Speech and braille, Library, SponsorBlock and dislikes, Updates and help (`Ctrl+Tab` between pages; Escape closes and saves) |
 
@@ -160,7 +160,9 @@ Lists keep loading as you reach the end: search results, channel pages, playlist
 | `A` | Autoplay on/off (plays the first unwatched related video when the queue ends) |
 | `S` / `H` | Skip the SponsorBlock segment playing now / jump to the highlight |
 | `E` / `Shift+E` | Next / previous sound preset |
-| `Ctrl+M` | Music mode on/off (also in the library) |
+| `Ctrl+M` | Switch between Video and Music (from anywhere) |
+| `Ctrl+Space`, `Ctrl+Shift+N` / `Ctrl+Shift+P`, media keys | Play/pause, next/previous from anywhere while something plays |
+| `Alt+P` | Music: open the player (Escape returns to the lists; the music keeps playing) |
 | `C` | Read captions aloud on/off (off by default) |
 | `Ctrl+S` / `Ctrl+L` / `Ctrl+G` | Subscribe, Watch Later, go to channel |
 | `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |

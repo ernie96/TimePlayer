@@ -611,6 +611,36 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public async Task UnplayableSongsInAQueue_AreSkipped_AndThreeInARowStop()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        // Videos whose id starts with "bad" never play.
+        _playerEngine.LoadHandler = (url, _) => Task.FromResult(!url.Contains("v=bad"));
+
+        var mixed = _library.CreatePlaylist("Mixed", new[] { Video("bad00000001", "Gone"), Video("jNQXAC9IVRw", "Plays") });
+        await vm.ShowSectionByNumberAsync(5);
+        vm.SelectedSearchResult = vm.SearchResults.Single(r => r.LibraryPlaylistId == mixed.Id);
+        await vm.PlayAllAsync();
+
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Skipped Gone: it wouldn't play.");
+        Assert.Equal("jNQXAC9IVRw", _coordinator.CurrentQueueItem?.VideoId.Value);
+        Assert.Null(vm.ErrorMessage);
+
+        var allBad = _library.CreatePlaylist("All bad", Enumerable.Range(1, 5).Select(i => Video($"bad0000000{i}", $"Bad {i}")));
+        var loadsBefore = _playerEngine.LoadedUrls.Count;
+        await vm.LeavePlayerViewAsync();
+        await vm.ShowSectionByNumberAsync(5);
+        vm.SelectedSearchResult = vm.SearchResults.Single(r => r.LibraryPlaylistId == allBad.Id);
+        await vm.PlayAllAsync();
+
+        Assert.StartsWith("Could not play this video: 3 videos in a row couldn't be played, so the queue stopped.", vm.ErrorMessage);
+        // Only the first three were tried; the last two were never loaded.
+        var tried = _playerEngine.LoadedUrls.Skip(loadsBefore).Select(u => u[(u.IndexOf("v=", StringComparison.Ordinal) + 2)..]).Distinct().ToList();
+        Assert.Equal(new[] { "bad00000001", "bad00000002", "bad00000003" }, tried);
+    }
+
+    [Fact]
     public async Task AProblemWithoutAReason_StillSaysSomethingUseful()
     {
         await using var vm = CreateViewModel();
@@ -647,7 +677,7 @@ public class MainViewModelTests
         await WaitUntil(() => _playerEngine.AudioFilters.Contains("extrastereo"));
         Assert.False(_playerEngine.VideoEnabled);
         Assert.Contains("extrastereo", _playerEngine.AudioFilters); // the Music preset
-        Assert.Contains(_accessibility.Announcements, a => a.message == "Music mode on: no video, Music sound.");
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Music. Music sound.");
 
         // Editing the custom sound makes it what you hear in the current mode.
         vm.CustomCrossfeed = true;
@@ -660,6 +690,55 @@ public class MainViewModelTests
         await WaitUntil(() => _playerEngine.AudioFilters.Contains("bass=g=6"));
         Assert.True(_playerEngine.VideoEnabled);
         Assert.Contains("bass=g=6", _playerEngine.AudioFilters);
+    }
+
+    [Fact]
+    public async Task MusicMode_HasItsOwnSections_AndKeepsPlayingWhileBrowsing()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        Assert.Equal("Featured", vm.SectionTabs[0].Header);
+
+        vm.ToggleMusicMode();
+        Assert.Equal(new[] { "Charts", "Recently played", "Playlists", "Queue" }, vm.SectionTabs.Select(t => t.Header));
+        Assert.Equal("TimePlayer Music", vm.WindowTitle);
+
+        // Playing a song leaves the lists in front, with the Now playing bar.
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Song"));
+        Assert.True(vm.IsPlayerDialogOpen);
+        Assert.False(vm.IsPlayerViewVisible);
+        Assert.True(vm.IsNowPlayingBarVisible);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Playing Song");
+
+        // Opening and leaving the player doesn't stop the music.
+        vm.ShowPlayerView();
+        Assert.True(vm.IsPlayerViewVisible);
+        await vm.LeavePlayerViewAsync();
+        Assert.False(vm.IsPlayerViewVisible);
+        Assert.True(vm.IsPlayerDialogOpen);
+        Assert.NotEqual(TimePlayer.Core.Models.PlaybackState.Stopped, _playerEngine.State);
+
+        // Back to Video: the song becomes a video in the player.
+        vm.ToggleMusicMode();
+        Assert.True(vm.IsPlayerViewVisible);
+        Assert.Equal("Featured", vm.SectionTabs[0].Header);
+
+        // In Video, leaving the player stops playback.
+        await vm.LeavePlayerViewAsync();
+        Assert.False(vm.IsPlayerDialogOpen);
+    }
+
+    [Fact]
+    public async Task MusicMode_RecentlyPlayed_ListsOnlyMusic()
+    {
+        await using var vm = CreateViewModel();
+        _library.RecordProgress(Video("jNQXAC9IVRw", "A video"), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(5), flush: true);
+        _library.RecordProgress(Video("dQw4w9WgXcQ", "A song"), TimeSpan.FromSeconds(30), TimeSpan.FromMinutes(3), flush: true, isMusic: true);
+
+        vm.ToggleMusicMode();
+        await vm.ShowSectionByNumberAsync(2);
+
+        Assert.Equal("A song", vm.SearchResults.Single().Title);
     }
 
     [Fact]

@@ -16,8 +16,18 @@ public static class KeyboardHelp
 
     public const string Sections =
         "Left and Right arrows switch sections. Tab moves through this section's buttons and list, and stays in the section.\n" +
-        "From anywhere: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History, 8 Queue. " +
-        "Control+Tab goes to the next section. Slash searches. F6 moves between the search box, the sections and the list.";
+        "Video: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History, 8 Queue.\n" +
+        "Music: Control+1 Charts, 2 Recently played, 3 Playlists, 4 Queue. Control+M switches between Video and Music.\n" +
+        "Control+Tab goes to the next section. Slash searches. F6 moves between the search box, the sections, the list and Now playing.\n" +
+        NowPlayingKeys;
+
+    /// <summary>Keys that work anywhere while something plays.</summary>
+    public const string NowPlayingKeys =
+        "While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. " +
+        "In Music, Alt+P opens the player.";
+
+    public const string NowPlaying =
+        "Now playing: music keeps playing while you browse. Tab moves through Play, Previous, Next, Open player and Stop.\n" + NowPlayingKeys;
 
     private const string VideoListKeys =
         "Enter plays. Control+Q adds to the queue, Control+L saves to Watch Later, " +
@@ -45,6 +55,10 @@ public static class KeyboardHelp
         BrowseSection.Channel =>
             "A channel's videos, newest first. Older videos load as you reach the end.\n" + VideoListKeys + "\nAlt+Left, Backspace or Escape goes back.",
         BrowseSection.Queue => Queue,
+        BrowseSection.MusicCharts =>
+            "Charts: the top 100 music videos for your region (Settings, Library). Enter plays a song; music keeps playing while you browse. " + VideoListKeys + "\n" + NowPlayingKeys,
+        BrowseSection.MusicRecent =>
+            "Songs you played in Music, newest first. " + VideoListKeys + "\nDelete removes a song from history.\n" + NowPlayingKeys,
         BrowseSection.ForYou =>
             "Videos picked for you from what you watch, like and subscribe to. Nothing leaves this computer.\n" + VideoListKeys +
             "\nDelete means not interested; Shift+Delete stops recommending that channel. F5 finds new picks.",
@@ -89,7 +103,8 @@ public static class KeyboardHelp
         "Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n" +
         "Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n" +
         "Alt+A or the Applications key opens Actions: like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more.\n" +
-        "Slash closes the player and goes to search. Escape closes the player.";
+        "Slash leaves the player and goes to search. Escape leaves the player: a video stops, music keeps playing.\n" +
+        "Control+M switches between Video and Music.";
 
     private static string Seconds(double value) => value == 1 ? "1 second" : $"{value:0.#} seconds";
 

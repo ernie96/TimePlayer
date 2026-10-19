@@ -3,6 +3,17 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.6.0
+
+- Music is now its own mode: Control+M switches the whole app between Video and Music. Music has its own sections: Control+1 Charts, 2 Recently played, 3 Playlists and 4 Queue.
+- In Music, songs keep playing while you browse. A Now playing bar shows what's on. Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. Alt+P opens the player, and Escape returns to the lists without stopping.
+- The music player has no video area; Up next, Description and Queue fill the window.
+- Switching to Video while a song plays opens it in the video player.
+- Songs that can't be played no longer stop a playlist. TimePlayer says "Skipped" with the title and moves on to the next song; three in a row stop the queue with an explanation.
+- A video YouTube won't play (removed, private or blocked where you are) is reported in about 10 seconds instead of 25 or more, and the message says why.
+- Playback problems are announced once instead of twice.
+- Thank you, Jenni, for the logs that found the skipping, waiting and double-announcement problems above.
+
 ## 1.5.0
 
 - Search from anywhere: press slash (or Control+F). Results open as their own page, and Alt+Left goes back. The Search tab is gone.

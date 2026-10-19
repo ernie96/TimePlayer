@@ -27,6 +27,8 @@ public sealed record HistoryEntry
     public double PositionSeconds { get; init; }
     public DateTimeOffset LastWatchedUtc { get; init; }
     public int WatchCount { get; init; } = 1;
+    /// <summary>Played in Music mode; listed under Music, Recently played.</summary>
+    public bool IsMusic { get; init; }
 
     /// <summary>Treat the last 5% (or last 20 seconds) as finished, so credits don't leave a stale resume point.</summary>
     public bool IsFinished =>

@@ -260,6 +260,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         InitializeCommunitySettings();
         InitializeStepSettings();
         InitializeSoundSettings();
+        if (MusicMode)
+            ApplyAppMode(announce: false);
         InitializeViewState();
         InitializeBrailleAddonPreference();
         _checkForAppUpdatesAtStartup = _configService.CurrentConfig.Update.CheckAtStartup;
@@ -277,6 +279,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             concreteCoord.QueueChanged += OnCoordinatorQueueChanged;
             concreteCoord.QueueEnded += OnCoordinatorQueueEnded;
+            concreteCoord.ItemSkipped += OnCoordinatorItemSkipped;
             concreteCoord.CaptionsChanged += OnCoordinatorCaptionsChanged;
         }
 
@@ -453,8 +456,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         ErrorMessage = null;
         CanRetry = false;
         // The banner (and the focused button in it) disappears; land somewhere useful.
-        if (IsPlayerDialogOpen)
-            RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
+        if (IsPlayerViewVisible)
+            FocusPlayerIfShown();
         else
             RequestFocusResults?.Invoke(this, EventArgs.Empty);
     }
@@ -538,8 +541,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         }
         if (item.Kind == SearchResultKind.Playlist)
         {
-            if (IsPlayerDialogOpen)
-                await ClosePlayerDialogAsync();
+            await LeavePlayerViewAsync();
             await OpenPlaylistAsync(item);
             return;
         }
@@ -559,12 +561,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             Duration = item.Duration.Value;
             UpdateBrailleDisplayLine();
         }
-        IsPlayerDialogOpen = true;
+        OpenPlayerSession();
         LastPlayedUrlOrId = item.Id;
         CanRetry = false;
         ErrorMessage = null;
-        _accessibility.Announce($"Loading {item.Title}", AnnouncementPriority.High);
-        RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
+        _accessibility.Announce(MusicMode ? $"Playing {item.Title}" : $"Loading {item.Title}", AnnouncementPriority.High);
+        FocusPlayerIfShown();
 
         // The coordinator's queue, not the on-screen copy, which updates a moment later.
         bool queued = _playbackCoordinator is PlaybackCoordinator queueOwner
@@ -616,12 +618,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             : YouTubeVideoId.TryParse(url, out var directId)
                 ? new SearchResult { Id = directId.Value, Title = string.Empty, ChannelTitle = string.Empty }
                 : null);
-        IsPlayerDialogOpen = true;
+        OpenPlayerSession();
         LastPlayedUrlOrId = url;
         CanRetry = false;
         ErrorMessage = null;
         _accessibility.Announce("Loading video...", AnnouncementPriority.High);
-        RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
+        FocusPlayerIfShown();
 
         try
         {
@@ -700,9 +702,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         CurrentVideoTitle = item.Title;
         CurrentChannelTitle = item.ChannelTitle;
         SetCurrentLibraryVideo(ToSearchResult(item));
-        IsPlayerDialogOpen = true;
+        OpenPlayerSession();
         _accessibility.Announce($"Loading {item.Title}", AnnouncementPriority.High);
-        RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
+        FocusPlayerIfShown();
 
         await _playbackCoordinator.PlayQueueItemAsync(item.QueueItemId);
         PopulateSubtitleTracks();
@@ -1109,9 +1111,9 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             CurrentVideoTitle = "Built-in Test Pattern (1080p 30fps Color Bars)";
             CurrentChannelTitle = "TimePlayer Built-in Diagnostics";
-            IsPlayerDialogOpen = true;
+            OpenPlayerSession();
             _accessibility.Announce("Loading test pattern...", AnnouncementPriority.High);
-            RequestFocusPlayer?.Invoke(this, EventArgs.Empty);
+            FocusPlayerIfShown();
 
             await _playerEngine.LoadAsync("av://lavfi:testsrc=duration=600:size=1280x720:rate=30");
         }
@@ -1278,6 +1280,18 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         ShowProblem("Playback problem", error.UserMessage);
         StatusAnnouncement = ErrorMessage ?? string.Empty;
+    }
+
+    private void OnCoordinatorItemSkipped(object? sender, QueueSkipEventArgs e)
+    {
+        if (!IsOnUiThread)
+        {
+            _uiContext!.Post(_ => OnCoordinatorItemSkipped(sender, e), null);
+            return;
+        }
+        var why = e.Reason.StartsWith("YouTube says", StringComparison.Ordinal) ? "it isn't available" : "it wouldn't play";
+        if (e.WillContinue)
+            _accessibility.Announce($"Skipped {e.Item.Title}: {why}.", AnnouncementPriority.Medium);
     }
 
     private void OnCoordinatorStatusChanged(object? sender, string status)
@@ -1592,6 +1606,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         {
             concreteCoord.QueueChanged -= OnCoordinatorQueueChanged;
             concreteCoord.QueueEnded -= OnCoordinatorQueueEnded;
+            concreteCoord.ItemSkipped -= OnCoordinatorItemSkipped;
             concreteCoord.CaptionsChanged -= OnCoordinatorCaptionsChanged;
         }
 

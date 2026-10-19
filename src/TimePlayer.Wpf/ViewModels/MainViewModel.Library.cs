@@ -27,7 +27,11 @@ public enum BrowseSection
     /// <summary>Liked videos, your playlists and saved YouTube playlists.</summary>
     Playlists,
     /// <summary>The videos of one playlist, opened from any list; Back returns.</summary>
-    Playlist
+    Playlist,
+    /// <summary>Music: the region's top music videos.</summary>
+    MusicCharts,
+    /// <summary>Music: what was played in Music mode.</summary>
+    MusicRecent
 }
 
 public sealed record SectionTab(BrowseSection Section, string Header, string Shortcut)
@@ -60,17 +64,8 @@ public sealed partial class MainViewModel
     private SearchResult? _currentLibraryVideo;
     private string? _resumeHandledForId;
 
-    public ObservableCollection<SectionTab> SectionTabs { get; } = new()
-    {
-        new(BrowseSection.Featured, "Featured", "Control+1"),
-        new(BrowseSection.ForYou, "For You", "Control+2"),
-        new(BrowseSection.WhatsNew, "What's New", "Control+3"),
-        new(BrowseSection.Channels, "Channels", "Control+4"),
-        new(BrowseSection.Playlists, "Playlists", "Control+5"),
-        new(BrowseSection.WatchLater, "Watch Later", "Control+6"),
-        new(BrowseSection.History, "History", "Control+7"),
-        new(BrowseSection.Queue, "Queue", "Control+8"),
-    };
+    /// <summary>The sections of the current mode; Video and Music each have their own.</summary>
+    public ObservableCollection<SectionTab> SectionTabs { get; } = new(VideoTabs);
 
     public IReadOnlyList<FeaturedCategory> FeaturedCategories { get; } = Enum.GetValues<FeaturedCategory>();
 
@@ -156,7 +151,7 @@ public sealed partial class MainViewModel
     public Task LoadStartSectionQuietlyAsync()
     {
         _quietSectionLoad = true;
-        return ShowSectionAsync(BrowseSection.Featured, moveFocus: false);
+        return ShowSectionAsync(SectionTabs[0].Section, moveFocus: false);
     }
 
     [RelayCommand]
@@ -229,6 +224,14 @@ public sealed partial class MainViewModel
 
                 case BrowseSection.ForYou:
                     await ShowForYouAsync(moveFocus, forceRefresh, token);
+                    break;
+
+                case BrowseSection.MusicCharts:
+                    await ShowMusicChartsAsync(moveFocus, forceRefresh, token);
+                    break;
+
+                case BrowseSection.MusicRecent:
+                    ShowMusicRecent(moveFocus);
                     break;
 
                 case BrowseSection.Playlists:
@@ -639,8 +642,8 @@ public sealed partial class MainViewModel
     {
         item ??= SelectedSearchResult;
         var channelId = item?.Kind == SearchResultKind.Channel ? item.Id : item?.ChannelId;
-        if (IsPlayerDialogOpen && !string.IsNullOrWhiteSpace(channelId))
-            await ClosePlayerDialogAsync();
+        if (IsPlayerViewVisible && !string.IsNullOrWhiteSpace(channelId))
+            await LeavePlayerViewAsync();
         if (item is null || string.IsNullOrWhiteSpace(channelId))
         {
             _accessibility.Announce("The channel for this video is not known yet. Play the video, then press Control+G in the player.", AnnouncementPriority.Medium);
@@ -698,6 +701,7 @@ public sealed partial class MainViewModel
         switch (CurrentSection)
         {
             case BrowseSection.History:
+            case BrowseSection.MusicRecent:
                 _library.RemoveFromHistory(item.Id);
                 _accessibility.Announce($"Removed from history: {item.Title}.", AnnouncementPriority.High);
                 break;
@@ -891,7 +895,7 @@ public sealed partial class MainViewModel
             _accessibility.Announce("The channel is not known yet; try again once the video is playing.", AnnouncementPriority.Medium);
             return;
         }
-        await ClosePlayerDialogAsync();
+        await LeavePlayerViewAsync();
         await OpenChannelAsync(video);
     }
 
@@ -1003,7 +1007,7 @@ public sealed partial class MainViewModel
         var video = CurrentVideo is { } details && details.Id.Value == _currentLibraryVideo.Id
             ? details.ToSearchResult()
             : _currentLibraryVideo;
-        _library.RecordProgress(video, position, Duration, flush);
+        _library.RecordProgress(video, position, Duration, flush, isMusic: MusicMode);
     }
 
     private async Task PersistLibraryPreferencesAsync()

@@ -180,7 +180,7 @@ public partial class MainWindow : Window
 
     private void FocusCurrentList()
     {
-        if (_viewModel.IsPlayerDialogOpen)
+        if (_viewModel.IsPlayerViewVisible)
             return;
         var list = _viewModel.IsQueueSection ? QueueListBox : ResultsListBox;
         if (list.Items.Count == 0)
@@ -254,6 +254,45 @@ public partial class MainWindow : Window
 
     private void PlayerActions_Click(object sender, RoutedEventArgs e) => ShowPlayerActionsMenu();
 
+    private void BackFromPlayer_Click(object sender, RoutedEventArgs e) => _ = _viewModel.LeavePlayerViewAsync();
+
+    /// <summary>
+    /// Playback keys that work from anywhere while something plays: Control+Space, Control+Shift+N and P,
+    /// Alt+P for the player in Music, Control+M to switch modes, and the keyboard's media keys.
+    /// </summary>
+    private bool HandleMusicKey(Key key, ModifierKeys mods)
+    {
+        if (key == Key.M && mods == ModifierKeys.Control)
+        {
+            _viewModel.ToggleMusicMode();
+            return true;
+        }
+        if (!_viewModel.IsPlayerDialogOpen)
+            return false;
+        switch (key)
+        {
+            case Key.MediaPlayPause:
+            case Key.Space when mods == ModifierKeys.Control:
+                _ = _viewModel.TogglePlayPauseAsync();
+                return true;
+            case Key.MediaNextTrack:
+            case Key.N when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                _ = _viewModel.PlayNextOrUpNextAsync();
+                return true;
+            case Key.MediaPreviousTrack:
+            case Key.P when mods == (ModifierKeys.Control | ModifierKeys.Shift):
+                _ = _viewModel.PlayPreviousAsync();
+                return true;
+            case Key.MediaStop:
+                _ = _viewModel.StopPlaybackSessionAsync();
+                return true;
+            case Key.P when mods == ModifierKeys.Alt && !_viewModel.IsPlayerViewVisible:
+                _viewModel.ShowPlayerView();
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>
     /// The player's Actions menu (Alt+A, the Applications key or the Actions button): everything that used to be
     /// a row of buttons. Each item names its shortcut, which keeps working without the menu.
@@ -320,8 +359,7 @@ public partial class MainWindow : Window
     /// <summary>Slash, Control+F or Control+E: the search box, from anywhere. From the player, the player closes first.</summary>
     private async void FocusSearchFromAnywhere()
     {
-        if (_viewModel.IsPlayerDialogOpen)
-            await _viewModel.ClosePlayerDialogAsync();
+        await _viewModel.LeavePlayerViewAsync();
         await Dispatcher.InvokeAsync(() =>
         {
             SearchBox.Focus();
@@ -337,7 +375,7 @@ public partial class MainWindow : Window
     private void ShowAddToPlaylistMenu(SearchResult? item)
     {
         UIElement anchor = Keyboard.FocusedElement as UIElement ?? (UIElement)PlayerActionsButton;
-        if (item is null && _viewModel.IsPlayerDialogOpen && !IsWithin(anchor as DependencyObject, PlayerPanelTabs))
+        if (item is null && _viewModel.IsPlayerViewVisible && !IsWithin(anchor as DependencyObject, PlayerPanelTabs))
             anchor = PlayerActionsButton;
         var menu = new ContextMenu { PlacementTarget = anchor, Placement = PlacementMode.Bottom };
         AutomationProperties.SetName(menu, "Add to playlist");
@@ -404,7 +442,7 @@ public partial class MainWindow : Window
         var focused = Keyboard.FocusedElement as DependencyObject;
         Action[] areas;
         int current;
-        if (_viewModel.IsPlayerDialogOpen)
+        if (_viewModel.IsPlayerViewVisible)
         {
             areas = new Action[]
             {
@@ -424,6 +462,12 @@ public partial class MainWindow : Window
                 () => { if (list.Items.Count > 0) FocusListItem(list); else SearchBox.Focus(); }
             };
             current = IsWithin(focused, SectionTabControl) ? 1 : IsWithin(focused, list) ? 2 : 0;
+            if (NowPlayingBar.IsVisible)
+            {
+                areas = areas.Append(() => NowPlayingPlayPause.Focus()).ToArray();
+                if (IsWithin(focused, NowPlayingBar))
+                    current = areas.Length - 1;
+            }
         }
         if (ErrorBanner.IsVisible)
         {
@@ -441,7 +485,7 @@ public partial class MainWindow : Window
         string title;
         string text;
 
-        if (_viewModel.IsPlayerDialogOpen)
+        if (_viewModel.IsPlayerViewVisible)
         {
             if (IsWithin(focused, UpNextListBox)) (title, text) = ("Up next", KeyboardHelp.UpNext);
             else if (IsWithin(focused, CommentsTree)) (title, text) = ("Comments", KeyboardHelp.Comments);
@@ -449,6 +493,7 @@ public partial class MainWindow : Window
             else if (IsWithin(focused, PlayerQueueListBox)) (title, text) = ("Queue", KeyboardHelp.Queue);
             else (title, text) = ("Player", KeyboardHelp.Player(_viewModel.SmallSeekSeconds, _viewModel.LargeSeekSeconds));
         }
+        else if (IsWithin(focused, NowPlayingBar)) (title, text) = ("Now playing", KeyboardHelp.NowPlaying);
         else if (IsWithin(focused, SearchBox)) (title, text) = ("Search box", KeyboardHelp.SearchBox);
         else if (IsWithin(focused, SectionTabControl)) (title, text) = ("Sections", KeyboardHelp.Sections);
         else (title, text) = (_viewModel.SectionTitle, KeyboardHelp.ForList(_viewModel.CurrentSection));
@@ -510,7 +555,13 @@ public partial class MainWindow : Window
             return;
         }
 
-        e.Handled = _viewModel.IsPlayerDialogOpen
+        if (HandleMusicKey(key, mods))
+        {
+            e.Handled = true;
+            return;
+        }
+
+        e.Handled = _viewModel.IsPlayerViewVisible
             ? HandlePlayerKey(key, mods, focused)
             : HandleLibraryKey(key, mods, focused);
     }
@@ -562,12 +613,6 @@ public partial class MainWindow : Window
             return true;
         }
 
-        if (key == Key.M && mods == ModifierKeys.Control)
-        {
-            _viewModel.ToggleMusicMode();
-            return true;
-        }
-
 
         if (key == Key.F5 && mods == ModifierKeys.None)
         {
@@ -599,11 +644,12 @@ public partial class MainWindow : Window
 
         if (key == Key.Escape && mods == ModifierKeys.None)
         {
-            // From a side panel, Escape returns to the controls; from the controls it closes the player.
+            // From a side panel, Escape returns to the controls; from the controls it leaves the player
+            // (a video stops; music keeps playing behind the lists).
             if (inSidePanel)
                 PlayPauseButton.Focus();
             else
-                _ = _viewModel.ClosePlayerDialogAsync();
+                _ = _viewModel.LeavePlayerViewAsync();
             return true;
         }
 
@@ -675,7 +721,6 @@ public partial class MainWindow : Window
                 case Key.L when !isList: _viewModel.ToggleWatchLaterCurrent(); return true;
                 case Key.K when !isList: _viewModel.ToggleLikeCurrent(); return true;
                 case Key.P when !isList: _viewModel.ShowAddToPlaylistMenu(null); return true;
-                case Key.M: _viewModel.ToggleMusicMode(); return true;
                 case Key.G when !isList: _ = _viewModel.OpenCurrentChannelAsync(); return true;
                 case Key.Left when !arrowsBelongToControl: _ = _viewModel.SeekLargeBackwardAsync(); return true;
                 case Key.Right when !arrowsBelongToControl: _ = _viewModel.SeekLargeForwardAsync(); return true;

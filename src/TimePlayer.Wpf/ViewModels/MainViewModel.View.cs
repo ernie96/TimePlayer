@@ -25,13 +25,13 @@ public sealed partial class MainViewModel
     }
 
     public string WindowTitle => IsPlayerDialogOpen && !string.IsNullOrWhiteSpace(CurrentVideoTitle)
-        ? $"{CurrentVideoTitle} - TimePlayer"
-        : "TimePlayer";
+        ? $"{CurrentVideoTitle} - TimePlayer {ModeName}"
+        : $"TimePlayer {ModeName}";
 
     public bool IsQueueSection => CurrentSection == BrowseSection.Queue;
     public bool IsResultsListVisible => !IsQueueSection && !IsSectionEmpty;
     public bool IsQueueListVisible => IsQueueSection && PlaybackQueue.Count > 0;
-    public bool CanRemoveFromSection => CurrentSection is BrowseSection.History or BrowseSection.WatchLater or BrowseSection.Channels
+    public bool CanRemoveFromSection => CurrentSection is BrowseSection.History or BrowseSection.MusicRecent or BrowseSection.WatchLater or BrowseSection.Channels
         or BrowseSection.Playlists or BrowseSection.ForYou || IsOpenPlaylistInLibrary;
 
     public bool IsSectionEmpty => IsQueueSection
@@ -59,7 +59,6 @@ public sealed partial class MainViewModel
 
     partial void OnIsSectionLoadingChanged(bool value) => RaiseListStateChanged();
 
-    partial void OnIsPlayerDialogOpenChanged(bool value) => OnPropertyChanged(nameof(WindowTitle));
     partial void OnCurrentVideoTitleChanged(string value) => OnPropertyChanged(nameof(WindowTitle));
 
     // --- Player labels ---

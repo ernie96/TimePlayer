@@ -171,6 +171,7 @@ public sealed partial class MainViewModel
             return;
         _ = _playerEngine.SetVideoEnabledAsync(!value);
         SoundChanged();
+        ApplyAppMode(announce: true);
     }
 
     /// <summary>Editing the custom sound makes it the one you hear, so the change is audible right away.</summary>
@@ -240,8 +241,8 @@ public sealed partial class MainViewModel
     {
         MusicMode = !MusicMode;
         _accessibility.Announce(MusicMode
-            ? $"Music mode on: no video, {ActiveSoundPreset} sound."
-            : $"Music mode off: video back, {ActiveSoundPreset} sound.", AnnouncementPriority.High);
+            ? $"Music. {ActiveSoundPreset} sound."
+            : $"Video. {ActiveSoundPreset} sound.", AnnouncementPriority.High);
     }
 
     /// <summary>E and Shift+E in the player: the next or previous sound preset for the current mode.</summary>
