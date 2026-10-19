@@ -624,6 +624,14 @@ public class MainViewModelTests
         Assert.Null(vm.ErrorMessage);
     }
 
+    /// <summary>Sound changes apply after a short pause; build machines can be much slower than a desktop.</summary>
+    private static async Task WaitUntil(Func<bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (!condition() && DateTime.UtcNow < deadline)
+            await Task.Delay(25);
+    }
+
     [Fact]
     public async Task Sound_PresetMusicModeAndCustom_ReachThePlayer()
     {
@@ -631,25 +639,25 @@ public class MainViewModelTests
         Assert.Equal(string.Empty, _playerEngine.AudioFilters);
 
         vm.VideoSoundPreset = "Bass boost";
-        await Task.Delay(500);
+        await WaitUntil(() => _playerEngine.AudioFilters.Contains("bass=g=6"));
         Assert.Contains("bass=g=6", _playerEngine.AudioFilters);
         Assert.Equal("Bass boost", _configService.CurrentConfig.Audio.Preset);
 
         vm.ToggleMusicMode();
-        await Task.Delay(500);
+        await WaitUntil(() => _playerEngine.AudioFilters.Contains("extrastereo"));
         Assert.False(_playerEngine.VideoEnabled);
         Assert.Contains("extrastereo", _playerEngine.AudioFilters); // the Music preset
         Assert.Contains(_accessibility.Announcements, a => a.message == "Music mode on: no video, Music sound.");
 
         // Editing the custom sound makes it what you hear in the current mode.
         vm.CustomCrossfeed = true;
-        await Task.Delay(500);
+        await WaitUntil(() => _playerEngine.AudioFilters == "@timeplayer:lavfi=[bs2b=profile=default]");
         Assert.Equal("Custom", vm.MusicSoundPreset);
         Assert.Equal("Bass boost", vm.VideoSoundPreset);
         Assert.Equal("@timeplayer:lavfi=[bs2b=profile=default]", _playerEngine.AudioFilters);
 
         vm.ToggleMusicMode();
-        await Task.Delay(500);
+        await WaitUntil(() => _playerEngine.AudioFilters.Contains("bass=g=6"));
         Assert.True(_playerEngine.VideoEnabled);
         Assert.Contains("bass=g=6", _playerEngine.AudioFilters);
     }
