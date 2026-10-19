@@ -145,8 +145,8 @@ public sealed partial class MainViewModel
 
     partial void OnHideShortsInFeedChanged(bool value)
     {
-        if (CurrentSection == BrowseSection.WhatsNew)
-            _ = ShowSectionAsync(BrowseSection.WhatsNew, moveFocus: false);
+        if (CurrentSection is BrowseSection.WhatsNew or BrowseSection.Featured)
+            _ = ShowSectionAsync(CurrentSection, moveFocus: false);
     }
 
     // --- Section navigation ---
@@ -280,7 +280,7 @@ public sealed partial class MainViewModel
 
         if (!forceRefresh && _featuredCache.TryGetValue(category, out var cached) && DateTimeOffset.UtcNow - cached.Fetched < FeaturedCacheLifetime)
         {
-            ShowItems(cached.Items, moveFocus);
+            ShowItems(WithoutHiddenShorts(cached.Items), moveFocus);
             ConfigureFeaturedPaging(category, cached.NextPage);
             return;
         }
@@ -292,7 +292,7 @@ public sealed partial class MainViewModel
         if (result.IsSuccess)
         {
             _featuredCache[category] = (DateTimeOffset.UtcNow, result.Value.Items, result.Value.NextPageToken);
-            ShowItems(result.Value.Items, moveFocus);
+            ShowItems(WithoutHiddenShorts(result.Value.Items), moveFocus);
             ConfigureFeaturedPaging(category, result.Value.NextPageToken);
         }
         else
@@ -318,9 +318,12 @@ public sealed partial class MainViewModel
             if (page.IsFailure)
                 return (Array.Empty<SearchResult>(), false);
             next = page.Value.NextPageToken;
-            return (page.Value.Items, next is not null);
+            return (WithoutHiddenShorts(page.Value.Items), next is not null);
         });
     }
+
+    private IReadOnlyList<SearchResult> WithoutHiddenShorts(IReadOnlyList<SearchResult> items) =>
+        HideShortsInFeed ? items.Where(v => !v.IsShort).ToList() : items;
 
     private async Task ShowWhatsNewAsync(bool moveFocus, bool forceRefresh, CancellationToken token)
     {
@@ -908,6 +911,10 @@ public sealed partial class MainViewModel
             parts.Add($"uploaded {AccessibleTextFormatter.FormatAgeSpoken(uploaded, DateTimeOffset.UtcNow)}");
         if (CurrentVideo?.ViewCount is { } views)
             parts.Add($"{views:N0} views");
+        if (CurrentVotes is { } votes)
+            parts.Add(votes.Spoken);
+        if (SegmentSummary() is { } segments)
+            parts.Add(segments);
         if (IsCurrentVideoLiked)
             parts.Add("liked");
         if (IsCurrentVideoInWatchLater)
@@ -946,6 +953,7 @@ public sealed partial class MainViewModel
             _resumeHandledForId = id;
             if (ResumePlayback && RecordHistory && _library.GetHistory(id)?.ResumePosition is { } resume)
             {
+                PauseSegmentHandlingBriefly();
                 _ = ResumeAtAsync(resume);
             }
         }

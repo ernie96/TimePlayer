@@ -3,6 +3,17 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.3.0
+
+- SponsorBlock: sponsor reads are skipped automatically, and other marked parts such as self-promotion are announced with how long they last. S skips the part playing now, H jumps to the video's highlight. Each kind can be set to skip, tell you, or do nothing.
+- Likes and estimated dislikes from Return YouTube Dislike, at the top of the description and when you press I.
+- Settings is now split into pages: Playback, Speech and braille, Library, SponsorBlock and dislikes, and Updates and help. Control+Tab moves between them.
+- New settings: how far the arrow keys seek, how much Up and Down change the volume, and the region chosen from a list of countries.
+- Screen readers now hear the name of every list in Settings; before, they only heard "combo box". Video quality reads as "720p, HD" instead of "P720".
+- Hide Shorts now also hides them in Featured.
+- Enter no longer closes Settings by accident; Escape still does.
+- Fixed: "Not interested" could freeze TimePlayer while For You was still loading.
+
 ## 1.2.2
 
 - Fixed "GitHub answered 404" when checking for updates. Copies first installed from an early test build had saved a placeholder update address in their settings, which kept pointing at a place that doesn't exist. TimePlayer now ignores that address and always finds official updates.

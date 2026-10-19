@@ -75,17 +75,20 @@ public static class KeyboardHelp
     public const string Queue =
         "Videos play in this order. Enter plays one now, Delete removes it. The Applications key also offers Clear queue.";
 
-    public const string Player =
-        "K plays or pauses (Space too, unless a button has focus). Left and Right move 5 seconds, Control+Left and Right 30.\n" +
+    public static string Player(double smallSeek, double largeSeek) =>
+        $"K plays or pauses (Space too, unless a button has focus). Left and Right move {Seconds(smallSeek)}, Control+Left and Right {Seconds(largeSeek)}.\n" +
         "0 to 9 jump to 0 to 90 percent. Home starts over. Up and Down change the volume, M mutes.\n" +
         "T says the time, I says what is playing, U says what plays next.\n" +
         "Shift+N next video, Shift+P previous. Shift+Period faster, Shift+Comma slower.\n" +
-        "On the Position slider, Left and Right move 5 seconds and Page Up and Page Down 30.\n" +
+        $"On the Position slider, Left and Right move {Seconds(smallSeek)} and Page Up and Page Down {Seconds(largeSeek)}.\n" +
         "Alt+U Up next, Alt+C comments, Alt+D description, Alt+Q queue. F6 moves between the controls, those panels and the top bar.\n" +
         "A turns autoplay on or off. C turns reading captions aloud on or off.\n" +
+        "S skips the SponsorBlock segment playing now, H jumps to the video's highlight.\n" +
         "Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n" +
         "Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n" +
         "Escape closes the player.";
+
+    private static string Seconds(double value) => value == 1 ? "1 second" : $"{value:0.#} seconds";
 
     public const string UpNext =
         "Related videos. Enter plays one now, Control+Q queues it, Control+K likes it, Control+P adds it to a playlist. With autoplay on, the first unwatched one plays when the queue ends.\n" +

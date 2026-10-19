@@ -57,6 +57,8 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Library.IDiscoveryService, Library.DiscoveryService>();
         services.TryAddSingleton<Library.IWatchPageService, Library.WatchPageService>();
         services.TryAddSingleton<Library.IPlaylistService, Library.PlaylistService>();
+        services.TryAddSingleton<Community.ISponsorBlockService, Community.SponsorBlockService>();
+        services.TryAddSingleton<Community.IDislikeService, Community.DislikeService>();
         services.TryAddSingleton<Library.IRecommendationService, Library.RecommendationService>();
         services.TryAddSingleton<Library.IDownloadService, Library.DownloadService>();
         services.TryAddSingleton<Updates.IUpdateService, Updates.UpdateService>();

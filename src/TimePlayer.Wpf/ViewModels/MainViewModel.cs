@@ -10,6 +10,7 @@ using TimePlayer.Core.Backends.YtDlp;
 using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Contracts;
+using TimePlayer.Core.Community;
 using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
@@ -218,8 +219,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         IDownloadService downloads,
         IPlaylistService playlists,
         IRecommendationService recommendations,
+        ISponsorBlockService sponsorBlock,
+        IDislikeService dislikes,
         ILogger<MainViewModel> logger)
     {
+        _sponsorBlock = sponsorBlock ?? throw new ArgumentNullException(nameof(sponsorBlock));
+        _dislikes = dislikes ?? throw new ArgumentNullException(nameof(dislikes));
         _playlists = playlists ?? throw new ArgumentNullException(nameof(playlists));
         _recommendations = recommendations ?? throw new ArgumentNullException(nameof(recommendations));
         _downloads = downloads ?? throw new ArgumentNullException(nameof(downloads));
@@ -252,6 +257,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         _brailleDisplayLine = _brailleTrack.GenerateDisplayLine(TimeSpan.Zero, TimeSpan.Zero, false, false);
         InitializeLibraryPreferences();
         InitializePlayerPreferences();
+        InitializeCommunitySettings();
+        InitializeStepSettings();
         InitializeViewState();
         InitializeBrailleAddonPreference();
         _checkForAppUpdatesAtStartup = _configService.CurrentConfig.Update.CheckAtStartup;
@@ -1176,6 +1183,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         Duration = e.Duration;
         UpdateBrailleDisplayLine();
         OnLibraryPositionChanged(e.Position);
+        OnSegmentPosition(e.Position);
     }
 
     private void OnEngineSubtitleTextChanged(object? sender, string text)

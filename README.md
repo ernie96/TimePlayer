@@ -24,6 +24,8 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   For You (local recommendations) and Playlists (Liked videos, your own and saved YouTube playlists).
 - **Player**: Up next with autoplay, comments with threaded replies, description, captions, speed, share links that
   start at the current time, and audio or video downloads.
+- **SponsorBlock**: sponsor reads and other marked segments are skipped or announced (`S` skips, `H` jumps to the
+  highlight), each category configurable in Settings. **Return YouTube Dislike** adds estimated dislike counts.
 - **Braille progress**: an NVDA add-on shows playback position as a "lower g" (⠶) on the braille display; the routing
   keys seek to that point and `Ctrl+Shift+D` toggles it.
 - **Updates itself** from GitHub Releases, with every download checked against an Ed25519 signature.
@@ -136,7 +138,7 @@ dotnet run --project src/TimePlayer.Wpf
 | `Applications` / `Shift+F10` | Every action for the item |
 | `Alt+Left`, `Backspace`, `Escape` | Back from a channel or playlist page |
 | `F5` | Refresh the section |
-| `F2` | Settings (a normal dialog; Escape closes and saves) |
+| `F2` | Settings: Playback, Speech and braille, Library, SponsorBlock and dislikes, Updates and help (`Ctrl+Tab` between pages; Escape closes and saves) |
 
 Lists keep loading as you reach the end: search results, channel pages, playlists and comments are not limited to the first 20.
 
@@ -153,6 +155,7 @@ Lists keep loading as you reach the end: search results, channel pages, playlist
 | `Shift+N` / `Shift+P` | Next (queue, then Up next) / previous |
 | `Alt+U`, `Alt+C`, `Alt+D`, `Alt+Q` | Up next, Comments, Description, Queue panels |
 | `A` | Autoplay on/off (plays the first unwatched related video when the queue ends) |
+| `S` / `H` | Skip the SponsorBlock segment playing now / jump to the highlight |
 | `C` | Read captions aloud on/off (off by default) |
 | `Ctrl+S` / `Ctrl+L` / `Ctrl+G` | Subscribe, Watch Later, go to channel |
 | `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
@@ -197,6 +200,16 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 - **History** with **resume**: videos continue where you left off ("Resuming at 4 minutes 12 seconds. Press Home to start from the beginning"),
   and lists say "Watched" or "Resume at ..." before the title.
 - **Watch Later** list and **channel pages** reachable from any video.
+
+## SponsorBlock and Return YouTube Dislike
+
+- **SponsorBlock** ([sponsor.ajay.app](https://sponsor.ajay.app)): segments are fetched through the hash-prefix endpoint, so
+  only the first four hex digits of the SHA-256 of the video id are sent. Each category (sponsor, self-promotion, reminders to
+  like or subscribe, intro, outro, preview, filler, non-music) can be skipped automatically, announced (`S` skips it) or ignored;
+  the highlight and whole-video labels can be announced. A skipped segment plays if you seek back into it. Skipping waits for the
+  resume jump, so it never undoes "continue where I left off".
+- **Return YouTube Dislike** ([returnyoutubedislike.com](https://returnyoutubedislike.com)): likes and estimated dislikes appear at
+  the top of the description and in the `I` summary.
 
 ---
 

@@ -45,7 +45,10 @@ public sealed class RecommendationService : IRecommendationService
     private readonly IDiscoveryService _discovery;
     private readonly ILogger<RecommendationService> _logger;
     private readonly Func<DateTimeOffset> _clock;
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    /// <summary>One build at a time; it can take seconds, so it never guards the cache itself.</summary>
+    private readonly SemaphoreSlim _buildGate = new(1, 1);
+    /// <summary>Guards <see cref="_cache"/>; held only briefly, so Not interested never waits on a build.</summary>
+    private readonly object _cacheLock = new();
     private CacheFile? _cache;
 
     public RecommendationService(ILibraryService library, IWatchPageService watchPage, IDiscoveryService discovery, ILogger<RecommendationService> logger)
@@ -67,8 +70,11 @@ public sealed class RecommendationService : IRecommendationService
     {
         get
         {
-            _cache ??= LoadCache();
-            return _cache is { Videos.Count: > 0 } c && _clock() - c.FetchedUtc < CacheLifetime;
+            lock (_cacheLock)
+            {
+                _cache ??= LoadCache();
+                return _cache is { Videos.Count: > 0 } c && _clock() - c.FetchedUtc < CacheLifetime;
+            }
         }
     }
 
@@ -76,37 +82,40 @@ public sealed class RecommendationService : IRecommendationService
 
     public async Task<Recommendations> GetAsync(RecommendationOptions options, IProgress<int>? progress = null, CancellationToken cancellationToken = default)
     {
-        await _gate.WaitAsync(cancellationToken);
+        await _buildGate.WaitAsync(cancellationToken);
         try
         {
-            _cache ??= LoadCache();
-            if (!options.Refresh && _cache is { } cached && _clock() - cached.FetchedUtc < CacheLifetime && cached.Videos.Count > 0)
-                return new Recommendations(Filter(cached.Videos, options).ToList(), cached.FetchedUtc, cached.IsPersonal);
+            lock (_cacheLock)
+            {
+                _cache ??= LoadCache();
+                if (!options.Refresh && _cache is { } cached && _clock() - cached.FetchedUtc < CacheLifetime && cached.Videos.Count > 0)
+                    return new Recommendations(Filter(cached.Videos, options).ToList(), cached.FetchedUtc, cached.IsPersonal);
+            }
 
             var fresh = await BuildAsync(options, progress, cancellationToken);
-            _cache = new CacheFile { FetchedUtc = fresh.FetchedUtc, IsPersonal = fresh.IsPersonal, Videos = fresh.Videos.ToList() };
-            SaveCache();
+            // Anything marked Not interested while this was being built stays out.
+            fresh = fresh with { Videos = Filter(fresh.Videos, options).ToList() };
+            lock (_cacheLock)
+            {
+                _cache = new CacheFile { FetchedUtc = fresh.FetchedUtc, IsPersonal = fresh.IsPersonal, Videos = fresh.Videos.ToList() };
+                SaveCache();
+            }
             return fresh;
         }
         finally
         {
-            _gate.Release();
+            _buildGate.Release();
         }
     }
 
     public void Forget(Func<SearchResult, bool> predicate)
     {
-        _gate.Wait();
-        try
+        lock (_cacheLock)
         {
             _cache ??= LoadCache();
             if (_cache is null || _cache.Videos.RemoveAll(v => predicate(v)) == 0)
                 return;
             SaveCache();
-        }
-        finally
-        {
-            _gate.Release();
         }
     }
 

@@ -66,7 +66,16 @@ public sealed partial class MainViewModel
 
     public string PlayPauseButtonText => PlaybackState == PlaybackState.Playing ? "Pause" : "Play";
     public string MuteButtonText => IsMuted ? "Unmute" : "Mute";
-    public string VideoDescriptionText => string.IsNullOrWhiteSpace(VideoDescription) ? "No description." : VideoDescription;
+    public string VideoDescriptionText
+    {
+        get
+        {
+            var description = string.IsNullOrWhiteSpace(VideoDescription) ? "No description." : VideoDescription;
+            return CurrentVotes is { } votes
+                ? $"{votes.Spoken} (dislikes estimated by Return YouTube Dislike).\n\n{description}"
+                : description;
+        }
+    }
 
     partial void OnPlaybackStateChanged(PlaybackState value) => OnPropertyChanged(nameof(PlayPauseButtonText));
     partial void OnIsMutedChanged(bool value) => OnPropertyChanged(nameof(MuteButtonText));

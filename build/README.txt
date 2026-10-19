@@ -45,6 +45,7 @@ Control+D downloads.
 
 Player: K plays and pauses, Left and Right seek, 0 to 9 jump through the video, T says the
 time, Alt+U, Alt+C, Alt+D and Alt+Q open Up next, Comments, Description and Queue.
+S skips a sponsor or other SponsorBlock segment, H jumps to the video's highlight.
 Escape goes back.
 
 
@@ -66,6 +67,16 @@ YouTube data" walks you through it; then Import from Google Takeout and choose t
 Google sends you. It brings subscriptions, playlists, liked videos and watch history.
 NewPipe, LibreTube, FreeTube and OPML subscription files can be imported in Channels
 (Control+4), and Export subscriptions saves a file NewPipe can read.
+
+
+SponsorBlock and dislikes
+-------------------------
+
+SponsorBlock skips sponsor reads automatically and tells you about other marked parts, such
+as self-promotion, with how long they last; press S to skip one. Each kind can be set to skip,
+tell you, or do nothing in Settings (F2), on the "SponsorBlock and dislikes" page.
+Likes and estimated dislikes (from Return YouTube Dislike) are read at the top of the
+description and when you press I in the player.
 
 
 Downloads

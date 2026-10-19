@@ -12,6 +12,52 @@ public record AppConfig
     public AccessibilityConfig Accessibility { get; init; } = new();
     public LibraryConfig Library { get; init; } = new();
     public UpdateConfig Update { get; init; } = new();
+    public SponsorBlockConfig SponsorBlock { get; init; } = new();
+    public DislikeConfig Dislikes { get; init; } = new();
+}
+
+/// <summary>What to do when a SponsorBlock segment of a category starts.</summary>
+public enum SegmentAction
+{
+    /// <summary>Ignore it.</summary>
+    Off,
+    /// <summary>Say what started and how long it lasts; S skips it.</summary>
+    Announce,
+    /// <summary>Skip it straight away.</summary>
+    Skip
+}
+
+/// <summary>
+/// SponsorBlock (sponsor.ajay.app): community-submitted segments such as sponsor reads, skipped or
+/// announced. Videos are looked up by the first characters of a hash of their id, so the server
+/// never learns which video is playing.
+/// </summary>
+public record SponsorBlockConfig
+{
+    public bool Enabled { get; init; } = true;
+    public string ServerUrl { get; init; } = "https://sponsor.ajay.app";
+    /// <summary>Say "Skipped sponsor, 40 seconds" after an automatic skip.</summary>
+    public bool AnnounceSkips { get; init; } = true;
+    public SegmentAction Sponsor { get; init; } = SegmentAction.Skip;
+    public SegmentAction SelfPromotion { get; init; } = SegmentAction.Announce;
+    public SegmentAction Interaction { get; init; } = SegmentAction.Announce;
+    public SegmentAction Intro { get; init; } = SegmentAction.Off;
+    public SegmentAction Outro { get; init; } = SegmentAction.Off;
+    public SegmentAction Preview { get; init; } = SegmentAction.Off;
+    public SegmentAction Filler { get; init; } = SegmentAction.Off;
+    /// <summary>Non-music parts of music videos.</summary>
+    public SegmentAction NonMusic { get; init; } = SegmentAction.Off;
+    /// <summary>Say when a video has a highlight (H jumps to it).</summary>
+    public bool AnnounceHighlight { get; init; } = true;
+    /// <summary>Say when the whole video is labeled, e.g. as sponsored or exclusive access.</summary>
+    public bool AnnounceWholeVideoLabels { get; init; } = true;
+}
+
+/// <summary>Return YouTube Dislike (returnyoutubedislike.com): estimated dislike counts.</summary>
+public record DislikeConfig
+{
+    public bool Enabled { get; init; } = true;
+    public string ApiUrl { get; init; } = "https://returnyoutubedislikeapi.com";
 }
 
 public record UpdateConfig

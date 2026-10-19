@@ -219,7 +219,27 @@ THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ---
 
-## 8. Inno Setup
+## 8. SponsorBlock
+
+* **Project**: SponsorBlock, by Ajay Ramachandran and contributors
+* **URL**: https://sponsor.ajay.app (source: https://github.com/ajayyy/SponsorBlock)
+* **Used for**: skip segments, read from its public API. No SponsorBlock code is included.
+* **Data license**: the SponsorBlock database is available under Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  (https://creativecommons.org/licenses/by-nc-sa/4.0/). TimePlayer is free and non-commercial, and credits SponsorBlock
+  wherever its segments are used.
+
+---
+
+## 9. Return YouTube Dislike
+
+* **Project**: Return YouTube Dislike
+* **URL**: https://returnyoutubedislike.com (API: https://returnyoutubedislikeapi.com)
+* **Used for**: estimated dislike counts, read from its public API with attribution, as its API documentation asks.
+  No Return YouTube Dislike code is included.
+
+---
+
+## 10. Inno Setup
 
 * **Project**: Inno Setup, by Jordan Russell and Martijn Laan
 * **URL**: https://jrsoftware.org/isinfo.php

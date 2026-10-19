@@ -86,6 +86,7 @@ public sealed partial class MainViewModel
         CommentsStatus = "Open this tab to load comments.";
         OnPropertyChanged(nameof(CanLoadMoreComments));
 
+        ResetCommunityData(videoId, _watchPageCts.Token);
         if (videoId is null)
             return;
 
@@ -380,6 +381,7 @@ public sealed partial class MainViewModel
         if (IsPlayerDialogOpen && PlaybackState is PlaybackState.Playing or PlaybackState.Paused)
             RecordCurrentProgress(CurrentTime, flush: true);
         _resumeHandledForId = null;
+        _segments.Rewind();
     }
 
     /// <summary>U in the player: what autoplay would play next, without moving focus.</summary>

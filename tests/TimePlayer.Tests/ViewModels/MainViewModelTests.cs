@@ -75,6 +75,8 @@ public class MainViewModelTests
     private readonly FakeDownloadService _downloads = new();
     private readonly FakePlaylistService _playlists = new();
     private readonly FakeRecommendationService _recommendations = new();
+    private readonly FakeSponsorBlockService _sponsorBlock = new();
+    private readonly FakeDislikeService _dislikes = new();
 
     public MainViewModelTests()
     {
@@ -113,6 +115,8 @@ public class MainViewModelTests
             _downloads,
             _playlists,
             _recommendations,
+            _sponsorBlock,
+            _dislikes,
             NullLogger<MainViewModel>.Instance);
     }
 
@@ -532,6 +536,70 @@ public class MainViewModelTests
         Assert.Equal(24, vm.SearchResults.Count);
         Assert.Contains(_discovery.FeaturedRequests, r => r.Category == FeaturedCategory.Music && r.Token == "1");
         Assert.False(vm.CanLoadMore);
+    }
+
+    [Fact]
+    public async Task SponsorBlock_SkipsSponsorAnnouncesSelfPromoAndShowsVotes()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        _sponsorBlock.Segments["jNQXAC9IVRw"] = new()
+        {
+            new(30, 60, TimePlayer.Core.Community.SegmentCategory.Sponsor, TimePlayer.Core.Community.SegmentKind.Skip, "a"),
+            new(90, 100, TimePlayer.Core.Community.SegmentCategory.SelfPromotion, TimePlayer.Core.Community.SegmentKind.Skip, "b"),
+            new(150, 150, TimePlayer.Core.Community.SegmentCategory.Highlight, TimePlayer.Core.Community.SegmentKind.Highlight, "h")
+        };
+        _dislikes.Votes["jNQXAC9IVRw"] = new TimePlayer.Core.Community.VideoVotes(1200, 34);
+
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+        Assert.StartsWith("1,200 likes, 34 dislikes", vm.VideoDescriptionText.Replace(' ', ','));
+
+        await _playerEngine.SeekAsync(TimeSpan.FromSeconds(35));
+        Assert.Equal(TimeSpan.FromSeconds(60), _playerEngine.CurrentTime);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Skipped sponsor, 30 seconds.");
+
+        await _playerEngine.SeekAsync(TimeSpan.FromSeconds(91));
+        Assert.Equal(TimeSpan.FromSeconds(91), _playerEngine.CurrentTime);
+        Assert.Contains(_accessibility.Announcements, a => a.message == "Self-promotion, 10 seconds. S skips it.");
+
+        await vm.SkipCurrentSegmentAsync();
+        Assert.Equal(TimeSpan.FromSeconds(100), _playerEngine.CurrentTime);
+
+        await vm.JumpToHighlightAsync();
+        Assert.Equal(TimeSpan.FromSeconds(150), _playerEngine.CurrentTime);
+    }
+
+    [Fact]
+    public async Task SponsorBlock_OffInSettings_DoesNotSkip()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        _sponsorBlock.Segments["jNQXAC9IVRw"] = new()
+        {
+            new(30, 60, TimePlayer.Core.Community.SegmentCategory.Sponsor, TimePlayer.Core.Community.SegmentKind.Skip, "a")
+        };
+        vm.SponsorBlockEnabled = false;
+
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+        await _playerEngine.SeekAsync(TimeSpan.FromSeconds(35));
+
+        Assert.Equal(TimeSpan.FromSeconds(35), _playerEngine.CurrentTime);
+        Assert.False(_configService.CurrentConfig.SponsorBlock.Enabled);
+    }
+
+    [Fact]
+    public async Task SettingsSteps_ChangeHowFarArrowsSeek()
+    {
+        await using var vm = CreateViewModel();
+        await vm.InitializePlayerEngineAsync((nint)1);
+        await vm.PlaySearchResultAsync(Video("jNQXAC9IVRw", "Me at the zoo"));
+        vm.SmallSeekSeconds = 10;
+
+        await vm.SeekSmallForwardAsync();
+
+        Assert.Equal(10, _configService.CurrentConfig.Playback.SmallSeekSeconds);
+        Assert.Equal(TimeSpan.FromSeconds(10), _playerEngine.CurrentTime);
+        Assert.Contains(vm.RegionChoices, r => r.Value == "GB" && r.Label == "United Kingdom (GB)");
     }
 
     [Fact]

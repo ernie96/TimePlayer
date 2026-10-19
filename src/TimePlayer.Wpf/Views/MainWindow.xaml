@@ -509,7 +509,7 @@
                             <Slider x:Name="SeekSlider" Grid.Column="1" Minimum="0"
                                     Maximum="{Binding DurationSeconds}"
                                     Value="{Binding SliderSeconds, Mode=TwoWay}"
-                                    SmallChange="5" LargeChange="30" IsMoveToPointEnabled="True"
+                                    SmallChange="{Binding SmallSeekSeconds}" LargeChange="{Binding LargeSeekSeconds}" IsMoveToPointEnabled="True"
                                     VerticalAlignment="Center"
                                     AutomationProperties.Name="Position"/>
                             <TextBlock Grid.Column="2" Text="{Binding DurationText}" Foreground="#A1A1AA" FontSize="13" VerticalAlignment="Center" Margin="10,0,0,0"/>

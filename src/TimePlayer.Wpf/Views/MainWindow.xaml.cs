@@ -362,7 +362,7 @@ public partial class MainWindow : Window
             else if (IsWithin(focused, CommentsTree)) (title, text) = ("Comments", KeyboardHelp.Comments);
             else if (IsWithin(focused, DescriptionBox)) (title, text) = ("Description", KeyboardHelp.Description);
             else if (IsWithin(focused, PlayerQueueListBox)) (title, text) = ("Queue", KeyboardHelp.Queue);
-            else (title, text) = ("Player", KeyboardHelp.Player);
+            else (title, text) = ("Player", KeyboardHelp.Player(_viewModel.SmallSeekSeconds, _viewModel.LargeSeekSeconds));
         }
         else if (IsWithin(focused, SearchBox)) (title, text) = ("Search box", KeyboardHelp.SearchBox);
         else if (IsWithin(focused, SectionTabControl)) (title, text) = ("Sections", KeyboardHelp.Sections);
@@ -595,6 +595,8 @@ public partial class MainWindow : Window
             case Key.U: _viewModel.AnnounceUpNext(); return true;
             case Key.A: _viewModel.ToggleAutoplay(); return true;
             case Key.C: _viewModel.ToggleSpeakCaptions(); return true;
+            case Key.S: _ = _viewModel.SkipCurrentSegmentAsync(); return true;
+            case Key.H: _ = _viewModel.JumpToHighlightAsync(); return true;
             case Key.Home when !arrowsBelongToControl && !isList: _ = _viewModel.RestartFromBeginningAsync(); return true;
             case Key.Left when !arrowsBelongToControl: _ = _viewModel.SeekSmallBackwardAsync(); return true;
             case Key.Right when !arrowsBelongToControl: _ = _viewModel.SeekSmallForwardAsync(); return true;
