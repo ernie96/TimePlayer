@@ -107,6 +107,12 @@ public sealed partial class UpdateFlow
             return;
         }
 
+        if (SingleInstance.OtherCopiesRunning() > 0)
+        {
+            _accessibility.Announce(T("Another TimePlayer window is open, and the update can't install while it is. Close it, then check for updates again."), AnnouncementPriority.High);
+            return;
+        }
+
         var start = _updates.StartInstall(download.Value);
         if (!start.IsSuccess)
         {

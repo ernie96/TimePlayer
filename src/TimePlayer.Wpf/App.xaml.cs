@@ -40,8 +40,17 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
-        _runningMutex = new Mutex(initiallyOwned: false, "TimePlayerRunning");
-
+        // One TimePlayer at a time. A second copy would play over the first, and while any copy is open
+        // the installer refuses to update (it checks this mutex), so updates failed silently.
+        _runningMutex = new Mutex(initiallyOwned: true, "TimePlayerRunning", out bool createdNew);
+        if (!createdNew)
+        {
+            SingleInstance.BringOtherCopyToFront();
+            _runningMutex.Dispose();
+            _runningMutex = null;
+            Shutdown();
+            return;
+        }
 
         var services = new ServiceCollection();
         ConfigureServices(services);
@@ -174,6 +183,11 @@ public partial class App : Application
             {
                 _logger?.LogWarning(ex, "Error while shutting down services.");
             }
+        }
+        if (_runningMutex is { } mutex)
+        {
+            try { mutex.ReleaseMutex(); } catch (ApplicationException) { }
+            mutex.Dispose();
         }
         base.OnExit(e);
     }

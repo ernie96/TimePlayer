@@ -152,6 +152,11 @@ public partial class MainWindow : Window
         SearchBox.Focus();
         _ = _viewModel.LoadStartSectionQuietlyAsync();
 
+        if (TimePlayer.Core.Updates.UpdateService.TakeInstallFailure() is { } setupCode)
+        {
+            _accessibility.Announce(T("The update didn't install (installer code {0}). Close every TimePlayer window, open TimePlayer again and check for updates.", setupCode), AnnouncementPriority.High);
+        }
+
         if (_viewModel.ShouldAskAboutBrailleAddon)
             Dispatcher.BeginInvoke(AskAboutBrailleAddon, DispatcherPriority.ApplicationIdle);
 

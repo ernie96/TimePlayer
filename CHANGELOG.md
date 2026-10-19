@@ -3,6 +3,11 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.7.1
+
+- Fixed: updates could fail silently when a second TimePlayer window was open (for example, if TimePlayer was started twice). The installer won't replace TimePlayer while any copy runs, so the old version simply came back. Now TimePlayer runs once: starting it again brings the open window to the front.
+- Before installing an update, TimePlayer checks for other open copies and tells you to close them. If the installer fails for any other reason, TimePlayer tells you at its next start instead of quietly reopening the old version.
+
 ## 1.7.0
 
 - TimePlayer speaks Romanian and Ukrainian. Choose the language in Settings, Speech and braille (it follows Windows by default); it applies after a restart. Everything is translated: what TimePlayer says, the screens, the menus and F1 help, with the right word forms for counts ("1 videoclip, 25 de videoclipuri", "1 канал, 3 канали, 5 каналів").

@@ -249,9 +249,32 @@ public sealed class UpdateService : IUpdateService
     /// <summary>Wait for TimePlayer to exit, run the installer silently, start TimePlayer again.</summary>
     internal static string InstallerScript(int pid, string installer, string exe) =>
         $"Wait-Process -Id {pid} -Timeout 60 -ErrorAction SilentlyContinue; " +
-        $"Start-Process -FilePath {Quote(installer)} -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CLOSEAPPLICATIONS' -Wait; " +
+        $"$setup = Start-Process -FilePath {Quote(installer)} -ArgumentList '/VERYSILENT','/SUPPRESSMSGBOXES','/NORESTART','/CLOSEAPPLICATIONS' -Wait -PassThru; " +
+        // The installer gives up at once when TimePlayer (or anything holding its files) is still open;
+        // leave a note so the next start can say so instead of looking as if nothing happened.
+        $"if ($setup.ExitCode -ne 0) {{ Set-Content -LiteralPath {Quote(FailureNotePath)} -Value $setup.ExitCode }}; " +
         $"Remove-Item -LiteralPath {Quote(installer)} -Force -ErrorAction SilentlyContinue; " +
         $"Start-Process -FilePath {Quote(exe)}";
+
+    /// <summary>Written by the update helper when the installer failed; read and removed at the next start.</summary>
+    public static string FailureNotePath => Path.Combine(Path.GetTempPath(), "TimePlayerUpdate", "install-failed.txt");
+
+    /// <summary>The installer's exit code from a failed update, once; null when the last update was fine.</summary>
+    public static int? TakeInstallFailure()
+    {
+        try
+        {
+            if (!File.Exists(FailureNotePath))
+                return null;
+            var text = File.ReadAllText(FailureNotePath).Trim();
+            File.Delete(FailureNotePath);
+            return int.TryParse(text, out var code) ? code : -1;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
+        }
+    }
 
     /// <summary>
     /// Wait for TimePlayer to exit, unpack the zip next to it, copy the new files over the old ones

@@ -50,6 +50,7 @@ internal static partial class Romanian
         table["Alt+Left, Backspace or Escape goes back."] = "Alt+Stânga, Backspace sau Escape revine.";
         table["Alt+U Up next, Alt+C comments, Alt+D description, Alt+Q queue. F6 moves between the controls, those panels and the top bar.\n"] = "Alt+U Urmează, Alt+C comentarii, Alt+D descriere, Alt+Q coadă. F6 trece între comenzi, aceste panouri și bara de sus.\n";
         table["An unexpected error occurred:\n\n{0}\n\nThe application will attempt to continue running."] = "A apărut o eroare neașteptată:\n\n{0}\n\nAplicația va încerca să funcționeze în continuare.";
+        table["Another TimePlayer window is open, and the update can't install while it is. Close it, then check for updates again."] = "Este deschisă o altă fereastră TimePlayer, iar actualizarea nu se poate instala cât timp este deschisă. Închideți-o, apoi verificați din nou actualizările.";
         table["Audio muted."] = "Sunet oprit.";
         table["Audio only"] = "Doar audio";
         table["Audio unmuted."] = "Sunet pornit.";
@@ -464,6 +465,7 @@ internal static partial class Romanian
         table["The queue is empty. Press Control+Q on any video to add it; queued videos play one after another."] = "Coada este goală. Apăsați Control+Q pe orice videoclip pentru a-l adăuga; videoclipurile din coadă se redau unul după altul.";
         table["The update could not be downloaded."] = "Actualizarea nu a putut fi descărcată.";
         table["The update could not be started."] = "Actualizarea nu a putut fi pornită.";
+        table["The update didn't install (installer code {0}). Close every TimePlayer window, open TimePlayer again and check for updates."] = "Actualizarea nu s-a instalat (codul programului de instalare: {0}). Închideți toate ferestrele TimePlayer, deschideți din nou TimePlayer și verificați actualizările.";
         table["The video description. Use the arrow keys to read it line by line. Escape returns to the player controls."] = "Descrierea videoclipului. Folosiți săgețile pentru a o citi rând cu rând. Escape revine la comenzile playerului.";
         table["The videos in this playlist. "] = "Videoclipurile din această listă. ";
         table["These effects change TimePlayer's sound only; other apps and Windows sound as before. In the player, E and Shift+E switch presets."] = "Aceste efecte schimbă doar sunetul TimePlayer; celelalte aplicații și Windows sună ca înainte. În player, E și Shift+E schimbă presetările.";

@@ -147,6 +147,10 @@ public class UpdateTests : IDisposable
         Assert.Contains("Wait-Process -Id 42", installer);
         Assert.Contains(@"'C:\Users\O''Brien\Temp\TimePlayer_setup.exe'", installer);
         Assert.Contains("'/VERYSILENT'", installer);
+        // A failed install (another copy open) leaves a note for the next start instead of failing silently.
+        Assert.Contains("-Wait -PassThru", installer);
+        Assert.Contains("if ($setup.ExitCode -ne 0)", installer);
+        Assert.Contains(UpdateService.Quote(UpdateService.FailureNotePath), installer);
 
         var portable = UpdateService.PortableScript(7, @"C:\Temp\TimePlayer.zip", @"D:\My Apps\TimePlayer\", @"D:\My Apps\TimePlayer\TimePlayer.exe");
         Assert.Contains(@"Expand-Archive -LiteralPath 'C:\Temp\TimePlayer.zip'", portable);

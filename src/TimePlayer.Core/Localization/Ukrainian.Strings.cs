@@ -50,6 +50,7 @@ internal static partial class Ukrainian
         table["Alt+Left, Backspace or Escape goes back."] = "Alt+Ліворуч, Backspace або Escape повертає назад.";
         table["Alt+U Up next, Alt+C comments, Alt+D description, Alt+Q queue. F6 moves between the controls, those panels and the top bar.\n"] = "Alt+U Далі, Alt+C коментарі, Alt+D опис, Alt+Q черга. F6 переходить між елементами керування, цими панелями та верхньою панеллю.\n";
         table["An unexpected error occurred:\n\n{0}\n\nThe application will attempt to continue running."] = "Сталася неочікувана помилка:\n\n{0}\n\nПрограма спробує продовжити роботу.";
+        table["Another TimePlayer window is open, and the update can't install while it is. Close it, then check for updates again."] = "Відкрито ще одне вікно TimePlayer, і поки воно відкрите, оновлення не встановиться. Закрийте його, а потім знову перевірте оновлення.";
         table["Audio muted."] = "Звук вимкнено.";
         table["Audio only"] = "Лише аудіо";
         table["Audio unmuted."] = "Звук увімкнено.";
@@ -464,6 +465,7 @@ internal static partial class Ukrainian
         table["The queue is empty. Press Control+Q on any video to add it; queued videos play one after another."] = "Черга порожня. Натисніть Control+Q на будь-якому відео, щоб додати його; відео з черги відтворюються одне за одним.";
         table["The update could not be downloaded."] = "Не вдалося завантажити оновлення.";
         table["The update could not be started."] = "Не вдалося запустити оновлення.";
+        table["The update didn't install (installer code {0}). Close every TimePlayer window, open TimePlayer again and check for updates."] = "Оновлення не встановилося (код інсталятора: {0}). Закрийте всі вікна TimePlayer, знову відкрийте TimePlayer і перевірте оновлення.";
         table["The video description. Use the arrow keys to read it line by line. Escape returns to the player controls."] = "Опис відео. Читайте його рядок за рядком стрілками. Escape повертає до елементів керування плеєром.";
         table["The videos in this playlist. "] = "Відео в цьому плейлисті. ";
         table["These effects change TimePlayer's sound only; other apps and Windows sound as before. In the player, E and Shift+E switch presets."] = "Ці ефекти змінюють лише звук TimePlayer; інші програми й Windows звучать як раніше. У плеєрі E і Shift+E перемикають набори.";
