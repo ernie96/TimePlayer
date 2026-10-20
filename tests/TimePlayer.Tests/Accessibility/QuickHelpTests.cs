@@ -16,6 +16,8 @@ public class QuickHelpTests : IDisposable
         new object[] { QuickHelp.Search }, new object[] { QuickHelp.Sections(false) }, new object[] { QuickHelp.Sections(true) },
         new object[] { QuickHelp.NowPlaying }, new object[] { QuickHelp.Player }, new object[] { QuickHelp.UpNext },
         new object[] { QuickHelp.Comments }, new object[] { QuickHelp.Description }, new object[] { QuickHelp.PlayerQueue },
+        new object[] { QuickHelp.Chapters }, new object[] { QuickHelp.Transcript }, new object[] { QuickHelp.Lyrics },
+        new object[] { QuickHelp.Shorts },
         new object[] { QuickHelp.Settings("Sound") },
         new object[] { QuickHelp.List(BrowseSection.Featured, 5, "") }, new object[] { QuickHelp.List(BrowseSection.Channels, 2, "") },
         new object[] { QuickHelp.List(BrowseSection.WatchLater, 0, "Watch Later is empty.\nPress Control+L on any video.") },

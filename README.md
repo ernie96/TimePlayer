@@ -26,6 +26,14 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   For You (local recommendations) and Playlists (Liked videos, your own and saved YouTube playlists).
 - **Player**: Up next with autoplay, comments with threaded replies, description, captions, speed, share links that
   start at the current time, and audio or video downloads.
+- **Audio description**: when a video has a described soundtrack, TimePlayer plays it (`D` switches it).
+- **Chapters and transcript**: chapters from the description (`Shift+Left` / `Shift+Right`, `Alt+H`), marked on the braille
+  display with dots 7 and 8; the captions as a readable transcript (`Alt+T`) where Enter plays from a line.
+- **Sound output and boost**: choose the device TimePlayer plays through, apart from the screen reader; Up can go to 200%.
+- **Radio and lyrics**: endless radio from a song (`R`, `Ctrl+R`); lyrics from LRCLIB (`Alt+L`), read aloud as they're sung (`L`).
+- **Optional YouTube account**: off by default. Signed in, age-restricted and members-only videos play, and your YouTube
+  home, subscriptions, history, likes and Watch Later can be shown (`Ctrl+9`), with likes and subscriptions sent to YouTube.
+  The sign-in is stored encrypted with Windows DPAPI and only ever sent to youtube.com.
 - **SponsorBlock**: sponsor reads and other marked segments are skipped or announced (`S` skips, `H` jumps to the
   highlight), each category configurable in Settings. **Return YouTube Dislike** adds estimated dislike counts.
 - **Sound and music mode**: equalizer, bass, clarity, stereo width, room, crossfeed, compressor and volume leveling,
@@ -139,6 +147,9 @@ player, Up next, comments, Settings). **Control+F1** opens the full help for tha
 | Key | Action |
 |---|---|
 | `Ctrl+1` ... `Ctrl+8` | Video: Featured, For You, What's New, Channels, Playlists, Watch Later, History, Queue. Music: Charts, Recently played, Playlists, Queue |
+| `Ctrl+9` | YouTube: your account's Home, Subscriptions, History, Liked videos and Watch Later (when the account is used) |
+| `Ctrl+R` | Start a radio of songs like the selected one |
+| `Ctrl+Shift+S` | Shorts mode: `Up` / `Down` move between Shorts, each repeats, `Shift+Up` / `Shift+Down` change the volume, `Escape` leaves |
 | `/`, `Ctrl+F`, `Ctrl+E` | Search from anywhere; results open as their own page |
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous section |
 | First letter | Jump to the next title starting with it |
@@ -146,18 +157,19 @@ player, Up next, comments, Settings). **Control+F1** opens the full help for tha
 | `Ctrl+Q` / `Ctrl+L` / `Ctrl+S` / `Ctrl+G` | Queue, Watch Later, subscribe, go to channel |
 | `Ctrl+K` / `Ctrl+P` | Like, add to a playlist |
 | `Ctrl+C` | Copy a link to share: asks YouTube link or TimePlayer link (Settings, Links and browser, can fix the choice) |
-| `Ctrl+D` | Download: audio (MP3) or video (MP4), open the downloads folder, cancel |
+| `Ctrl+D` | Download: audio (MP3) or video (MP4), the whole list as audio or video, open the downloads folder, cancel |
 | `Delete` | Remove from History, Watch Later, Channels, a playlist or the Queue; in For You, not interested |
 | `Shift+Delete` | Don't recommend this channel |
 | `Alt+Up` / `Alt+Down` | Move a video in your own playlist |
 | `Applications` / `Shift+F10` | Every action for the item |
 | `Alt+Left`, `Backspace`, `Escape` | Back from search results, a channel or a playlist page |
 | `F5` | Refresh the section |
-| `F2` | Settings: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, Updates and help (`Ctrl+Tab` between pages; Escape closes and saves) |
+| `F2` | Settings: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, YouTube account, Updates and help (`Ctrl+Tab` between pages; Escape closes and saves) |
 | `Ctrl+Shift+V` | Play a YouTube link from the clipboard |
 | `Ctrl+Shift+B` / `Ctrl+Shift+F` | Report a problem / suggest a feature |
 
 Lists keep loading as you reach the end: search results, channel pages, playlists and comments are not limited to the first 20.
+On a channel's page, `Shift+Tab` reaches the Tab box: Videos, Shorts, Live and Playlists.
 
 ### Player
 
@@ -173,6 +185,11 @@ Lists keep loading as you reach the end: search results, channel pages, playlist
 | `Alt+U`, `Alt+C`, `Alt+D`, `Alt+Q` | Up next, Comments, Description, Queue panels |
 | `A` | Autoplay on/off (plays the first unwatched related video when the queue ends) |
 | `S` / `H` | Skip the SponsorBlock segment playing now / jump to the highlight |
+| `D` | Audio description on/off (when the video has it) |
+| `Shift+Left` / `Shift+Right` | Previous / next chapter |
+| `Alt+H`, `Alt+T`, `Alt+L` | Chapters, Transcript and Lyrics panels |
+| `L` | Read timed lyrics aloud as they're sung |
+| `R` | Start a radio from the song playing |
 | `E` / `Shift+E` | Next / previous sound preset |
 | `Ctrl+M` | Switch between Video and Music (from anywhere) |
 | `Ctrl+Space`, `Ctrl+Shift+N` / `Ctrl+Shift+P`, media keys | Play/pause, next/previous from anywhere while something plays |
@@ -237,7 +254,7 @@ stream source.
 TimePlayer can play YouTube links that come from your browser, email, chat or any other app. Only one TimePlayer runs at a time: a link from elsewhere goes to the open window.
 
 - **Copied links:** copy a YouTube link anywhere, then press Control+Shift+V in TimePlayer.
-- **The browser extension** (Chrome, Edge, Brave and other Chromium browsers) adds "Play in TimePlayer" after each YouTube link on other websites (Reddit, webmail, forums), or can make those links open in TimePlayer directly. On YouTube itself, use its toolbar button, Alt+Shift+P, or "Play this page in TimePlayer" in the context menu. Settings, Links and browser, has the steps: copy the extension folder's location, open `chrome://extensions` (or `edge://extensions`), turn on Developer mode, choose "Load unpacked" and paste the location. It's also `TimePlayer-browser-extension.zip` on the releases page.
+- **The browser extension** (Chrome, Edge, Brave and other Chromium browsers) adds "Play in TimePlayer" after each YouTube link on other websites (Reddit, webmail, forums), or can make those links open in TimePlayer directly. It talks to TimePlayer through the browser's native messaging, so links open without the browser asking first (only this extension, by its fixed ID, may do that). On YouTube itself, use its toolbar button, Alt+Shift+P, or "Play this page in TimePlayer" in the context menu. Settings, Links and browser, has the steps: copy the extension folder's location, open `chrome://extensions` (or `edge://extensions`), turn on Developer mode, choose "Load unpacked" and paste the location. It's also `TimePlayer-browser-extension.zip` on the releases page.
 - **A bookmark** does the same without an extension: Settings, Links and browser, "Copy the browser bookmark", then add a bookmark with that as its address. Choose it on a YouTube page.
 - **`timeplayer://` links:** TimePlayer registers itself for links like `timeplayer://open?url=https%3A%2F%2Fyoutu.be%2FdQw4w9WgXcQ`, which any web page, document or app can use. The first time, the browser asks whether to open TimePlayer. If links stop opening (for example after moving a portable copy), Settings, Links and browser, "Register TimePlayer for links again" fixes it.
 - **The command line:** `TimePlayer.exe "https://youtu.be/dQw4w9WgXcQ"`, which also covers shortcuts and scripts.
@@ -247,6 +264,16 @@ TimePlayer can play YouTube links that come from your browser, email, chat or an
 YouTube Music links (music.youtube.com) open in Music. Only YouTube videos and playlists are accepted; anything else in a link is ignored. "Let browsers and other apps open YouTube links in TimePlayer" in Settings turns the `timeplayer://` links off.
 
 Windows doesn't let desktop apps take over ordinary youtube.com links, so a YouTube link clicked in an email still opens the browser. The extension or Control+Shift+V cover that.
+
+## Your YouTube account (optional)
+
+TimePlayer needs no account. Settings, YouTube account, can use one anyway: "Only for videos that need signing in"
+(age-restricted, members-only) or "Also my YouTube home, subscriptions, history and likes" (`Ctrl+9`; likes and
+subscriptions made in TimePlayer are sent to YouTube too). Sign in with the browser extension's "Export my YouTube sign-in"
+(it asks for the cookies and downloads permissions only then, and gives them back), with any cookies.txt file, or from
+Firefox through yt-dlp; Chrome-based browsers lock their cookies, so use the extension there. Only YouTube's and Google's
+cookies are kept, stored encrypted with Windows DPAPI for the current user, sent only to youtube.com (InnerTube with a
+SAPISIDHASH, and to yt-dlp through a temporary file deleted right after), and never logged. Sign out erases them.
 
 ## SponsorBlock and Return YouTube Dislike
 

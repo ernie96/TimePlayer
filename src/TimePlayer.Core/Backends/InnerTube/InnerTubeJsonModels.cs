@@ -39,6 +39,19 @@ public record InnerTubeClientInfo
 
     [JsonPropertyName("gl")]
     public string Gl { get; init; } = "US";
+
+    // The phone app's client describes itself; left out (null) for the web client.
+    [JsonPropertyName("deviceMake"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DeviceMake { get; init; }
+
+    [JsonPropertyName("deviceModel"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? DeviceModel { get; init; }
+
+    [JsonPropertyName("osName"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OsName { get; init; }
+
+    [JsonPropertyName("osVersion"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string? OsVersion { get; init; }
 }
 
 public record InnerTubePlayerResponse
@@ -121,6 +134,22 @@ public record InnerTubeFormat
 
     [JsonPropertyName("audioQuality")]
     public string? AudioQuality { get; init; }
+
+    [JsonPropertyName("audioTrack")]
+    public InnerTubeAudioTrack? AudioTrack { get; init; }
+}
+
+public record InnerTubeAudioTrack
+{
+    /// <summary>"English (United States) original", "English (United States) descriptive" (with hl=en).</summary>
+    [JsonPropertyName("displayName")]
+    public string? DisplayName { get; init; }
+
+    [JsonPropertyName("id")]
+    public string? Id { get; init; }
+
+    [JsonPropertyName("audioIsDefault")]
+    public bool? AudioIsDefault { get; init; }
 
 }
 

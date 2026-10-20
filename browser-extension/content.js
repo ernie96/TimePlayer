@@ -6,19 +6,36 @@
   var mode = "after";
   var label = chrome.i18n.getMessage("playInTimePlayer");
 
+  // Straight to TimePlayer through the extension. If the extension was updated or removed since the page
+  // loaded, the link's own timeplayer:// address still works.
+  function playThroughExtension(event, url) {
+    try {
+      chrome.runtime.sendMessage({ play: url });
+      event.preventDefault();
+    } catch (e) {
+    }
+  }
+
   function handle(link) {
     if (link.dataset[MARK] || link.classList.contains("timeplayer-link")) return;
     link.dataset[MARK] = "1";
     if (!TimePlayerLinks.isYouTube(link.href)) return;
     var target = TimePlayerLinks.toTimePlayer(link.href);
     if (mode === "replace") {
+      var original = link.href;
       link.href = target;
       link.removeAttribute("target");
+      link.addEventListener("click", function (event) {
+        playThroughExtension(event, original);
+      });
       return;
     }
     var extra = document.createElement("a");
     extra.href = target;
     extra.className = "timeplayer-link";
+    extra.addEventListener("click", function (event) {
+      playThroughExtension(event, link.href);
+    });
     extra.textContent = " (" + label + ")";
     var name = (link.textContent || "").trim();
     if (name) extra.setAttribute("aria-label", label + ": " + name);

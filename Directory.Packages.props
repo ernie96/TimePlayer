@@ -19,6 +19,7 @@
 
     <!-- Ed25519 signatures for verifying downloaded updates -->
     <PackageVersion Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageVersion Include="System.Security.Cryptography.ProtectedData" Version="10.0.13" />
 
     <!-- Testing Packages -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.0" />

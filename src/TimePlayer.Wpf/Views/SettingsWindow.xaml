@@ -54,6 +54,7 @@
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
                     <StackPanel>
                         <CheckBox x:Name="FirstSetting" Content="{l:T 'Continue videos where I left off'}" IsChecked="{Binding ResumePlayback}"/>
+                        <CheckBox Content="{l:T 'Play audio description when a video has it (D in the player)'}" IsChecked="{Binding UseAudioDescription}"/>
                         <CheckBox Content="{l:T 'Autoplay a related video when the queue ends (A in the player)'}" IsChecked="{Binding Autoplay}"/>
                         <CheckBox Content="{l:T 'Use hardware video decoding (takes effect after restart)'}" IsChecked="{Binding EnableHardwareDecoding}"/>
                         <StackPanel Style="{StaticResource Row}">
@@ -86,6 +87,12 @@
                     <StackPanel>
                         <TextBlock Style="{StaticResource NoteText}"
                                    Text="{l:T 'These effects change TimePlayer\'s sound only; other apps and Windows sound as before. In the player, E and Shift+E switch presets.'}"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <Label Content="{l:T 'Play sound _through:'}" Target="{Binding ElementName=AudioDeviceBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="AudioDeviceBox" AutomationProperties.Name="{l:T 'Play sound through'}" ItemsSource="{Binding AudioDeviceChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding AudioDevice}" MinWidth="240"/>
+                        </StackPanel>
+                        <CheckBox Content="{l:T 'Allow volume above 100 percent, up to 200, for quiet videos'}" IsChecked="{Binding VolumeBoost}"/>
                         <CheckBox Content="{l:T 'Music mode: no video, and the music sound below (Control+M)'}" IsChecked="{Binding MusicMode}"/>
                         <StackPanel Style="{StaticResource Row}">
                             <Label Content="{l:T 'Sound for _videos:'}" Target="{Binding ElementName=VideoPresetBox}" Style="{StaticResource SettingLabel}"/>
@@ -157,6 +164,8 @@
                                       DisplayMemberPath="Label" SelectedValuePath="Value" SelectedValue="{Binding Language}" MinWidth="240"/>
                         </StackPanel>
                         <CheckBox Content="{l:T 'Read captions aloud as they appear (C in the player)'}" IsChecked="{Binding SpeakCaptions}"/>
+                        <CheckBox Content="{l:T 'Say each chapter\'s name when it starts'}" IsChecked="{Binding AnnounceChapters}"/>
+                        <CheckBox Content="{l:T 'Read timed lyrics aloud as they\'re sung (L in the player)'}" IsChecked="{Binding SpeakLyrics}"/>
                         <CheckBox Content="{l:T 'Use the NVDA braille add-on (for braille displays; restart NVDA after changing)'}" IsChecked="{Binding UseBrailleAddon}"/>
                         <CheckBox Content="{l:T 'Show playback progress on the braille display (Control+Shift+D)'}" IsChecked="{Binding EnableBrailleProgress}"/>
                         <StackPanel Style="{StaticResource Row}">
@@ -237,6 +246,34 @@
                             <ComboBox x:Name="ShareLinkBox" AutomationProperties.Name="{l:T 'Control+C shares'}" ItemsSource="{Binding ShareLinkChoices}" DisplayMemberPath="Label"
                                       SelectedValuePath="Value" SelectedValue="{Binding ShareLinkKind}" MinWidth="180"/>
                         </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ===== YouTube account ===== -->
+            <TabItem Header="{l:T 'YouTube account'}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Focusable="False" Padding="0,8,10,0">
+                    <StackPanel>
+                        <TextBlock Text="{Binding AccountStatus}" Style="{StaticResource NoteText}" Foreground="#E4E4E7"/>
+                        <StackPanel Style="{StaticResource Row}">
+                            <Label Content="{l:T 'Use my YouTube _account:'}" Target="{Binding ElementName=AccountUseBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="AccountUseBox" AutomationProperties.Name="{l:T 'Use my YouTube account'}" ItemsSource="{Binding AccountUseChoices}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding AccountUse}" MinWidth="280"/>
+                        </StackPanel>
+                        <WrapPanel Margin="0,0,0,8">
+                            <Button Content="{l:T '_Import a sign-in file...'}" Click="ImportSignIn_Click" Style="{StaticResource AccentButtonStyle}" Margin="0,0,6,0"/>
+                            <Button Content="{l:T 'Sign _out'}" Command="{Binding SignOutCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                        </WrapPanel>
+                        <StackPanel Style="{StaticResource Row}">
+                            <Label Content="{l:T '_Browser:'}" Target="{Binding ElementName=SignInBrowserBox}" Style="{StaticResource SettingLabel}"/>
+                            <ComboBox x:Name="SignInBrowserBox" AutomationProperties.Name="{l:T 'Browser'}" ItemsSource="{Binding SignInBrowsers}" DisplayMemberPath="Label"
+                                      SelectedValuePath="Value" SelectedValue="{Binding SignInBrowser}" MinWidth="140" Margin="0,0,6,0"/>
+                            <Button Content="{l:T 'Read the sign-in from the bro_wser'}" Command="{Binding SignInFromBrowserCommand}" Style="{StaticResource SmallButtonStyle}"/>
+                        </StackPanel>
+                        <Label Content="{l:T 'About si_gning in:'}" Target="{Binding ElementName=SignInStepsBox}" Foreground="#E4E4E7" Padding="0,0,0,4"/>
+                        <TextBox x:Name="SignInStepsBox" AutomationProperties.Name="{l:T 'About signing in'}"
+                                 Text="{Binding SignInSteps, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto" Height="200" Background="#141416"/>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

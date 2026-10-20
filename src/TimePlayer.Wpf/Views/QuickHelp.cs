@@ -44,6 +44,9 @@ public static class QuickHelp
     public static string Player => WithMore(
         T("Player. K or Space plays or pauses, Left and Right move through the video, and Up and Down change the volume. Alt+A or the Applications key lists every action, and Escape leaves the player."));
 
+    public static string Shorts => WithMore(
+        T("Shorts. Up and Down move between Shorts, and each one repeats. Shift+Up and Shift+Down change the volume, and Escape leaves Shorts."));
+
     public static string UpNext => WithMore(
         T("Up next. Enter plays the selected video, and the Applications key lists more. Escape returns to the player controls."));
 
@@ -52,6 +55,15 @@ public static class QuickHelp
 
     public static string Description => WithMore(
         T("Description. Read it with the arrow keys. Escape returns to the player controls."));
+
+    public static string Chapters => WithMore(
+        T("Chapters. Enter goes to the chapter; while playing, Shift+Left and Shift+Right move between chapters. Escape returns to the player controls."));
+
+    public static string Transcript => WithMore(
+        T("Transcript. Up and Down read it line by line, and Enter plays from that line. Escape returns to the player controls."));
+
+    public static string Lyrics => WithMore(
+        T("Lyrics. Up and Down read them line by line, and Enter plays from a timed line. L reads them aloud as they're sung."));
 
     public static string PlayerQueue => WithMore(
         T("Queue. Enter plays the video now, and Delete takes it out of the queue. Escape returns to the player controls."));

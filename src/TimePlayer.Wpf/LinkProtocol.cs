@@ -16,6 +16,8 @@ internal static class LinkProtocol
 
     public static void Apply(bool enabled)
     {
+        // The extension's direct connection follows the same setting.
+        NativeMessagingHost.Apply(enabled);
         var exe = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exe))
             return;

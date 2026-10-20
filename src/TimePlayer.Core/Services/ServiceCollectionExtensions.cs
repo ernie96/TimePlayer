@@ -60,6 +60,9 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<Community.IDislikeService, Community.DislikeService>();
         services.TryAddSingleton<Community.IRunCounter, Community.RunCounter>();
         services.TryAddSingleton<Community.IBugReportService, Community.BugReportService>();
+        services.TryAddSingleton<Community.ITranscriptService, Community.TranscriptService>();
+        services.TryAddSingleton<Community.IYouTubeAccount, Community.YouTubeAccount>();
+        services.TryAddSingleton<Community.ILyricsService, Community.LyricsService>();
         services.TryAddSingleton<Library.IRecommendationService, Library.RecommendationService>();
         services.TryAddSingleton<Library.IDownloadService, Library.DownloadService>();
         services.TryAddSingleton<Updates.IUpdateService, Updates.UpdateService>();

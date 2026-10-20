@@ -26,6 +26,18 @@ public partial class SettingsWindow : Window
         Close();
     }
 
+    private async void ImportSignIn_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = T("Import a sign-in file"),
+            Filter = T("Sign-in files (*.txt)|*.txt|All files|*.*"),
+            InitialDirectory = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads")
+        };
+        if (dialog.ShowDialog(this) == true)
+            await _viewModel.ImportSignInFileAsync(dialog.FileName);
+    }
+
     private void ReportProblem_Click(object sender, RoutedEventArgs e)
     {
         BugReportRequested = true;
@@ -58,7 +70,7 @@ public partial class SettingsWindow : Window
         else if (e.Key == Key.F1 && Keyboard.Modifiers == ModifierKeys.Control)
         {
             MessageBox.Show(this,
-                T("Settings has seven pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, and Updates and help. ") +
+                T("Settings has eight pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, YouTube account, and Updates and help. ") +
                 T("Control+Tab and Control+Shift+Tab move between pages; on the page names, Left and Right do too.\n") +
                 T("Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. ") +
                 T("Alt plus the underlined letter jumps to a setting on the current page.\n") +

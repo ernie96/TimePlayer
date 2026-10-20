@@ -15,4 +15,8 @@ public record StreamResolutionResult
     public IReadOnlyList<CaptionTrack> Captions { get; init; } = Array.Empty<CaptionTrack>();
     public bool IsLiveStream { get; init; }
     public BackendProviderType SourceProvider { get; init; }
+    /// <summary>The video has an audio-described track.</summary>
+    public bool HasAudioDescription { get; init; }
+    /// <summary>The audio chosen is the audio-described track.</summary>
+    public bool UsesAudioDescription { get; init; }
 }

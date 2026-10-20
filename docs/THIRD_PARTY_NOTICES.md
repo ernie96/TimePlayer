@@ -246,3 +246,23 @@ THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 * **License**: Inno Setup License (free for any use, including commercial)
 
 The installer, `TimePlayer_setup.exe`, is built with Inno Setup.
+Its Romanian translation (`build/Languages/Romanian.isl`, by Alexandru Bogdan Munteanu) comes from the Inno Setup
+repository's unofficial translations, under the same license.
+
+---
+
+## 11. LRCLIB
+
+* **Project**: LRCLIB, a free and open lyrics database
+* **URL**: https://lrclib.net
+* **Used for**: song lyrics, with timing, read from its public API. Only a song's artist, title and length are sent.
+  No LRCLIB code is included.
+
+---
+
+## 12. System.Security.Cryptography.ProtectedData
+
+* **Project**: part of .NET, by Microsoft
+* **URL**: https://github.com/dotnet/runtime
+* **License**: MIT
+* **Used for**: keeping the optional YouTube sign-in encrypted for the Windows user (Windows DPAPI).

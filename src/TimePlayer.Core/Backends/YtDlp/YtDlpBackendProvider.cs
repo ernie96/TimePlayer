@@ -166,8 +166,15 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
         }
     }
 
+    public Task<Result<VideoDetails>> GetVideoDetailsAsync(
+        YouTubeVideoId videoId,
+        CancellationToken cancellationToken = default) =>
+        GetVideoDetailsAsync(videoId, cookiesFile: null, cancellationToken);
+
+    /// <param name="cookiesFile">A YouTube sign-in for this call only (videos that need one).</param>
     public async Task<Result<VideoDetails>> GetVideoDetailsAsync(
         YouTubeVideoId videoId,
+        string? cookiesFile,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(videoId.Value))
@@ -187,7 +194,15 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             "--no-warnings"
         };
 
-        AppendCookieArgs(args);
+        if (cookiesFile is not null)
+        {
+            args.Add("--cookies");
+            args.Add(cookiesFile);
+        }
+        else
+        {
+            AppendCookieArgs(args);
+        }
         args.Add(videoId.ToWatchUrl());
 
         var timeout = TimeSpan.FromSeconds(_configService.CurrentConfig.Backend.YtDlpTimeoutSeconds);
@@ -249,16 +264,27 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
         }
     }
 
-    public async Task<Result<StreamResolutionResult>> ResolveStreamsAsync(
+    public Task<Result<StreamResolutionResult>> ResolveStreamsAsync(
         YouTubeVideoId videoId,
         QualityPreference qualityPreference = QualityPreference.Auto,
         bool audioOnly = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ResolveStreamsAsync(videoId, qualityPreference, audioOnly, audioDescription: false, cancellationToken);
+
+    /// <param name="audioDescription">Use the audio-described track when the video has one.</param>
+    /// <param name="cookiesFile">A YouTube sign-in for this call only (videos that need one).</param>
+    public async Task<Result<StreamResolutionResult>> ResolveStreamsAsync(
+        YouTubeVideoId videoId,
+        QualityPreference qualityPreference,
+        bool audioOnly,
+        bool audioDescription,
+        CancellationToken cancellationToken = default,
+        string? cookiesFile = null)
     {
         if (string.IsNullOrWhiteSpace(videoId.Value))
             return Result<StreamResolutionResult>.Failure("INVALID_ID", "Video ID cannot be empty.");
 
-        var detailsResult = await GetVideoDetailsAsync(videoId, cancellationToken);
+        var detailsResult = await GetVideoDetailsAsync(videoId, cookiesFile, cancellationToken);
         if (!detailsResult.IsSuccess)
             return Result<StreamResolutionResult>.Failure(detailsResult.Error!);
 
@@ -270,14 +296,19 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             return Result<StreamResolutionResult>.Failure(AppError.StreamUnavailable(videoId.Value, "No stream formats found."));
         }
 
+        // The audio to use: the described track when asked for and present, otherwise the best ordinary one.
+        // (Ordered by bitrate alone, the described track could win by accident.)
+        var described = streams.Where(s => s.IsAudioOnly && s.IsAudioDescription)
+            .OrderByDescending(s => s.AudioBitrate ?? s.Bitrate ?? 0).FirstOrDefault();
+        var useDescription = audioDescription && described is not null;
+        var chosenAudio = useDescription
+            ? described
+            : streams.Where(s => s.IsAudioOnly && !s.IsAudioDescription).OrderByDescending(s => s.AudioBitrate ?? s.Bitrate ?? 0).FirstOrDefault();
+
         // Case 1: Audio only requested
         if (audioOnly || qualityPreference == QualityPreference.AudioOnly)
         {
-            var audioStream = streams
-                .Where(s => s.IsAudioOnly)
-                .OrderByDescending(s => s.AudioBitrate ?? s.Bitrate ?? 0)
-                .FirstOrDefault()
-                ?? streams.FirstOrDefault(s => s.IsProgressive);
+            var audioStream = chosenAudio ?? streams.FirstOrDefault(s => s.IsProgressive);
 
             if (audioStream == null)
             {
@@ -294,7 +325,9 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
                 AlternativeStreams = streams.Where(s => s.IsAudioOnly && s.Url != audioStream.Url).ToList(),
                 Captions = details.Captions,
                 IsLiveStream = details.IsLive,
-                SourceProvider = BackendProviderType.YtDlpLocal
+                SourceProvider = BackendProviderType.YtDlpLocal,
+                HasAudioDescription = described is not null,
+                UsesAudioDescription = useDescription
             });
         }
 
@@ -310,10 +343,7 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             .OrderByDescending(s => s.Height ?? 0)
             .ToList();
 
-        var bestAudio = streams
-            .Where(s => s.IsAudioOnly)
-            .OrderByDescending(s => s.AudioBitrate ?? s.Bitrate ?? 0)
-            .FirstOrDefault();
+        var bestAudio = chosenAudio;
 
         StreamCandidate? selectedVideo = null;
         StreamCandidate? selectedAudio = null;
@@ -334,7 +364,13 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
         var matchedVideoOnly = videoOnlyStreams.FirstOrDefault(s => s.Height == targetHeight)
                              ?? videoOnlyStreams.FirstOrDefault();
 
-        if (qualityPreference != QualityPreference.Auto && matchedVideoOnly?.Height == targetHeight && bestAudio != null)
+        if (useDescription && matchedVideoOnly != null)
+        {
+            // A progressive stream always carries the original soundtrack; description needs separate audio.
+            selectedVideo = videoOnlyStreams.FirstOrDefault(s => s.Height <= targetHeight) ?? matchedVideoOnly;
+            selectedAudio = bestAudio;
+        }
+        else if (qualityPreference != QualityPreference.Auto && matchedVideoOnly?.Height == targetHeight && bestAudio != null)
         {
             selectedVideo = matchedVideoOnly;
             selectedAudio = bestAudio;
@@ -369,7 +405,9 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             AlternativeStreams = streams.Where(s => s.Url != selectedVideo.Url).ToList(),
             Captions = details.Captions,
             IsLiveStream = details.IsLive,
-            SourceProvider = BackendProviderType.YtDlpLocal
+            SourceProvider = BackendProviderType.YtDlpLocal,
+            HasAudioDescription = described is not null,
+            UsesAudioDescription = useDescription && selectedAudio?.IsAudioDescription == true
         });
     }
 
@@ -572,7 +610,11 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
 
             if (f.IsAudioOnly)
             {
-                list.Add(StreamCandidate.CreateAudio(f.Url, formatExt, bitrate, f.ACodec));
+                list.Add(StreamCandidate.CreateAudio(f.Url, formatExt, bitrate, f.ACodec) with
+                {
+                    AudioTrackName = f.FormatNote,
+                    IsAudioDescription = StreamCandidate.IsDescriptiveTrackName(f.FormatNote)
+                });
             }
             else if (f.IsProgressive)
             {

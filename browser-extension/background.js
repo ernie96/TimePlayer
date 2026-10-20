@@ -21,8 +21,9 @@ chrome.runtime.onInstalled.addListener(function () {
   });
 });
 
-// Opening a timeplayer:// address hands it to Windows, which starts TimePlayer (or passes the link to
-// the open copy). The page itself stays where it is.
+// First straight to TimePlayer (native messaging: no question from the browser). If TimePlayer can't be
+// reached that way (an older TimePlayer, or links turned off), a timeplayer:// address does it through
+// Windows, and the browser asks once whether to open TimePlayer. The page itself stays where it is.
 function open(tab, href) {
   if (!tab || !href) return;
   if (!TimePlayerLinks.isYouTube(href)) {
@@ -30,8 +31,16 @@ function open(tab, href) {
     chrome.action.setTitle({ tabId: tab.id, title: chrome.i18n.getMessage("notYouTube") });
     return;
   }
-  chrome.tabs.update(tab.id, { url: TimePlayerLinks.toTimePlayer(href) });
+  chrome.runtime.sendNativeMessage("com.timeplayer.links", { url: href }, function (response) {
+    if (chrome.runtime.lastError || !response || !response.ok)
+      chrome.tabs.update(tab.id, { url: TimePlayerLinks.toTimePlayer(href) });
+  });
 }
+
+// "Play in TimePlayer" links on pages ask the background to open them.
+chrome.runtime.onMessage.addListener(function (message, sender) {
+  if (message && message.play && sender.tab) open(sender.tab, message.play);
+});
 
 chrome.contextMenus.onClicked.addListener(function (info, tab) {
   open(tab, info.menuItemId === "play-link" ? info.linkUrl : (info.pageUrl || (tab && tab.url)));

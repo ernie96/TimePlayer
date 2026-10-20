@@ -14,7 +14,8 @@ namespace TimePlayer.Wpf.ViewModels;
 public enum SearchKind
 {
     Videos,
-    Playlists
+    Playlists,
+    Shorts
 }
 
 /// <summary>
@@ -91,6 +92,24 @@ public sealed partial class MainViewModel
         _accessibility.Announce(value == SearchKind.Playlists ? T("Searching for playlists.") : T("Searching for videos."), AnnouncementPriority.Low);
         if (!string.IsNullOrWhiteSpace(SearchQuery) && CurrentSection == BrowseSection.Search && _lastSearchResults.Count > 0)
             _ = SearchAsync();
+    }
+
+    private void ConfigureShortsSearchPaging(string query, string? firstToken)
+    {
+        var token = firstToken;
+        if (token is null)
+        {
+            SetLoadMore(null);
+            return;
+        }
+        SetLoadMore(async ct =>
+        {
+            var page = await _innerTubeDirect!.SearchShortsAsync(query, token, ct);
+            if (page.IsFailure)
+                return (Array.Empty<SearchResult>(), false);
+            token = page.Value.NextPageToken;
+            return (page.Value.Items, token is not null);
+        });
     }
 
     private void ConfigurePlaylistSearchPaging(string query, string? firstToken)
@@ -211,6 +230,7 @@ public sealed partial class MainViewModel
         item ??= SelectedSearchResult;
         if (item is null || !item.IsVideo) return;
         bool liked = _library.ToggleLike(item);
+        SyncLikeToYouTube(item.Id, liked);
         _accessibility.Announce(liked ? T("Liked {0}.", item.Title) : T("Removed like from {0}.", item.Title), AnnouncementPriority.High);
         if (!liked && CurrentSection == BrowseSection.Playlist && _openLibraryPlaylistId == LibraryService.LikedPlaylistId)
             RemoveItemKeepingPosition(item);
@@ -227,6 +247,7 @@ public sealed partial class MainViewModel
             return;
         }
         bool liked = _library.ToggleLike(video);
+        SyncLikeToYouTube(video.Id, liked);
         UpdateCurrentVideoLibraryState();
         _accessibility.Announce(liked ? T("Liked.") : T("Like removed."), AnnouncementPriority.High);
     }

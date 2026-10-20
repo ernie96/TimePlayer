@@ -56,15 +56,58 @@ Control+M switches between Video and Music.
 In any list, the first letter of a title jumps to it and Enter plays. Control+Q queues,
 Control+L saves to Watch Later, Control+K likes, Control+P adds to a playlist,
 Control+S subscribes, Control+G opens the channel, Control+C copies a link to share and
-Control+D downloads.
+Control+D downloads. On a channel's page, Shift+Tab reaches the Tab box: Videos, Shorts,
+Live and Playlists.
+
+Shorts mode: Control+Shift+S plays Shorts one after another. Up and Down move between
+them, each one repeats, Shift+Up and Shift+Down change the volume and Escape leaves.
 
 Player: K plays and pauses, Left and Right seek, 0 to 9 jump through the video, T says the
 time, Alt+U, Alt+C, Alt+D and Alt+Q open Up next, Comments, Description and Queue.
 S skips a sponsor or other SponsorBlock segment, H jumps to the video's highlight.
+D turns audio description on or off. Shift+Left and Shift+Right go to the previous and
+next chapter; Alt+H lists the chapters, Alt+T shows the transcript, Alt+L the lyrics.
+L reads lyrics aloud as they're sung, R starts a radio of songs like the one playing.
 Alt+A lists every action. Escape goes back.
 
 Anywhere: Control+Shift+V plays a YouTube link you copied, Control+Shift+B reports a
 problem, Control+Shift+F suggests a feature, F2 opens Settings.
+
+
+Audio description, chapters and transcript
+------------------------------------------
+
+Some videos have a second soundtrack where a narrator describes what is on screen.
+TimePlayer plays it when there is one and says "With audio description"; D switches it, and
+Settings (F2), Playback, can turn it off.
+
+Chapters come from the timestamps in a video's description. On a braille display, dots 7
+and 8 mark where chapters start; a routing key on one goes to that chapter.
+
+The transcript (Alt+T) shows a video's captions as lines you read with the arrow keys;
+Enter plays from the line you are on.
+
+
+Sound output, radio and lyrics
+------------------------------
+
+Settings (F2), Sound, chooses which speakers or headphones TimePlayer plays through, so your
+screen reader can stay on another device, and can let the volume go up to 200 percent.
+R in the player, or Control+R on a song in a list, starts a radio of songs like it.
+Alt+L shows a song's lyrics (from LRCLIB); L reads timed lyrics aloud as they're sung.
+
+
+Your YouTube account (optional)
+-------------------------------
+
+TimePlayer needs no account. If you want, Settings (F2), YouTube account, can use yours:
+only for videos YouTube won't play without signing in (age-restricted, members-only), or
+also to show your YouTube home, subscriptions, history and likes (Control+9) and to send
+your likes and subscriptions to YouTube. To sign in, use the Play in TimePlayer browser
+extension's "Export my YouTube sign-in" button, then "Import a sign-in file" in TimePlayer;
+with Firefox, "Read the sign-in from the browser" also works. The sign-in is stored
+encrypted for your Windows user, only sent to youtube.com, and never logged. Sign out
+erases it.
 
 
 Languages
@@ -82,7 +125,9 @@ Copy a YouTube link anywhere and press Control+Shift+V in TimePlayer to play it.
 
 The "Play in TimePlayer" browser extension (Chrome, Edge, Brave) adds a "Play in TimePlayer"
 link after YouTube links on other websites, and Alt+Shift+P plays the YouTube page you are
-on. Settings (F2), Links and browser, has the steps to add it, a bookmark that works
+on. Links go straight to TimePlayer without the browser asking first. If you added the
+extension before version 1.11, remove the old one and add it again.
+Settings (F2), Links and browser, has the steps to add it, a bookmark that works
 without the extension, and "Register TimePlayer for links again" if links stop opening.
 YouTube Music links open in Music.
 
@@ -137,7 +182,8 @@ Downloads
 
 Control+D downloads the audio or video to Downloads\TimePlayer. With ffmpeg installed,
 audio is saved as MP3 and video at full quality. Without it, audio is saved as M4A and
-video as a single MP4. To install ffmpeg, open a command prompt and run:
+video as a single MP4. "Download all in this list" (also on Control+D) downloads a whole
+playlist, channel tab or search into its own numbered folder. To install ffmpeg, open a command prompt and run:
     winget install Gyan.FFmpeg
 
 

@@ -130,6 +130,9 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
         if (_currentOptions != null)
         {
             startInfo.ArgumentList.Add($"--volume={_currentOptions.InitialVolume}");
+            startInfo.ArgumentList.Add(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"--volume-max={_maxVolume}"));
+            if (_audioDevice != "auto")
+                startInfo.ArgumentList.Add($"--audio-device={_audioDevice}");
             startInfo.ArgumentList.Add($"--speed={_currentOptions.InitialSpeed}");
             Volume = _currentOptions.InitialVolume;
             Speed = _currentOptions.InitialSpeed;
@@ -172,6 +175,8 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
             await ApplyAudioFiltersAsync(cancellationToken);
         if (!_videoEnabled)
             await _ipcClient.SetPropertyAsync("vid", "no", cancellationToken);
+        if (_loop)
+            await _ipcClient.SetPropertyAsync("loop-file", "inf", cancellationToken);
 
         SetState(PlaybackState.Stopped);
         _logger.LogInformation("mpv engine initialized and property observers registered.");
@@ -259,6 +264,45 @@ public sealed class MpvPlaybackEngine : IPlayerEngine
 
     private string _audioFilters = string.Empty;
     private bool _videoEnabled = true;
+    private string _audioDevice = "auto";
+    private double _maxVolume = 100;
+
+    public async Task SetAudioDeviceAsync(string device, CancellationToken cancellationToken = default)
+    {
+        _audioDevice = string.IsNullOrWhiteSpace(device) ? "auto" : device;
+        if (IsEngineAlive)
+            await _ipcClient.SetPropertyAsync("audio-device", _audioDevice, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AudioDevice>> GetAudioDevicesAsync(CancellationToken cancellationToken = default)
+    {
+        if (!IsEngineAlive)
+            return Array.Empty<AudioDevice>();
+        var list = await _ipcClient.GetPropertyAsync<List<MpvAudioDevice>>("audio-device-list", cancellationToken);
+        return list?.Where(d => !string.IsNullOrWhiteSpace(d.Name))
+            .Select(d => new AudioDevice(d.Name!, string.IsNullOrWhiteSpace(d.Description) ? d.Name! : d.Description!))
+            .ToList() ?? (IReadOnlyList<AudioDevice>)Array.Empty<AudioDevice>();
+    }
+
+    private bool _loop;
+
+    public async Task SetLoopAsync(bool loop, CancellationToken cancellationToken = default)
+    {
+        _loop = loop;
+        if (IsEngineAlive)
+            await _ipcClient.SetPropertyAsync("loop-file", loop ? "inf" : "no", cancellationToken);
+    }
+
+    public async Task SetMaxVolumeAsync(double percent, CancellationToken cancellationToken = default)
+    {
+        _maxVolume = Math.Clamp(percent, 100, 200);
+        if (IsEngineAlive)
+            await _ipcClient.SetPropertyAsync("volume-max", _maxVolume, cancellationToken);
+    }
+
+    private sealed record MpvAudioDevice(
+        [property: System.Text.Json.Serialization.JsonPropertyName("name")] string? Name,
+        [property: System.Text.Json.Serialization.JsonPropertyName("description")] string? Description);
 
     public async Task SetAudioFiltersAsync(string filterChain, CancellationToken cancellationToken = default)
     {

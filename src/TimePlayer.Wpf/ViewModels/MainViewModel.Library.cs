@@ -32,7 +32,9 @@ public enum BrowseSection
     /// <summary>Music: the region's top music videos.</summary>
     MusicCharts,
     /// <summary>Music: what was played in Music mode.</summary>
-    MusicRecent
+    MusicRecent,
+    /// <summary>The signed-in YouTube account's own pages (Control+9), when chosen in Settings.</summary>
+    YouTube
 }
 
 public sealed record SectionTab(BrowseSection Section, string Header, string Shortcut)
@@ -76,7 +78,7 @@ public sealed partial class MainViewModel
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsFeaturedSection), nameof(IsChannelsSection), nameof(IsHistorySection), nameof(IsChannelView),
-        nameof(IsForYouSection), nameof(IsPlaylistsSection), nameof(IsPlaylistView), nameof(IsDetailView), nameof(IsSearchSection))]
+        nameof(IsForYouSection), nameof(IsPlaylistsSection), nameof(IsPlaylistView), nameof(IsDetailView), nameof(IsSearchSection), nameof(IsAccountSection))]
     private BrowseSection _currentSection = BrowseSection.Featured;
 
     [ObservableProperty]
@@ -194,6 +196,10 @@ public sealed partial class MainViewModel
 
                 case BrowseSection.Featured:
                     await ShowFeaturedAsync(moveFocus, forceRefresh, token);
+                    break;
+
+                case BrowseSection.YouTube:
+                    await ShowAccountPageAsync(moveFocus, token);
                     break;
 
                 case BrowseSection.WhatsNew:
@@ -433,6 +439,11 @@ public sealed partial class MainViewModel
         var channelId = _currentChannelId;
         if (channelId is null)
             return;
+        if (SelectedChannelTab != ChannelTab.Videos)
+        {
+            await ShowChannelTabAsync(channelId, moveFocus, token);
+            return;
+        }
 
         SectionTitle = T("{0}: latest uploads", _currentChannelName);
         SectionEmptyText = T("This channel's uploads could not be loaded. Press F5 to try again, or Alt+Left to go back.");
@@ -663,6 +674,12 @@ public sealed partial class MainViewModel
 
         if (CurrentSection != BrowseSection.Channel || _currentChannelId != channelId)
             PushNavigation();
+        if (_currentChannelId != channelId)
+        {
+            // A new channel opens on its videos.
+            _selectedChannelTab = ChannelTab.Videos;
+            OnPropertyChanged(nameof(SelectedChannelTab));
+        }
         _currentChannelId = channelId;
         _currentChannelName = item.Kind == SearchResultKind.Channel ? item.Title : item.ChannelTitle;
         await ShowSectionAsync(BrowseSection.Channel, moveFocus: true);
@@ -682,6 +699,7 @@ public sealed partial class MainViewModel
         }
 
         bool subscribed = _library.ToggleSubscription(channelId, channelName);
+        SyncSubscriptionToYouTube(channelId, subscribed);
         _accessibility.Announce(subscribed ? T("Subscribed to {0}.", channelName) : T("Unsubscribed from {0}.", channelName), AnnouncementPriority.High);
 
         // In Channels, keep the row so Control+S again undoes the change.
@@ -722,6 +740,7 @@ public sealed partial class MainViewModel
                 break;
             case BrowseSection.Channels:
                 _library.Unsubscribe(item.Id);
+                SyncSubscriptionToYouTube(item.Id, false);
                 _accessibility.Announce(T("Unsubscribed from {0}.", item.Title), AnnouncementPriority.High);
                 break;
             case BrowseSection.ForYou:
@@ -732,7 +751,7 @@ public sealed partial class MainViewModel
                 return;
             case BrowseSection.Playlist when _openLibraryPlaylistId is { } playlistId:
                 if (playlistId == LibraryService.LikedPlaylistId)
-                    _library.ToggleLike(item);
+                    SyncLikeToYouTube(item.Id, _library.ToggleLike(item));
                 else
                     _library.RemoveFromPlaylist(playlistId, item.Id);
                 _accessibility.Announce(T("Removed {0}.", item.Title), AnnouncementPriority.High);
@@ -880,6 +899,7 @@ public sealed partial class MainViewModel
             return;
         }
         bool subscribed = _library.ToggleSubscription(channelId, channelName);
+        SyncSubscriptionToYouTube(channelId, subscribed);
         UpdateCurrentVideoLibraryState();
         _accessibility.Announce(subscribed ? T("Subscribed to {0}.", channelName) : T("Unsubscribed from {0}.", channelName), AnnouncementPriority.High);
     }
@@ -921,9 +941,11 @@ public sealed partial class MainViewModel
         }
         var remaining = dur - CurrentTime;
         int percent = (int)Math.Round(CurrentTime / dur * 100);
+        var chapter = CurrentChapterSpoken();
         _accessibility.Announce(
             T("{0} of {1}. ", AccessibleTextFormatter.FormatTimeSpoken(CurrentTime), AccessibleTextFormatter.FormatTimeSpoken(dur)) +
-            T("{0} remaining. {1} percent.", AccessibleTextFormatter.FormatTimeSpoken(remaining), percent),
+            T("{0} remaining. {1} percent.", AccessibleTextFormatter.FormatTimeSpoken(remaining), percent) +
+            (chapter is null ? string.Empty : " " + chapter),
             AnnouncementPriority.High);
     }
 

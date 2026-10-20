@@ -125,6 +125,7 @@ public sealed partial class MainViewModel
             SectionTabs.Add(tab);
         SelectedSectionTab = SectionTabs[0];
         _syncingTab = false;
+        RefreshAccountTab();
         _backStack.Clear();
         OnPropertyChanged(nameof(ModeName));
         OnPropertyChanged(nameof(WindowTitle));

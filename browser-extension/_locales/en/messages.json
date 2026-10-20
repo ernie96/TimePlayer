@@ -34,5 +34,23 @@
   },
   "optionsHelp": {
     "message": "On YouTube itself, use the toolbar button, Alt+Shift+P, or the context menu. The first time, the browser asks whether to open TimePlayer; you can let it always allow this."
+  },
+  "signinHeading": {
+    "message": "Your YouTube sign-in (optional)"
+  },
+  "signinHelp": {
+    "message": "Only if you want TimePlayer to use your YouTube account. Sign in to YouTube in this browser, then press the button. A file is saved to Downloads; in TimePlayer, Settings, YouTube account, choose Import a sign-in file. TimePlayer deletes the file after reading it."
+  },
+  "exportSignin": {
+    "message": "Export my YouTube sign-in for TimePlayer"
+  },
+  "signinDenied": {
+    "message": "Not exported: the browser's permission was not given."
+  },
+  "signinNotSignedIn": {
+    "message": "You are not signed in to YouTube in this browser. Sign in, then try again."
+  },
+  "signinSaved": {
+    "message": "Saved to Downloads as timeplayer-youtube-signin.txt. In TimePlayer: Settings, YouTube account, Import a sign-in file."
   }
 }

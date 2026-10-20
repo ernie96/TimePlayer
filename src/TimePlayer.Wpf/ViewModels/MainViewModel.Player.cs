@@ -15,7 +15,10 @@ public enum PlayerPanel
     UpNext = 0,
     Comments = 1,
     Description = 2,
-    Queue = 3
+    Queue = 3,
+    Chapters = 4,
+    Transcript = 5,
+    Lyrics = 6
 }
 
 /// <summary>
@@ -84,6 +87,8 @@ public sealed partial class MainViewModel
         UpNext.Clear();
         Comments.Clear();
         VideoDescription = string.Empty;
+        ResetTranscript();
+        ResetLyrics();
         CommentsStatus = T("Open this tab to load comments.");
         OnPropertyChanged(nameof(CanLoadMoreComments));
 
@@ -125,6 +130,10 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(SelectedPlayerPanelIndex));
         if (value == PlayerPanel.Comments && !_commentsRequested)
             _ = LoadCommentsAsync(announce: true);
+        if (value == PlayerPanel.Transcript)
+            _ = LoadTranscriptAsync();
+        if (value == PlayerPanel.Lyrics)
+            _ = LoadLyricsAsync(announce: true);
     }
 
     [RelayCommand]
@@ -310,7 +319,11 @@ public sealed partial class MainViewModel
             return;
         }
 
-        if (Autoplay && IsPlayerDialogOpen && NextAutoplayCandidate() is { } next)
+        if (IsPlayerDialogOpen && ContinueRadio())
+        {
+            // The radio fetches more songs like the last one.
+        }
+        else if (Autoplay && IsPlayerDialogOpen && NextAutoplayCandidate() is { } next)
         {
             _accessibility.Announce(T("Up next: {0}", next.Title), AnnouncementPriority.Medium);
             _ = ContinueWithAsync(next);

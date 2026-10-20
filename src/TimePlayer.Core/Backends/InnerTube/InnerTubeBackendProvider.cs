@@ -8,6 +8,8 @@ using TimePlayer.Core.Contracts;
 using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Core.Backends.InnerTube;
 
 /// <summary>
@@ -15,19 +17,22 @@ namespace TimePlayer.Core.Backends.InnerTube;
 /// Requires no Google API key, no OAuth, and no user login.
 /// Provides direct YouTube catalog search, metadata via /next, and player format inspection via /player.
 /// </summary>
-public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogProvider, IStreamResolver
+public sealed partial class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogProvider, IStreamResolver
 {
     private readonly HttpClient _httpClient;
     private readonly IConfigurationService _configService;
     private readonly ILogger<InnerTubeBackendProvider> _logger;
+    private readonly Community.IYouTubeAccount? _account;
 
     public BackendProviderType ProviderType => BackendProviderType.InnerTube;
 
     public InnerTubeBackendProvider(
         HttpClient httpClient,
         IConfigurationService configService,
-        ILogger<InnerTubeBackendProvider> logger)
+        ILogger<InnerTubeBackendProvider> logger,
+        Community.IYouTubeAccount? account = null)
     {
+        _account = account;
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         _configService = configService ?? throw new ArgumentNullException(nameof(configService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -123,6 +128,34 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
         {
             _logger.LogWarning(ex, "InnerTube search returned unreadable JSON for '{Query}'.", query);
             return Result<PagedResult<SearchResult>>.Failure("INNERTUBE_SEARCH_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    /// <summary>
+    /// A radio for a song: YouTube's endless mix of songs like it (the "RDAMVM" playlist), as YouTube Music
+    /// plays after a song. Calling it again with the last song gives more.
+    /// </summary>
+    public async Task<Result<IReadOnlyList<SearchResult>>> GetRadioAsync(string videoId, CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject { ["videoId"] = videoId, ["playlistId"] = "RDAMVM" + videoId };
+        var response = await PostAsync("next", body, cancellationToken);
+        if (response.IsFailure)
+            return Result<IReadOnlyList<SearchResult>>.Failure(response.Error);
+        try
+        {
+            using var doc = JsonDocument.Parse(response.Value);
+            var songs = new List<SearchResult>();
+            var seen = new HashSet<string>();
+            foreach (var renderer in InnerTubeJson.FindAll(doc.RootElement, "playlistPanelVideoRenderer"))
+                if (InnerTubeJson.ParseVideoRenderer(renderer) is { } song && seen.Add(song.Id))
+                    songs.Add(song);
+            return songs.Count == 0
+                ? Result<IReadOnlyList<SearchResult>>.Failure("NO_RADIO", T("YouTube has no radio for this song."))
+                : Result<IReadOnlyList<SearchResult>>.Success(songs);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IReadOnlyList<SearchResult>>.Failure("INNERTUBE_RADIO_FAILED", ex.Message, ex.ToString(), ex);
         }
     }
 
@@ -258,8 +291,83 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
         }
     }
 
-    private async Task<Result<string>> PostAsync(string endpoint, JsonObject body, CancellationToken cancellationToken, string? region = null)
+    // ----- The optional YouTube account -----
+
+    /// <summary>Signed in, and the account may be used for its own pages and actions.</summary>
+    public bool CanUseAccount => _account?.ForAccountFeatures == true;
+
+    /// <summary>
+    /// A page of the signed-in account: "FEwhat_to_watch" (Home), "FEsubscriptions" or "FEhistory".
+    /// </summary>
+    public async Task<Result<IReadOnlyList<SearchResult>>> GetAccountPageAsync(string browseId, CancellationToken cancellationToken = default)
     {
+        var response = await PostAsync("browse", new JsonObject { ["browseId"] = browseId }, cancellationToken, signedIn: true);
+        if (response.IsFailure)
+            return Result<IReadOnlyList<SearchResult>>.Failure(response.Error);
+        try
+        {
+            using var doc = JsonDocument.Parse(response.Value);
+            if (SignedOut(doc.RootElement))
+                return Result<IReadOnlyList<SearchResult>>.Failure("SIGNED_OUT", T("YouTube says you are signed out. Sign in again in Settings, YouTube account."));
+            var videos = new List<SearchResult>();
+            var seen = new HashSet<string>();
+            foreach (var lockup in InnerTubeJson.FindAll(doc.RootElement, "lockupViewModel"))
+                if (InnerTubeJson.ParseLockup(lockup) is { } video && seen.Add(video.Id))
+                    videos.Add(video);
+            foreach (var name in new[] { "videoRenderer", "gridVideoRenderer", "playlistVideoRenderer" })
+                foreach (var renderer in InnerTubeJson.FindAll(doc.RootElement, name))
+                    if (InnerTubeJson.ParseVideoRenderer(renderer) is { } video && seen.Add(video.Id))
+                        videos.Add(video);
+            return Result<IReadOnlyList<SearchResult>>.Success(videos);
+        }
+        catch (JsonException ex)
+        {
+            return Result<IReadOnlyList<SearchResult>>.Failure("INNERTUBE_ACCOUNT_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    /// <summary>A private playlist of the account: "LL" (liked videos) or "WL" (Watch later).</summary>
+    public async Task<Result<YouTubePlaylistPage>> GetAccountPlaylistAsync(string playlistId, CancellationToken cancellationToken = default)
+    {
+        var response = await PostAsync("browse", new JsonObject { ["browseId"] = "VL" + playlistId }, cancellationToken, signedIn: true);
+        if (response.IsFailure)
+            return Result<YouTubePlaylistPage>.Failure(response.Error);
+        try
+        {
+            using var doc = JsonDocument.Parse(response.Value);
+            if (SignedOut(doc.RootElement))
+                return Result<YouTubePlaylistPage>.Failure("SIGNED_OUT", T("YouTube says you are signed out. Sign in again in Settings, YouTube account."));
+            return Result<YouTubePlaylistPage>.Success(InnerTubeJson.ParsePlaylistPage(doc.RootElement, playlistId));
+        }
+        catch (JsonException ex)
+        {
+            return Result<YouTubePlaylistPage>.Failure("INNERTUBE_ACCOUNT_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    /// <summary>Likes a video on YouTube, or takes the like back.</summary>
+    public async Task<Result<bool>> SetLikeAsync(string videoId, bool like, CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject { ["target"] = new JsonObject { ["videoId"] = videoId } };
+        var response = await PostAsync(like ? "like/like" : "like/removelike", body, cancellationToken, signedIn: true);
+        return response.IsSuccess ? Result<bool>.Success(true) : Result<bool>.Failure(response.Error);
+    }
+
+    /// <summary>Subscribes to a channel on YouTube, or unsubscribes.</summary>
+    public async Task<Result<bool>> SetSubscribedAsync(string channelId, bool subscribe, CancellationToken cancellationToken = default)
+    {
+        var body = new JsonObject { ["channelIds"] = new JsonArray(channelId) };
+        var response = await PostAsync(subscribe ? "subscription/subscribe" : "subscription/unsubscribe", body, cancellationToken, signedIn: true);
+        return response.IsSuccess ? Result<bool>.Success(true) : Result<bool>.Failure(response.Error);
+    }
+
+    private static bool SignedOut(JsonElement root) =>
+        InnerTubeJson.FindAll(root, "loggedOut").Any(e => e.ValueKind == JsonValueKind.True);
+
+    private async Task<Result<string>> PostAsync(string endpoint, JsonObject body, CancellationToken cancellationToken, string? region = null, bool signedIn = false)
+    {
+        if (signedIn && !CanUseAccount)
+            return Result<string>.Failure("NOT_SIGNED_IN", T("Sign in to YouTube in Settings, YouTube account, first."));
         body["context"] = JsonSerializer.SerializeToNode(CreateWebContext(region));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(Timeout);
@@ -271,6 +379,12 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
             };
             req.Headers.TryAddWithoutValidation("User-Agent", BrowserUserAgent);
             req.Headers.TryAddWithoutValidation("Accept", "*/*");
+            if (signedIn)
+            {
+                // Only ever to youtube.com: the sign-in never goes to another server, and isn't logged.
+                foreach (var (name, value) in _account!.RequestHeaders(DateTimeOffset.UtcNow))
+                    req.Headers.TryAddWithoutValidation(name, value);
+            }
 
             using var resp = await _httpClient.SendAsync(req, HttpCompletionOption.ResponseContentRead, cts.Token);
             if (!resp.IsSuccessStatusCode)
@@ -418,6 +532,51 @@ public sealed class InnerTubeBackendProvider : IBackendProvider, IVideoCatalogPr
         {
             _logger.LogWarning(ex, "Failed to load InnerTube video details for {Id}.", videoId.Value);
             return Result<VideoDetails>.Failure("INNERTUBE_DETAILS_FAILED", ex.Message, ex.ToString(), ex);
+        }
+    }
+
+    /// <summary>
+    /// Whether the video has an audio-described track. One quick request; null when YouTube didn't say
+    /// (an error, or a video that needs signing in).
+    /// </summary>
+    public async Task<bool?> HasAudioDescriptionAsync(YouTubeVideoId videoId, CancellationToken cancellationToken = default)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        cts.CancelAfter(TimeSpan.FromSeconds(3));
+        try
+        {
+            // YouTube's iPhone app client: the web client's player answers "Video unavailable" without a
+            // proof-of-origin token, but the phone app's lists the audio tracks ("English original", "... descriptive").
+            var phone = new InnerTubeContext
+            {
+                Client = new InnerTubeClientInfo
+                {
+                    ClientName = "IOS", ClientVersion = "20.10.4", Hl = "en", Gl = "US",
+                    DeviceMake = "Apple", DeviceModel = "iPhone16,2", OsName = "iPhone", OsVersion = "18.3.2.22D82"
+                }
+            };
+            using var req = new HttpRequestMessage(HttpMethod.Post, $"{BaseUrl}player?prettyPrint=false")
+            {
+                Content = JsonContent.Create(new InnerTubePlayerRequest { Context = phone, VideoId = videoId.Value })
+            };
+            req.Headers.TryAddWithoutValidation("User-Agent", "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)");
+            using var resp = await _httpClient.SendAsync(req, cts.Token);
+            if (!resp.IsSuccessStatusCode)
+                return null;
+            var player = await resp.Content.ReadFromJsonAsync<InnerTubePlayerResponse>(cancellationToken: cts.Token);
+            var formats = player?.StreamingData?.AdaptiveFormats;
+            if (formats is null || formats.Count == 0)
+                return null;
+            return formats.Any(f => StreamCandidate.IsDescriptiveTrackName(f.AudioTrack?.DisplayName));
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException or System.Text.Json.JsonException)
+        {
+            _logger.LogInformation("Audio track check failed for {Id}: {Message}", videoId.Value, ex.Message);
+            return null;
         }
     }
 

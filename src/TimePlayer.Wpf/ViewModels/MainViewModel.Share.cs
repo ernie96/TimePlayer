@@ -67,8 +67,8 @@ public sealed partial class MainViewModel
 
         var title = string.IsNullOrWhiteSpace(item.Title) ? "video" : item.Title;
         var format = audioOnly
-            ? (_downloads.CanConvert ? "audio, MP3" : "audio, M4A")
-            : "video";
+            ? (_downloads.CanConvert ? T("audio, MP3") : T("audio, M4A"))
+            : T("video");
         _accessibility.Announce(T("Downloading {0}: {1}", format, title), AnnouncementPriority.Medium);
 
         ActiveDownloads++;
@@ -208,7 +208,7 @@ public sealed partial class MainViewModel
         T("3. Turn on Developer mode. It's a switch on that page.") + "\n" +
         T("4. Choose \"Load unpacked\". In the folder window, paste the location into the folder box, press Enter, then choose Select Folder.") + "\n" +
         T("5. That's it. On other websites, \"Play in TimePlayer\" now follows each YouTube link. On YouTube itself, press Alt+Shift+P to play the page.") + "\n" +
-        T("6. The first time, the browser asks whether to open TimePlayer. Check \"Always allow\", then choose Open.") + "\n\n" +
+        T("6. Links now go straight to TimePlayer. If you added an earlier version of the extension, remove that one in the browser's extensions page.") + "\n\n" +
         T("Without the extension: choose \"Copy the browser bookmark\", add a bookmark in your browser and paste it as the address. On a YouTube page, choose that bookmark.") + "\n\n" +
         T("If links stop opening in TimePlayer (for example after moving a portable copy), choose \"Register TimePlayer for links again\".");
 

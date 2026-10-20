@@ -225,8 +225,16 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         IRecommendationService recommendations,
         ISponsorBlockService sponsorBlock,
         IDislikeService dislikes,
-        ILogger<MainViewModel> logger)
+        ILogger<MainViewModel> logger,
+        ITranscriptService? transcripts = null,
+        IYouTubeAccount? account = null,
+        TimePlayer.Core.Backends.InnerTube.InnerTubeBackendProvider? accountPages = null,
+        ILyricsService? lyrics = null)
     {
+        _lyrics = lyrics;
+        _transcripts = transcripts;
+        _account = account;
+        _innerTubeDirect = accountPages;
         _sponsorBlock = sponsorBlock ?? throw new ArgumentNullException(nameof(sponsorBlock));
         _dislikes = dislikes ?? throw new ArgumentNullException(nameof(dislikes));
         _playlists = playlists ?? throw new ArgumentNullException(nameof(playlists));
@@ -292,6 +300,13 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             concreteCoord.CaptionsChanged += OnCoordinatorCaptionsChanged;
         }
 
+        InitializeAudioDescription();
+        InitializeChapters();
+        InitializeSoundOutput();
+        InitializeAccount();
+        InitializeLyrics();
+        ResetTranscript();
+
         // Initialize subtitle tracks list with "Off"
         ResetSubtitleTracks();
     }
@@ -321,6 +336,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             };
 
             await _playerEngine.InitializeAsync(windowHandle, options);
+            _ = RefreshAudioDevicesAsync();
             IsEngineInitialized = true;
             PlaybackStatusText = T("Engine initialized");
         }
@@ -361,9 +377,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         try
         {
-            var searchResult = SelectedSearchKind == SearchKind.Playlists
-                ? await _playlists.SearchAsync(query, null, cancellationToken)
-                : await _playbackCoordinator.SearchAsync(query, cancellationToken);
+            var searchResult = SelectedSearchKind switch
+            {
+                SearchKind.Playlists => await _playlists.SearchAsync(query, null, cancellationToken),
+                SearchKind.Shorts when _innerTubeDirect is not null => await _innerTubeDirect.SearchShortsAsync(query, null, cancellationToken),
+                _ => await _playbackCoordinator.SearchAsync(query, cancellationToken)
+            };
             if (cancellationToken.IsCancellationRequested)
             {
                 return;
@@ -386,6 +405,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
                 }
                 if (SelectedSearchKind == SearchKind.Playlists)
                     ConfigurePlaylistSearchPaging(query, searchResult.Value.NextPageToken);
+                else if (SelectedSearchKind == SearchKind.Shorts && _innerTubeDirect is not null)
+                    ConfigureShortsSearchPaging(query, searchResult.Value.NextPageToken);
                 else
                     ConfigureSearchPaging();
 
@@ -536,6 +557,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             await OpenPlaylistAsync(item);
             return;
         }
+        if (!_playingShort)
+            EndShortsMode();
         BeginNewPlayback();
         SetCurrentLibraryVideo(item);
 
@@ -594,6 +617,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     public async Task PlayDirectUrlAsync(string url)
     {
         if (string.IsNullOrWhiteSpace(url)) return;
+        EndShortsMode();
 
         // Cancel previous in-flight playback loading if any
         _playbackCts?.Cancel();
@@ -644,6 +668,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (!IsPlayerDialogOpen) return;
 
         IsPlayerDialogOpen = false;
+        EndShortsMode();
         StopBrailleBlinkTimer();
         RecordCurrentProgress(CurrentTime, flush: true);
         _ = PersistVolumeAsync();
@@ -878,12 +903,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (!IsEngineInitialized) return;
 
         var step = _configService.CurrentConfig.Playback.VolumeStepPercent;
-        var newVol = Math.Clamp(VolumePercent + step, 0.0, 100.0);
+        var newVol = Math.Clamp(VolumePercent + step, 0.0, MaxVolume);
         try
         {
             await _playerEngine.SetVolumeAsync(newVol);
             VolumePercent = newVol;
-            _accessibility.Announce(AccessibleTextFormatter.FormatVolumeSpoken(VolumePercent), AnnouncementPriority.Low);
+            _accessibility.Announce(VolumeSpoken(VolumePercent), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -897,12 +922,12 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         if (!IsEngineInitialized) return;
 
         var step = _configService.CurrentConfig.Playback.VolumeStepPercent;
-        var newVol = Math.Clamp(VolumePercent - step, 0.0, 100.0);
+        var newVol = Math.Clamp(VolumePercent - step, 0.0, MaxVolume);
         try
         {
             await _playerEngine.SetVolumeAsync(newVol);
             VolumePercent = newVol;
-            _accessibility.Announce(AccessibleTextFormatter.FormatVolumeSpoken(VolumePercent), AnnouncementPriority.Low);
+            _accessibility.Announce(VolumeSpoken(VolumePercent), AnnouncementPriority.Low);
         }
         catch (Exception ex)
         {
@@ -1000,6 +1025,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
     [RelayCommand]
     public void OpenSettings()
     {
+        _ = RefreshAudioDevicesAsync();
         IsSettingsDialogOpen = true;
     }
 
@@ -1186,6 +1212,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
 
         UpdateBrailleDisplayLine();
         OnLibraryPlaybackStateChanged(e.NewState);
+        if (e.NewState == PlaybackState.Playing)
+            AnnounceAudioDescriptionOnPlay();
 
         var status = e.NewState switch
         {
@@ -1217,6 +1245,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         UpdateBrailleDisplayLine();
         OnLibraryPositionChanged(e.Position);
         OnSegmentPosition(e.Position);
+        OnChapterPosition(e.Position);
+        OnLyricsPosition(e.Position);
     }
 
     private void OnEngineSubtitleTextChanged(object? sender, string text)
@@ -1377,6 +1407,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
         var targetTime = cellCount >= 2
             ? BrailleProgressTrack.CalculateSeekTime(cellIndex, cellCount, dur)
             : _brailleTrack.CalculateSeekTime(cellIndex, dur);
+        targetTime = SnapToChapter(cellIndex, cellCount >= 2 ? cellCount : _brailleTrack.CellCount, dur, targetTime);
         try
         {
             // Update local time and tactile display line immediately for 0ms physical response
@@ -1555,13 +1586,14 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             dur,
             isPlaying,
             isPaused,
-            _brailleBlinkVisible);
+            _brailleBlinkVisible,
+            _chapterStarts);
 
         BrailleDisplayLine = newLine;
 
         double fraction = dur > TimeSpan.Zero ? Math.Clamp(CurrentTime / dur, 0.0, 1.0) : 0.0;
         NvdaBrailleBridge.PublishProgressState(isPlaying || isPaused
-            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{(isPlaying ? "playing" : "paused")} {fraction:F4}")
+            ? string.Create(System.Globalization.CultureInfo.InvariantCulture, $"{(isPlaying ? "playing" : "paused")} {fraction:F4} {ChapterFractions(dur)}").TrimEnd()
             : "stopped");
 
     }
@@ -1613,6 +1645,7 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             concreteCoord.ItemSkipped -= OnCoordinatorItemSkipped;
             concreteCoord.CaptionsChanged -= OnCoordinatorCaptionsChanged;
         }
+        DisposeAudioDescription();
 
         return ValueTask.CompletedTask;
     }

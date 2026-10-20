@@ -18,6 +18,9 @@ public sealed class BrailleProgressTrack
     /// </summary>
     public const char LowerG = '\u2836';
 
+    /// <summary>Dots 7-8 (⣀, U+28C0): where a chapter starts, under the line so the lower g stays clear.</summary>
+    public const char ChapterMark = '\u28C0';
+
     /// <summary>
     /// Unicode Braille blank pattern: empty cell (⠀, U+2800).
     /// </summary>
@@ -87,7 +90,9 @@ public sealed class BrailleProgressTrack
     /// <param name="isPlaying">True if playing; false if paused or stopped.</param>
     /// <param name="isPaused">True if paused (triggering slow blinking).</param>
     /// <param name="blinkVisible">Blink phase when paused (true = lower g visible, false = blank).</param>
-    public string GenerateDisplayLine(TimeSpan position, TimeSpan duration, bool isPlaying, bool isPaused, bool blinkVisible = true)
+    /// <param name="chapterStarts">Where chapters begin; each is marked with dots 7 and 8.</param>
+    public string GenerateDisplayLine(TimeSpan position, TimeSpan duration, bool isPlaying, bool isPaused, bool blinkVisible = true,
+        IReadOnlyList<TimeSpan>? chapterStarts = null)
     {
         char blankChar = UseBrailleBlank ? BrailleBlank : SpaceBlank;
 
@@ -106,7 +111,12 @@ public sealed class BrailleProgressTrack
         int activeIndex = CalculateCellIndex(position, duration);
         var cells = new char[CellCount];
         Array.Fill(cells, blankChar);
-        cells[activeIndex] = LowerG;
+        foreach (var start in chapterStarts ?? Array.Empty<TimeSpan>())
+        {
+            if (start > TimeSpan.Zero)
+                cells[CalculateCellIndex(start, duration)] = ChapterMark;
+        }
+        cells[activeIndex] = cells[activeIndex] == ChapterMark ? (char)(LowerG | ChapterMark) : LowerG;
 
         return new string(cells);
     }

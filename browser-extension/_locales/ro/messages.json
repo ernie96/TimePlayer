@@ -34,5 +34,23 @@
   },
   "optionsHelp": {
     "message": "Pe YouTube, folosiți butonul din bara de instrumente, Alt+Shift+P sau meniul contextual. Prima dată, browserul întreabă dacă să deschidă TimePlayer; îl puteți lăsa să permită mereu."
+  },
+  "signinHeading": {
+    "message": "Conectarea la YouTube (opțional)"
+  },
+  "signinHelp": {
+    "message": "Doar dacă doriți ca TimePlayer să folosească contul dvs. YouTube. Conectați-vă la YouTube în acest browser, apoi apăsați butonul. Un fișier se salvează în Descărcări; în TimePlayer, Setări, Cont YouTube, alegeți Importă un fișier de conectare. TimePlayer șterge fișierul după ce îl citește."
+  },
+  "exportSignin": {
+    "message": "Exportă conectarea mea YouTube pentru TimePlayer"
+  },
+  "signinDenied": {
+    "message": "Nu s-a exportat: permisiunea browserului nu a fost acordată."
+  },
+  "signinNotSignedIn": {
+    "message": "Nu sunteți conectat la YouTube în acest browser. Conectați-vă, apoi încercați din nou."
+  },
+  "signinSaved": {
+    "message": "Salvat în Descărcări ca timeplayer-youtube-signin.txt. În TimePlayer: Setări, Cont YouTube, Importă un fișier de conectare."
   }
 }

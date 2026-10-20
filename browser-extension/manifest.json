@@ -2,24 +2,56 @@
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
   "description": "__MSG_extensionDescription__",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "default_locale": "en",
-  "permissions": ["contextMenus", "storage", "activeTab"],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_title": "__MSG_playPage__" },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0eJXIUYzhHTj+0Ah3x+9s+y7W23qgTaNwAUWII+gsLrdfXh/UoiepAJa2JQIU2uEFqLIm6nukFmS37zNQlu20zOwoi61GjsHjpJctyVIRXtyx6O6vCn+RYjT4CuYfZbr50qc2wC5h4IAfIx2OC/6egy/qoO7579zSMg8sVjnfAVbiVsouSPfZXn8AinjDvVcTMMwYPRYF9ydQNej6rUEmD/yvcl6SIUQhR+6x1Ci4VQe8plzUCKxxGaU3jkRiIQCBQgr6P3ztmDdbhD5vtASw9+QAsNZ92n8beoUl5k/FOKWP7Rip/FQuPBEi60vFEUEcnzsH77I+cb9evmmWw73dwIDAQAB",
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "activeTab",
+    "nativeMessaging"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "__MSG_playPage__"
+  },
   "commands": {
     "play-page": {
-      "suggested_key": { "default": "Alt+Shift+P" },
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
       "description": "__MSG_playPage__"
     }
   },
   "content_scripts": [
     {
-      "matches": ["http://*/*", "https://*/*"],
-      "exclude_matches": ["*://*.youtube.com/*", "*://youtube.com/*"],
-      "js": ["links.js", "content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "exclude_matches": [
+        "*://*.youtube.com/*",
+        "*://youtube.com/*"
+      ],
+      "js": [
+        "links.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-  "options_ui": { "page": "options.html", "open_in_tab": false }
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "optional_permissions": [
+    "cookies",
+    "downloads"
+  ],
+  "optional_host_permissions": [
+    "https://*.youtube.com/*",
+    "https://*.google.com/*"
+  ]
 }

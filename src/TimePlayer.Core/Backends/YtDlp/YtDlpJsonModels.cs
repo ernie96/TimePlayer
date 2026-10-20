@@ -176,6 +176,10 @@ public record YtDlpFormat
     [JsonPropertyName("protocol")]
     public string? Protocol { get; init; }
 
+    /// <summary>For YouTube audio tracks, their name: "English (United States) original (default)", "... descriptive".</summary>
+    [JsonPropertyName("format_note")]
+    public string? FormatNote { get; init; }
+
     [JsonIgnore]
     public bool IsAudioOnly => (VCodec == "none" || string.IsNullOrEmpty(VCodec)) && !string.IsNullOrEmpty(ACodec) && ACodec != "none";
 

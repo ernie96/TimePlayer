@@ -20,6 +20,8 @@ public static class KeyboardHelp
         T("Left and Right arrows switch sections. Tab moves through this section's buttons and list, and stays in the section.\n") +
         T("Video: Control+1 Featured, 2 For You, 3 What's New, 4 Channels, 5 Playlists, 6 Watch Later, 7 History, 8 Queue.\n") +
         T("Music: Control+1 Charts, 2 Recently played, 3 Playlists, 4 Queue. Control+M switches between Video and Music.\n") +
+        T("Control+9 is YouTube (your account's home, subscriptions, history and likes) when you use your account: Settings, YouTube account.\n") +
+        T("Control+Shift+S starts Shorts mode: Up and Down move between Shorts, and each one repeats.\n") +
         T("Control+Tab goes to the next section. Slash searches. F6 moves between the search box, the sections, the list and Now playing.\n") +
         NowPlayingKeys;
 
@@ -36,6 +38,8 @@ public static class KeyboardHelp
         T("Control+K likes, Control+P adds to a playlist, ") +
         T("Control+S subscribes to the channel, Control+G opens the channel, Control+C copies a share link, ") +
         T("Control+D downloads the audio or video. ") +
+        T("Control+R starts a radio of songs like it. ") +
+        T("Control+Shift+S plays the list's Shorts in Shorts mode. ") +
         T("The Applications key lists every action.");
 
     public static string ForList(BrowseSection section) => section switch
@@ -55,7 +59,9 @@ public static class KeyboardHelp
         BrowseSection.WatchLater =>
             T("Videos you saved. ") + VideoListKeys + T("\nDelete removes a video from Watch Later."),
         BrowseSection.Channel =>
-            T("A channel's videos, newest first. Older videos load as you reach the end.\n") + VideoListKeys + T("\nAlt+Left, Backspace or Escape goes back."),
+            T("A channel's videos, newest first. Older videos load as you reach the end.\n") + VideoListKeys +
+            T("\nShift+Tab reaches the Tab box: Videos, Shorts, Live and Playlists. Control+D on a video offers to download the whole list.") +
+            T("\nAlt+Left, Backspace or Escape goes back."),
         BrowseSection.Queue => Queue,
         BrowseSection.MusicCharts =>
             T("Charts: the top 100 music videos for your region (Settings, Library). Enter plays a song; music keeps playing while you browse. ") + VideoListKeys + "\n" + NowPlayingKeys,
@@ -102,6 +108,8 @@ public static class KeyboardHelp
         T("A turns autoplay on or off. C turns reading captions aloud on or off.\n") +
         T("S skips the SponsorBlock segment playing now, H jumps to the video's highlight.\n") +
         T("E and Shift+E switch the sound preset, Control+M turns music mode (no video, music sound) on or off.\n") +
+        T("D turns audio description on or off. Shift+Left and Shift+Right go to the previous and next chapter.\n") +
+        T("Alt+H chapters, Alt+T transcript, Alt+L lyrics. L reads lyrics aloud as they're sung, and R starts a radio of songs like this one.\n") +
         T("Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n") +
         T("Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n") +
         T("Alt+A or the Applications key opens Actions: like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more.\n") +
@@ -122,6 +130,18 @@ public static class KeyboardHelp
         T("Right again moves into them; Left goes back up to the comment, and Left on the comment closes it. Enter also opens or closes. ") +
         T("\"More replies\" at the end of a reply list loads the rest with Enter.\n") +
         T("Control+C copies a comment. Escape returns to the player controls.");
+
+    public static string Chapters =>
+        T("Chapters come from the timestamps in the video's description. Enter goes to a chapter. While playing, Shift+Left and Shift+Right move between chapters, and T says which chapter you are in. ") +
+        T("On a braille display, dots 7 and 8 mark where chapters start, and a routing key on one goes to that chapter.");
+
+    public static string Transcript =>
+        T("The video's captions as a document, each line followed by its time. Up and Down read it, the first letter of a word jumps to a line starting with it, and Enter plays from the selected line. ") +
+        T("It uses the captions chosen in the player, or else the best for your language.");
+
+    public static string Lyrics =>
+        T("The song's lyrics from LRCLIB, a free lyrics library. Up and Down read them, and Enter plays from a timed line. ") +
+        T("L in the player reads timed lyrics aloud as they're sung, like captions; Settings, Speech and braille, can keep it on.");
 
     public static string Description =>
         T("The video description. Use the arrow keys to read it line by line. Escape returns to the player controls.");

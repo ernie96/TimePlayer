@@ -74,6 +74,16 @@ public partial class MainWindow : Window
         _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         _viewModel.RequestAddToPlaylistMenu += (_, item) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ShowAddToPlaylistMenu(item));
         _viewModel.RequestShareChoice += (_, request) => Dispatcher.BeginInvoke(DispatcherPriority.Input, () => ShowShareChoiceMenu(request));
+        _viewModel.RequestFocusLyrics += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            if (_viewModel.SelectedPlayerPanel == PlayerPanel.Lyrics && IsWithin(Keyboard.FocusedElement as DependencyObject, PlayerPanelTabs))
+                FocusListItem(LyricsListBox);
+        });
+        _viewModel.RequestFocusTranscript += (_, _) => Dispatcher.BeginInvoke(DispatcherPriority.Loaded, () =>
+        {
+            if (_viewModel.SelectedPlayerPanel == PlayerPanel.Transcript && IsWithin(Keyboard.FocusedElement as DependencyObject, PlayerPanelTabs))
+                FocusListItem(TranscriptListBox);
+        });
         _viewModel.Confirm = (title, message) =>
             MessageBox.Show(this, message, title, MessageBoxButton.YesNo, MessageBoxImage.Warning, MessageBoxResult.No) == MessageBoxResult.Yes;
         _viewModel.AskForText = (title, prompt, initial) => TextPromptWindow.Ask(this, title, prompt, initial);
@@ -343,6 +353,11 @@ public partial class MainWindow : Window
             menu.Items.Add(menuItem);
         }
         bool isPlayer = item is null;
+        if (!isPlayer && _viewModel.SearchResults.Count(r => r.IsVideo) > 1)
+        {
+            Add(T("Download all in this list as a_udio..."), () => _ = _viewModel.DownloadAllAudioAsync());
+            Add(T("Download all in this list as vid_eo..."), () => _ = _viewModel.DownloadAllVideoAsync());
+        }
         Add(_viewModel.CanConvertDownloads ? T("Download audio (_MP3)") : T("Download audio (M_4A)"),
             () => _ = isPlayer ? _viewModel.DownloadAudioCurrentAsync() : _viewModel.DownloadAudioForItemAsync(item));
         Add(T("Download _video (MP4)"),
@@ -447,12 +462,25 @@ public partial class MainWindow : Window
         }
         sound.Items.Add(new Separator());
         sound.Items.Add(Item(T("_Music mode"), T("Ctrl+M"), _viewModel.ToggleMusicMode, _viewModel.MusicMode, checkable: true));
+        if (_viewModel.AudioDeviceChoices.Count > 1)
+        {
+            sound.Items.Add(new Separator());
+            foreach (var device in _viewModel.AudioDeviceChoices)
+            {
+                var name = device.Value;
+                sound.Items.Add(Item(T("Output: {0}", device.Label.Replace("_", "__")), string.Empty, () => _viewModel.ChooseAudioDevice(name),
+                    isChecked: name == _viewModel.AudioDevice, checkable: true));
+            }
+        }
         menu.Items.Add(sound);
 
         menu.Items.Add(Item(T("_Autoplay related videos"), "A", _viewModel.ToggleAutoplay, _viewModel.Autoplay, checkable: true));
         menu.Items.Add(Item(T("S_kip SponsorBlock segment"), "S", () => _ = _viewModel.SkipCurrentSegmentAsync()));
         menu.Items.Add(Item(T("Jump to _highlight"), "H", () => _ = _viewModel.JumpToHighlightAsync()));
         menu.Items.Add(Item(T("_Video information"), "I", _viewModel.AnnounceVideoInfo));
+        menu.Items.Add(Item(T("Audio d_escription"), "D", () => _ = _viewModel.ToggleAudioDescriptionAsync(), _viewModel.UseAudioDescription, checkable: true));
+        menu.Items.Add(Item(T("Read l_yrics aloud"), "L", () => _ = _viewModel.ToggleSpeakLyricsAsync(), _viewModel.SpeakLyrics, checkable: true));
+        menu.Items.Add(Item(T("Start _radio from this song"), "R", () => _ = _viewModel.StartRadioAsync(null)));
 
         menu.Opened += (_, _) => (menu.Items[0] as MenuItem)?.Focus();
         menu.IsOpen = true;
@@ -534,6 +562,9 @@ public partial class MainWindow : Window
                 case PlayerPanel.Comments when _viewModel.Comments.Count > 0: FocusCommentsTree(); break;
                 case PlayerPanel.Description: DescriptionBox.Focus(); break;
                 case PlayerPanel.Queue when _viewModel.PlaybackQueue.Count > 0: FocusListItem(PlayerQueueListBox); break;
+                case PlayerPanel.Chapters when _viewModel.Chapters.Count > 0: FocusListItem(ChaptersListBox); break;
+                case PlayerPanel.Transcript when _viewModel.TranscriptLines.Count > 0: FocusListItem(TranscriptListBox); break;
+                case PlayerPanel.Lyrics when _viewModel.LyricLines.Count > 0: FocusListItem(LyricsListBox); break;
                 default:
                     // Nothing listed yet: the tab takes focus, and its panel says why.
                     (PlayerPanelTabs.SelectedItem as TabItem)?.Focus();
@@ -608,7 +639,10 @@ public partial class MainWindow : Window
             else if (IsWithin(focused, CommentsTree)) text = QuickHelp.Comments;
             else if (IsWithin(focused, DescriptionBox)) text = QuickHelp.Description;
             else if (IsWithin(focused, PlayerQueueListBox)) text = QuickHelp.PlayerQueue;
-            else text = QuickHelp.Player;
+            else if (IsWithin(focused, ChaptersListBox) || _viewModel.SelectedPlayerPanel == PlayerPanel.Chapters && IsWithin(focused, PlayerPanelTabs)) text = QuickHelp.Chapters;
+            else if (IsWithin(focused, TranscriptListBox) || _viewModel.SelectedPlayerPanel == PlayerPanel.Transcript && IsWithin(focused, PlayerPanelTabs)) text = QuickHelp.Transcript;
+            else if (IsWithin(focused, LyricsListBox) || _viewModel.SelectedPlayerPanel == PlayerPanel.Lyrics && IsWithin(focused, PlayerPanelTabs)) text = QuickHelp.Lyrics;
+            else text = _viewModel.IsShortsMode ? QuickHelp.Shorts : QuickHelp.Player;
         }
         else if (IsWithin(focused, NowPlayingBar)) text = QuickHelp.NowPlaying;
         else if (IsWithin(focused, SearchBox)) text = QuickHelp.Search;
@@ -631,6 +665,9 @@ public partial class MainWindow : Window
             else if (IsWithin(focused, CommentsTree)) (title, text) = (T("Comments"), KeyboardHelp.Comments);
             else if (IsWithin(focused, DescriptionBox)) (title, text) = (T("Description"), KeyboardHelp.Description);
             else if (IsWithin(focused, PlayerQueueListBox)) (title, text) = (T("Queue"), KeyboardHelp.Queue);
+            else if (IsWithin(focused, ChaptersListBox)) (title, text) = (T("Chapters"), KeyboardHelp.Chapters);
+            else if (IsWithin(focused, TranscriptListBox)) (title, text) = (T("Transcript"), KeyboardHelp.Transcript);
+            else if (IsWithin(focused, LyricsListBox)) (title, text) = (T("Lyrics"), KeyboardHelp.Lyrics);
             else (title, text) = (T("Player"), KeyboardHelp.Player(_viewModel.SmallSeekSeconds, _viewModel.LargeSeekSeconds));
         }
         else if (IsWithin(focused, NowPlayingBar)) (title, text) = (T("Now playing"), KeyboardHelp.NowPlaying);
@@ -727,6 +764,13 @@ public partial class MainWindow : Window
         if (key == Key.F && mods == (ModifierKeys.Control | ModifierKeys.Shift))
         {
             ShowFeatureRequest();
+            e.Handled = true;
+            return;
+        }
+
+        if (key == Key.S && mods == (ModifierKeys.Control | ModifierKeys.Shift))
+        {
+            _ = _viewModel.StartShortsAsync();
             e.Handled = true;
             return;
         }
@@ -856,6 +900,9 @@ public partial class MainWindow : Window
                 Key.C => PlayerPanel.Comments,
                 Key.D => PlayerPanel.Description,
                 Key.Q => PlayerPanel.Queue,
+                Key.H => PlayerPanel.Chapters,
+                Key.T => PlayerPanel.Transcript,
+                Key.L => PlayerPanel.Lyrics,
                 _ => null
             };
             if (panel is { } p)
@@ -919,6 +966,10 @@ public partial class MainWindow : Window
                 case Key.E: _viewModel.CycleSoundPreset(-1); return true;
                 case Key.OemPeriod: _ = _viewModel.SpeedUpAsync(); return true;
                 case Key.OemComma: _ = _viewModel.SpeedDownAsync(); return true;
+                case Key.Right when !arrowsBelongToControl: _ = _viewModel.NextChapterAsync(); return true;
+                case Key.Up when _viewModel.IsShortsMode && !arrowsBelongToControl: _ = _viewModel.VolumeUpAsync(); return true;
+                case Key.Down when _viewModel.IsShortsMode && !arrowsBelongToControl: _ = _viewModel.VolumeDownAsync(); return true;
+                case Key.Left when !arrowsBelongToControl: _ = _viewModel.PreviousChapterAsync(); return true;
             }
             return false;
         }
@@ -943,6 +994,9 @@ public partial class MainWindow : Window
             case Key.I: _viewModel.AnnounceVideoInfo(); return true;
             case Key.U: _viewModel.AnnounceUpNext(); return true;
             case Key.A: _viewModel.ToggleAutoplay(); return true;
+            case Key.D: _ = _viewModel.ToggleAudioDescriptionAsync(); return true;
+            case Key.L: _ = _viewModel.ToggleSpeakLyricsAsync(); return true;
+            case Key.R: _ = _viewModel.StartRadioAsync(null); return true;
             case Key.C: _viewModel.ToggleSpeakCaptions(); return true;
             case Key.S: _ = _viewModel.SkipCurrentSegmentAsync(); return true;
             case Key.H: _ = _viewModel.JumpToHighlightAsync(); return true;
@@ -950,13 +1004,15 @@ public partial class MainWindow : Window
             case Key.Home when !arrowsBelongToControl && !isList: _ = _viewModel.RestartFromBeginningAsync(); return true;
             case Key.Left when !arrowsBelongToControl: _ = _viewModel.SeekSmallBackwardAsync(); return true;
             case Key.Right when !arrowsBelongToControl: _ = _viewModel.SeekSmallForwardAsync(); return true;
+            case Key.Up when _viewModel.IsShortsMode && !arrowsBelongToControl && !isList: _ = _viewModel.PreviousShortAsync(); return true;
+            case Key.Down when _viewModel.IsShortsMode && !arrowsBelongToControl && !isList: _ = _viewModel.NextShortAsync(); return true;
             case Key.Up when !arrowsBelongToControl && !isList: _ = _viewModel.VolumeUpAsync(); return true;
             case Key.Down when !arrowsBelongToControl && !isList: _ = _viewModel.VolumeDownAsync(); return true;
         }
         return false;
     }
 
-    private static int? SectionNumber(Key key) => DigitValue(key) is int d and >= 1 and <= 8 ? d : null;
+    private static int? SectionNumber(Key key) => DigitValue(key) is int d and >= 1 and <= 9 ? d : null;
 
     private static int? DigitValue(Key key) => key switch
     {

@@ -14,6 +14,14 @@ public interface IDownloadService
     bool CanConvert { get; }
 
     Task<Result<string>> DownloadAsync(string videoId, bool audioOnly, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// One video of a whole list: saved in a folder named after the list, as "003 - Title" so the files
+    /// keep the list's order.
+    /// </summary>
+    Task<Result<string>> DownloadIntoFolderAsync(string videoId, bool audioOnly, string folderName, int number,
+        IProgress<DownloadProgress>? progress, CancellationToken cancellationToken) =>
+        DownloadAsync(videoId, audioOnly, progress, cancellationToken);
 }
 
 /// <summary>Saves videos or their audio with yt-dlp, using ffmpeg when it is installed.</summary>
@@ -36,20 +44,48 @@ public sealed class DownloadService : IDownloadService
 
     public bool CanConvert => _ffmpeg.Value is not null;
 
-    public Task<Result<string>> DownloadAsync(string videoId, bool audioOnly, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
+    public Task<Result<string>> DownloadAsync(string videoId, bool audioOnly, IProgress<DownloadProgress>? progress, CancellationToken cancellationToken) =>
+        Download(videoId, audioOnly, DownloadFolder, "%(title)s.%(ext)s", progress, cancellationToken);
+
+    public Task<Result<string>> DownloadIntoFolderAsync(string videoId, bool audioOnly, string folderName, int number,
+        IProgress<DownloadProgress>? progress, CancellationToken cancellationToken) =>
+        Download(videoId, audioOnly, Path.Combine(DownloadFolder, SafeFolderName(folderName)), $"{number:D3} - %(title)s.%(ext)s", progress, cancellationToken);
+
+    private static readonly string[] ReservedNames =
+    {
+        "CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+        "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+    };
+
+    /// <summary>A playlist or channel name as a folder name Windows accepts.</summary>
+    public static string SafeFolderName(string name)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var safe = new string(name.Select(c => invalid.Contains(c) ? '_' : c).ToArray()).Trim().TrimEnd('.', ' ');
+        if (safe.Length > 80)
+            safe = safe[..80].TrimEnd('.', ' ');
+        if (safe.Length == 0)
+            return "TimePlayer list";
+        // Names Windows keeps for devices (a playlist called "Con" or "Aux").
+        var stem = safe.Split('.')[0];
+        return ReservedNames.Contains(stem, StringComparer.OrdinalIgnoreCase) ? "_" + safe : safe;
+    }
+
+    private Task<Result<string>> Download(string videoId, bool audioOnly, string folder, string pattern,
+        IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
         if (!YouTubeVideoId.TryParse(videoId, out var id))
             return Task.FromResult(Result<string>.Failure("INVALID_ID", "This is not a YouTube video."));
 
         var options = new DownloadOptions
         {
-            OutputDirectory = DownloadFolder,
+            OutputDirectory = folder,
             AudioOnly = audioOnly,
             QualityPreference = _config.CurrentConfig.Playback.PreferredQuality is QualityPreference.AudioOnly
                 ? QualityPreference.Auto
                 : _config.CurrentConfig.Playback.PreferredQuality,
             FfmpegLocation = _ffmpeg.Value,
-            FileNamePattern = "%(title)s.%(ext)s"
+            FileNamePattern = pattern
         };
         return _ytDlp.DownloadAsync(id, options, progress, cancellationToken);
     }

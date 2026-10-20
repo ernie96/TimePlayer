@@ -30,6 +30,9 @@
                         <ContextMenu AutomationProperties.Name="{l:T 'Actions'}">
                             <MenuItem Header="{l:T '_Play or open'}" InputGestureText="Enter"
                                       Command="{Binding PlacementTarget.Tag.PlaySearchResultCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
+                            <MenuItem Header="{l:T 'Start radi_o'}" InputGestureText="Ctrl+R"
+                                      Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                      Command="{Binding PlacementTarget.Tag.StartRadioCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
                             <MenuItem Header="{l:T 'Add to _queue'}" InputGestureText="Ctrl+Q"
                                       Visibility="{Binding IsVideo, Converter={StaticResource BooleanToVisibilityConverter}}"
                                       Command="{Binding PlacementTarget.Tag.EnqueueSearchResultCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}" CommandParameter="{Binding}"/>
@@ -273,6 +276,20 @@
                                   SelectedValuePath="Value" SelectedValue="{Binding SelectedFeaturedCategory, Mode=TwoWay}" MinWidth="120"
                                   AutomationProperties.Name="{l:T 'Category'}"/>
                     </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,8,0"
+                                Visibility="{Binding IsChannelView, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Label Content="{l:T 'Ta_b:'}" Target="{Binding ElementName=ChannelTabBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
+                        <ComboBox x:Name="ChannelTabBox" ItemsSource="{Binding ChannelTabs}" DisplayMemberPath="Label"
+                                  SelectedValuePath="Value" SelectedValue="{Binding SelectedChannelTab, Mode=TwoWay}" MinWidth="120"
+                                  AutomationProperties.Name="{l:T 'Channel tab'}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,8,0"
+                                Visibility="{Binding IsAccountSection, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <Label Content="{l:T '_Page:'}" Target="{Binding ElementName=AccountPageBox}" Foreground="#E4E4E7" VerticalAlignment="Center" Padding="0,0,6,0"/>
+                        <ComboBox x:Name="AccountPageBox" ItemsSource="{Binding AccountPages}" DisplayMemberPath="Label"
+                                  SelectedValuePath="Value" SelectedValue="{Binding SelectedAccountPage, Mode=TwoWay}" MinWidth="140"
+                                  AutomationProperties.Name="{l:T 'YouTube page'}"/>
+                    </StackPanel>
                     <Button Content="{l:T '_Import subscriptions...'}" Click="ImportSubscriptions_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsChannelsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
                             AutomationProperties.Name="{l:T 'Import subscriptions'}"/>
@@ -315,6 +332,7 @@
                         <KeyBinding Key="S" Modifiers="Control" Command="{Binding ToggleSubscriptionForItemCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="G" Modifiers="Control" Command="{Binding OpenChannelCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="C" Modifiers="Control" Command="{Binding CopyLinkCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
+                        <KeyBinding Key="R" Modifiers="Control" Command="{Binding StartRadioCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="Delete" Command="{Binding RemoveSelectedItemCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="Delete" Modifiers="Shift" Command="{Binding DontRecommendChannelCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
                         <KeyBinding Key="K" Modifiers="Control" Command="{Binding ToggleLikeForItemCommand}" CommandParameter="{Binding SelectedSearchResult}"/>
@@ -501,6 +519,52 @@
                                     <ListBox.InputBindings>
                                         <KeyBinding Key="Enter" Command="{Binding PlayQueueItemCommand}" CommandParameter="{Binding SelectedQueueItem}"/>
                                         <KeyBinding Key="Delete" Command="{Binding RemoveQueueItemCommand}" CommandParameter="{Binding SelectedQueueItem}"/>
+                                    </ListBox.InputBindings>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="{l:T 'C_hapters'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Chapters'}" AutomationProperties.AcceleratorKey="Alt+H">
+                            <Grid>
+                                <TextBlock Text="{l:T 'This video has no chapters.'}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
+                                           Visibility="{Binding Chapters.Count, Converter={StaticResource BooleanToVisibilityInvertedConverter}}"/>
+                                <ListBox x:Name="ChaptersListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Title"
+                                         Style="{StaticResource AccessibleListBoxStyle}"
+                                         ItemsSource="{Binding Chapters}" DisplayMemberPath="AccessibleLabel"
+                                         SelectedItem="{Binding SelectedChapter}"
+                                         AutomationProperties.Name="{l:T 'Chapters'}">
+                                    <ListBox.InputBindings>
+                                        <KeyBinding Key="Enter" Command="{Binding PlayChapterCommand}" CommandParameter="{Binding SelectedChapter}"/>
+                                    </ListBox.InputBindings>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="{l:T '_Transcript'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Transcript'}" AutomationProperties.AcceleratorKey="Alt+T">
+                            <Grid>
+                                <TextBlock Text="{Binding TranscriptStatus}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
+                                           Visibility="{Binding TranscriptStatus, Converter={StaticResource NullOrEmptyToVisibilityConverter}}"/>
+                                <ListBox x:Name="TranscriptListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Text"
+                                         Style="{StaticResource AccessibleListBoxStyle}"
+                                         ItemsSource="{Binding TranscriptLines}" DisplayMemberPath="AccessibleLabel"
+                                         SelectedItem="{Binding SelectedTranscriptLine}"
+                                         VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling"
+                                         AutomationProperties.Name="{l:T 'Transcript'}">
+                                    <ListBox.InputBindings>
+                                        <KeyBinding Key="Enter" Command="{Binding PlayFromTranscriptLineCommand}" CommandParameter="{Binding SelectedTranscriptLine}"/>
+                                    </ListBox.InputBindings>
+                                </ListBox>
+                            </Grid>
+                        </TabItem>
+                        <TabItem Header="{l:T '_Lyrics'}" Style="{StaticResource StripTabItemStyle}" AutomationProperties.Name="{l:T 'Lyrics'}" AutomationProperties.AcceleratorKey="Alt+L">
+                            <Grid>
+                                <TextBlock Text="{Binding LyricsStatus}" Foreground="#A1A1AA" TextWrapping="Wrap" Margin="8"
+                                           Visibility="{Binding LyricsStatus, Converter={StaticResource NullOrEmptyToVisibilityConverter}}"/>
+                                <ListBox x:Name="LyricsListBox" IsTextSearchEnabled="True" TextSearch.TextPath="Text"
+                                         Style="{StaticResource AccessibleListBoxStyle}"
+                                         ItemsSource="{Binding LyricLines}" DisplayMemberPath="AccessibleLabel"
+                                         SelectedItem="{Binding SelectedLyricLine}"
+                                         AutomationProperties.Name="{l:T 'Lyrics'}">
+                                    <ListBox.InputBindings>
+                                        <KeyBinding Key="Enter" Command="{Binding PlayFromLyricLineCommand}" CommandParameter="{Binding SelectedLyricLine}"/>
                                     </ListBox.InputBindings>
                                 </ListBox>
                             </Grid>

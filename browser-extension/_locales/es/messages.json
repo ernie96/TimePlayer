@@ -34,5 +34,23 @@
   },
   "optionsHelp": {
     "message": "En YouTube, usa el botón de la barra de herramientas, Alt+Mayús+P o el menú contextual. La primera vez, el navegador pregunta si quieres abrir TimePlayer; puedes permitirlo siempre."
+  },
+  "signinHeading": {
+    "message": "Tu sesión de YouTube (opcional)"
+  },
+  "signinHelp": {
+    "message": "Solo si quieres que TimePlayer use tu cuenta de YouTube. Inicia sesión en YouTube en este navegador y pulsa el botón. Se guarda un archivo en Descargas; en TimePlayer, Configuración, Cuenta de YouTube, elige Importar un archivo de inicio de sesión. TimePlayer borra el archivo después de leerlo."
+  },
+  "exportSignin": {
+    "message": "Exportar mi sesión de YouTube para TimePlayer"
+  },
+  "signinDenied": {
+    "message": "No se exportó: el navegador no dio el permiso."
+  },
+  "signinNotSignedIn": {
+    "message": "No has iniciado sesión en YouTube en este navegador. Inicia sesión e inténtalo de nuevo."
+  },
+  "signinSaved": {
+    "message": "Guardado en Descargas como timeplayer-youtube-signin.txt. En TimePlayer: Configuración, Cuenta de YouTube, Importar un archivo de inicio de sesión."
   }
 }

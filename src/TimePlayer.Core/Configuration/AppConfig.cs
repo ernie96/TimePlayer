@@ -19,10 +19,17 @@ public record AppConfig
     public DislikeConfig Dislikes { get; init; } = new();
     public AudioConfig Audio { get; init; } = new();
     public RunsConfig Runs { get; init; } = new();
+    public AccountConfig Account { get; init; } = new();
     /// <summary>Let browsers and other apps open YouTube links in TimePlayer (timeplayer:// links).</summary>
     public bool OpenLinksFromOtherApps { get; init; } = true;
     /// <summary>Which link Control+C shares: "ask" each time, "youtube" or "timeplayer" (a timeplayer:// link).</summary>
     public string ShareLinks { get; init; } = "ask";
+}
+
+/// <summary>The optional YouTube sign-in. The sign-in itself is stored encrypted elsewhere, never here.</summary>
+public record AccountConfig
+{
+    public Community.AccountUse Use { get; init; } = Community.AccountUse.Off;
 }
 
 /// <summary>How many times TimePlayer has started, and whether those starts are added to everyone's total.</summary>
@@ -123,6 +130,12 @@ public record LibraryConfig
 
 public record PlaybackConfig
 {
+    /// <summary>mpv's name for the sound output, or "auto" for Windows' default device.</summary>
+    public string AudioDevice { get; init; } = "auto";
+    /// <summary>Let Up go past 100 percent, to 200, for videos recorded too quietly.</summary>
+    public bool VolumeBoost { get; init; }
+    /// <summary>Play a video's audio-described track (a narrator describes what's on screen) when it has one.</summary>
+    public bool AudioDescription { get; init; } = true;
     public double DefaultVolumePercent { get; init; } = 80.0;
     public double VolumeStepPercent { get; init; } = 5.0;
     public double SmallSeekSeconds { get; init; } = 5.0;
@@ -176,6 +189,10 @@ public record BackendConfig
 
 public record AccessibilityConfig
 {
+    /// <summary>Say a chapter's name when it starts playing.</summary>
+    public bool AnnounceChapters { get; init; }
+    /// <summary>Read timed lyrics aloud as they're sung (L in the player).</summary>
+    public bool SpeakLyrics { get; init; }
     public int BrailleDisplayCellCount { get; init; } = 40;
     public bool EnableBrailleProgress { get; init; } = true;
     /// <summary>Read captions aloud through the screen reader as they appear.</summary>

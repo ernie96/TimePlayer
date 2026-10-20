@@ -20,6 +20,14 @@ public record StreamCandidate
     public bool IsVideoOnly { get; init; }
     public bool IsProgressive { get; init; }
     public long? ContentLength { get; init; }
+    /// <summary>The audio track's name when a video has several (dubbed languages, audio description).</summary>
+    public string? AudioTrackName { get; init; }
+    /// <summary>An audio-described track: the soundtrack with a narrator describing what is on screen.</summary>
+    public bool IsAudioDescription { get; init; }
+
+    /// <summary>YouTube names its audio-described tracks "... descriptive".</summary>
+    public static bool IsDescriptiveTrackName(string? name) =>
+        name?.Contains("descriptive", StringComparison.OrdinalIgnoreCase) == true;
 
     /// <summary>
     /// Gets screen reader accessible label describing resolution, framerate, and codecs.

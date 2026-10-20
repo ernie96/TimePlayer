@@ -3,6 +3,22 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.11.0
+
+- Audio description: when a video has a described soundtrack (a narrator says what is on screen), TimePlayer plays it and says "With audio description" once. D in the player switches it; Settings, Playback, can turn it off.
+- Chapters: read from the timestamps in a video's description. Shift+Left and Shift+Right move between chapters, T says which one you're in, Alt+H lists them, and Settings can say each one as it starts. On a braille display, dots 7 and 8 mark where chapters start, and a routing key on one goes to that chapter (the NVDA add-on updates itself; restart NVDA once).
+- Transcript (Alt+T in the player): the captions as a document you read line by line; Enter plays from that line.
+- Sound output: choose the speakers or headphones TimePlayer plays through (Settings, Sound, or the Actions menu's Sound), so the screen reader can stay on another device. Volume boost lets Up go to 200 percent for quiet videos.
+- Radio: R in the player, or Control+R on a song in a list, plays songs like it, and more follow when they run out.
+- Lyrics (Alt+L in the player), from LRCLIB. L reads timed lyrics aloud as they're sung, like captions.
+- Optional YouTube account (Settings, YouTube account). Off unless you choose it. Signed in, TimePlayer can play age-restricted and members-only videos, and, if you like, show your YouTube home, subscriptions, history, liked videos and Watch Later (Control+9) and send your likes and subscriptions to YouTube. Sign in with the browser extension's new "Export my YouTube sign-in" button, a cookies file, or Firefox. The sign-in is stored encrypted, only sent to youtube.com, and never logged.
+- Shorts mode: Control+Shift+S plays Shorts one after another, from the list you're in, your subscriptions, or a search. Up and Down move between them, each one repeats until you move on, and the next one is loaded ahead so it starts at once. Shift+Up and Shift+Down change the volume; Escape leaves. "Shorts" is also a choice in the Search for box.
+- Channel tabs: on a channel's page, Shift+Tab reaches the new Tab box: Videos, Shorts, Live and Playlists.
+- Download a whole list: Control+D, "Download all in this list as audio" or "as video", downloads every video in a playlist, a channel tab or search results into its own numbered folder in Downloads\TimePlayer, one after another. Cancel downloads stops them.
+- The browser extension now talks to TimePlayer directly: links go straight to TimePlayer, with no "Open TimePlayer?" question from the browser. The extension has a fixed identity for this, so if you added it before, remove the old one in the browser's extensions page and load it again (Settings, Links and browser, has the steps).
+- Fixed: "No description." and the dislike note in the Description panel were always in English.
+- Fixed: audio from yt-dlp could, rarely, be a video's described track by accident.
+
 ## 1.10.0
 
 - Quieter, with help when you want it. F1 now says, in a sentence or two, where you are and the keys that matter most there, without opening a window; Control+F1 opens the full help for that place. TimePlayer says "Press F1 for help" when it starts, and an empty section just says it's empty: F1 tells you how to fill it.

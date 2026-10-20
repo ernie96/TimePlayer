@@ -43,6 +43,14 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // Started by Chrome, Edge or Brave for the Play in TimePlayer extension: pass the link on and leave.
+        if (NativeMessagingHost.IsHostStart(e.Args))
+        {
+            NativeMessagingHost.Run(e.Args);
+            Shutdown();
+            return;
+        }
+
         // One TimePlayer at a time. A second copy would play over the first, and while any copy is open
         // the installer refuses to update (it checks this mutex), so updates failed silently.
         _runningMutex = new Mutex(initiallyOwned: true, "TimePlayerRunning", out bool createdNew);

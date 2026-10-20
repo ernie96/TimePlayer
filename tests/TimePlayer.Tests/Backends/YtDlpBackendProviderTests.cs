@@ -306,6 +306,47 @@ public class YtDlpBackendProviderTests
         Assert.NotNull(resolved.SelectedAudioStream);
     }
 
+    private const string DescribedVideoJson = """
+        {
+            "id": "fJ9rUzIMcZQ",
+            "title": "Described",
+            "formats": [
+                { "format_id": "140-1", "ext": "m4a", "url": "https://audio.described", "vcodec": "none", "acodec": "mp4a", "abr": 160, "format_note": "English (United States) descriptive" },
+                { "format_id": "140-0", "ext": "m4a", "url": "https://audio.original", "vcodec": "none", "acodec": "mp4a", "abr": 128, "format_note": "English (United States) original (default)" },
+                { "format_id": "18", "ext": "mp4", "url": "https://prog.360", "vcodec": "avc1", "acodec": "mp4a", "height": 360 },
+                { "format_id": "136", "ext": "mp4", "url": "https://video.720", "vcodec": "avc1", "acodec": "none", "height": 720 },
+                { "format_id": "137", "ext": "mp4", "url": "https://video.1080", "vcodec": "avc1", "acodec": "none", "height": 1080 }
+            ]
+        }
+        """;
+
+    [Fact]
+    public async Task AudioDescription_WhenWanted_PlaysTheDescribedTrackWithSeparateVideo()
+    {
+        _processRunner.NextResult = new() { ExitCode = 0, StandardOutput = DescribedVideoJson, StandardError = "" };
+        var result = await CreateProvider().ResolveStreamsAsync(new YouTubeVideoId("fJ9rUzIMcZQ"), QualityPreference.P720, audioOnly: false, audioDescription: true);
+
+        Assert.True(result.IsSuccess);
+        Assert.True(result.Value!.UsesAudioDescription);
+        Assert.True(result.Value.HasAudioDescription);
+        Assert.Equal("https://audio.described", result.Value.AudioTrackUrl);
+        Assert.Equal("https://video.720", result.Value.DirectPlaybackUrl); // never the progressive file: it has the original sound
+    }
+
+    [Fact]
+    public async Task AudioDescription_WhenNotWanted_IsNeverPickedEvenWithTheHighestBitrate()
+    {
+        _processRunner.NextResult = new() { ExitCode = 0, StandardOutput = DescribedVideoJson, StandardError = "" };
+        var audio = await CreateProvider().ResolveStreamsAsync(new YouTubeVideoId("fJ9rUzIMcZQ"), audioOnly: true);
+        Assert.Equal("https://audio.original", audio.Value!.DirectPlaybackUrl);
+        Assert.False(audio.Value.UsesAudioDescription);
+        Assert.True(audio.Value.HasAudioDescription);
+
+        _processRunner.NextResult = new() { ExitCode = 0, StandardOutput = DescribedVideoJson, StandardError = "" };
+        var video = await CreateProvider().ResolveStreamsAsync(new YouTubeVideoId("fJ9rUzIMcZQ"), qualityPreference: QualityPreference.P1080);
+        Assert.Equal("https://audio.original", video.Value!.AudioTrackUrl);
+    }
+
     [Fact]
     public async Task DownloadAsync_VideoDownload_EmitsProgressAndReturnsDestination()
     {

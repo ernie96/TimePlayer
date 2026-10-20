@@ -26,6 +26,7 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     private readonly IPlayerEngine _playerEngine;
     private readonly IConfigurationService _configService;
     private readonly ILogger<PlaybackCoordinator> _logger;
+    private readonly Community.IYouTubeAccount? _account;
 
     private readonly List<PlaybackQueueItem> _queue = new();
     private int _currentIndex = -1;
@@ -59,6 +60,46 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
     /// <summary>A queued video couldn't be played; <see cref="QueueSkipEventArgs.WillContinue"/> says whether the next one is being tried.</summary>
     public event EventHandler<QueueSkipEventArgs>? ItemSkipped;
 
+    /// <summary>Whether the video playing now has audio description, and whether it is in use.</summary>
+    public AudioDescriptionState AudioDescription { get; private set; }
+
+    // Streams found ahead of time (the next Short), used once if still fresh.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, (DateTimeOffset At, StreamResolutionResult Stream)> _prefetched = new();
+    private static readonly TimeSpan PrefetchLifetime = TimeSpan.FromMinutes(5);
+
+    /// <summary>Finds a video's stream ahead of time, so playing it later starts at once.</summary>
+    public async Task PrefetchAsync(string videoId, CancellationToken cancellationToken = default)
+    {
+        if (!YouTubeVideoId.TryParse(videoId, out var id) ||
+            (_prefetched.TryGetValue(videoId, out var known) && DateTimeOffset.UtcNow - known.At < PrefetchLifetime))
+            return;
+        foreach (var source in new[] { _tubeRepair, _ytdlp })
+        {
+            try
+            {
+                var stream = await source.ResolveStreamsAsync(id, _configService.CurrentConfig.Playback.PreferredQuality, cancellationToken: cancellationToken);
+                if (stream.IsSuccess && !string.IsNullOrWhiteSpace(stream.Value.DirectPlaybackUrl))
+                {
+                    _prefetched[videoId] = (DateTimeOffset.UtcNow, stream.Value);
+                    foreach (var old in _prefetched.Where(p => DateTimeOffset.UtcNow - p.Value.At > PrefetchLifetime).ToList())
+                        _prefetched.TryRemove(old.Key, out _);
+                    return;
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                return;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogInformation("Preloading {Id} failed: {Message}", videoId, ex.Message);
+            }
+        }
+    }
+
+    /// <summary>Raised when it turns out the video playing has audio description that isn't being used.</summary>
+    public event EventHandler? AudioDescriptionAvailable;
+
     /// <summary>After this many unplayable videos in a row, the queue stops instead of skipping on.</summary>
     public const int MaxConsecutiveSkips = 3;
 
@@ -75,8 +116,10 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         IBackendProvider ytdlp,
         IPlayerEngine playerEngine,
         IConfigurationService configService,
-        ILogger<PlaybackCoordinator> logger)
+        ILogger<PlaybackCoordinator> logger,
+        Community.IYouTubeAccount? account = null)
     {
+        _account = account;
         _tubeRepair = tubeRepair ?? throw new ArgumentNullException(nameof(tubeRepair));
         _invidious = invidious ?? throw new ArgumentNullException(nameof(invidious));
         _innerTube = innerTube ?? throw new ArgumentNullException(nameof(innerTube));
@@ -96,8 +139,9 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         YtDlpBackendProvider ytdlp,
         IPlayerEngine playerEngine,
         IConfigurationService configService,
-        ILogger<PlaybackCoordinator> logger)
-        : this((IBackendProvider)tubeRepair, (IBackendProvider)invidious, (IBackendProvider)innerTube, (IBackendProvider)ytdlp, playerEngine, configService, logger)
+        ILogger<PlaybackCoordinator> logger,
+        Community.IYouTubeAccount? account = null)
+        : this((IBackendProvider)tubeRepair, (IBackendProvider)invidious, (IBackendProvider)innerTube, (IBackendProvider)ytdlp, playerEngine, configService, logger, account)
     {
     }
 
@@ -312,6 +356,53 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
         _playingVideoId = videoId.Value;
         var qualityPref = _configService.CurrentConfig.Playback.PreferredQuality;
 
+        // Audio description: a quick look at the video's audio tracks. A described track is only reachable
+        // through yt-dlp (the other sources give one file with the original soundtrack), so when it's wanted
+        // and there, yt-dlp goes first; otherwise the usual order runs and the check finishes on the side.
+        AudioDescription = AudioDescriptionState.None;
+        var wantDescription = _configService.CurrentConfig.Playback.AudioDescription;
+        var descriptionCheck = _innerTube is InnerTubeBackendProvider innerTubeTracks
+            ? innerTubeTracks.HasAudioDescriptionAsync(videoId, cancellationToken)
+            : Task.FromResult<bool?>(null);
+        // Found ahead of time (the next Short): start right away, without waiting for the track check.
+        if (_prefetched.TryRemove(videoId.Value, out var ready) && DateTimeOffset.UtcNow - ready.At < PrefetchLifetime &&
+            await AttemptPlaybackAsync(ready.Stream.DirectPlaybackUrl, ready.Stream.AudioTrackUrl, ready.Stream.Captions,
+                videoId, startTime, ready.Stream.SourceProvider, TimeSpan.FromSeconds(7), cancellationToken))
+        {
+            _ = ReportDescriptionWhenKnownAsync(descriptionCheck, videoId.Value);
+            return Result<bool>.Success(true);
+        }
+
+        if (wantDescription && await descriptionCheck == true && _ytdlp is YtDlpBackendProvider described)
+        {
+            AudioDescription = AudioDescriptionState.Available;
+            try
+            {
+                StatusChanged?.Invoke(this, "Loading the audio-described version...");
+                var stream = await described.ResolveStreamsAsync(videoId, qualityPref, audioOnly: false, audioDescription: true, cancellationToken);
+                if (stream.IsSuccess && stream.Value.UsesAudioDescription &&
+                    await AttemptPlaybackAsync(stream.Value.DirectPlaybackUrl, stream.Value.AudioTrackUrl, stream.Value.Captions,
+                        videoId, startTime, BackendProviderType.YtDlpLocal, TimeSpan.FromSeconds(10), cancellationToken))
+                {
+                    AudioDescription = AudioDescriptionState.Playing;
+                    return Result<bool>.Success(true);
+                }
+                _logger.LogWarning("The audio-described version of {Id} did not start; playing the original.", videoId.Value);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Audio-described playback failed for {Id}.", videoId.Value);
+            }
+        }
+        else
+        {
+            _ = ReportDescriptionWhenKnownAsync(descriptionCheck, videoId.Value);
+        }
+
         // Tier 1: TubeRepair Stream Resolution & Playback Confirmation
         try
         {
@@ -457,6 +548,40 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             _logger.LogWarning(ex, "Exception attempting yt-dlp resolved playback for {Id}.", videoId.Value);
         }
 
+        // Signed in (if the person chose to): age-restricted and members-only videos.
+        if (_account?.ForRestrictedVideos == true && _ytdlp is YtDlpBackendProvider signedInYtDlp)
+        {
+            var cookies = _account.WriteTemporaryCookiesFile();
+            try
+            {
+                StatusChanged?.Invoke(this, "Trying with your YouTube sign-in...");
+                _logger.LogInformation("Trying {Id} signed in.", videoId.Value);
+                var stream = await signedInYtDlp.ResolveStreamsAsync(videoId, qualityPref, audioOnly: false,
+                    audioDescription: wantDescription, cancellationToken, cookies);
+                if (stream.IsSuccess &&
+                    await AttemptPlaybackAsync(stream.Value.DirectPlaybackUrl, stream.Value.AudioTrackUrl, stream.Value.Captions,
+                        videoId, startTime, BackendProviderType.YtDlpLocal, TimeSpan.FromSeconds(10), cancellationToken))
+                {
+                    if (stream.Value.UsesAudioDescription)
+                        AudioDescription = AudioDescriptionState.Playing;
+                    return Result<bool>.Success(true);
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Signed-in playback failed for {Id}.", videoId.Value);
+            }
+            finally
+            {
+                if (cookies is not null)
+                    try { File.Delete(cookies); } catch (IOException) { }
+            }
+        }
+
         // Tier 4 Fallback: Direct watch URL hook via mpv's bundled yt-dlp hook
         if (unavailable is not null)
         {
@@ -495,7 +620,10 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
 
         // All tiers failed
         _logger.LogError("All playback tiers failed for video ID {Id}.", videoId.Value);
-        return Fail(T("None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later."), raiseErrors);
+        var failure = T("None of TimePlayer's sources could play this video. It may be private, age-restricted or blocked, or the sources may be having trouble; try again later.");
+        if (_account?.ForRestrictedVideos != true)
+            failure += " " + T("Age-restricted videos can play if you sign in: Settings, YouTube account.");
+        return Fail(failure, raiseErrors);
 
         Result<bool> Fail(string message, bool raise, string code = "PLAYBACK_ENGINE_ERROR")
         {
@@ -504,6 +632,29 @@ public sealed class PlaybackCoordinator : IPlaybackCoordinator, IAsyncDisposable
             StatusChanged?.Invoke(this, "Playback failed.");
             return Result<bool>.Failure(new AppError { Code = code, Message = message, IsRecoverable = code != "VIDEO_UNAVAILABLE" });
         }
+    }
+
+    private async Task ReportDescriptionWhenKnownAsync(Task<bool?> check, string videoId)
+    {
+        try
+        {
+            if (await check == true && _playingVideoId == videoId && AudioDescription == AudioDescriptionState.None)
+            {
+                AudioDescription = AudioDescriptionState.Available;
+                AudioDescriptionAvailable?.Invoke(this, EventArgs.Empty);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    /// <summary>Plays the current video again from <paramref name="at"/> (after turning audio description on or off).</summary>
+    public async Task<Result<bool>> ReplayCurrentAsync(TimeSpan at, CancellationToken cancellationToken = default)
+    {
+        if (_playingVideoId is not { } id)
+            return Result<bool>.Failure("NOTHING_PLAYING", "Nothing is playing.");
+        return await PlayVideoIdInternalAsync(YouTubeVideoId.Parse(id), at > TimeSpan.Zero ? at : null, cancellationToken, raiseErrors: false);
     }
 
     private async Task<bool> AttemptPlaybackAsync(
@@ -934,4 +1085,14 @@ public sealed class QueueSkipEventArgs : EventArgs
     public PlaybackQueueItem Item { get; }
     public string Reason { get; }
     public bool WillContinue { get; }
+}
+
+public enum AudioDescriptionState
+{
+    /// <summary>The video has no audio description, or it isn't known yet.</summary>
+    None,
+    /// <summary>The video has audio description, but the original soundtrack is playing.</summary>
+    Available,
+    /// <summary>The audio-described track is playing.</summary>
+    Playing
 }

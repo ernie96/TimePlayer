@@ -65,8 +65,13 @@ Filename: "{app}\TimePlayer.exe"; Description: "{cm:LaunchProgram,TimePlayer}"; 
 ; TimePlayer registers itself for timeplayer:// links when it starts (Settings can turn that off);
 ; this only removes the entry again on uninstall.
 Root: HKA; Subkey: "Software\Classes\timeplayer"; Flags: uninsdeletekey dontcreatekey
+; The browser extension's direct connection (native messaging), registered by TimePlayer the same way.
+Root: HKA; Subkey: "Software\Google\Chrome\NativeMessagingHosts\com.timeplayer.links"; Flags: uninsdeletekey dontcreatekey
+Root: HKA; Subkey: "Software\Microsoft\Edge\NativeMessagingHosts\com.timeplayer.links"; Flags: uninsdeletekey dontcreatekey
+Root: HKA; Subkey: "Software\BraveSoftware\Brave-Browser\NativeMessagingHosts\com.timeplayer.links"; Flags: uninsdeletekey dontcreatekey
 
 [UninstallDelete]
+Type: files; Name: "{localappdata}\TimePlayer\native-messaging-host.json"
 ; yt-dlp updates itself and writes these next to it.
 Type: files; Name: "{app}\bin\yt-dlp-version.json"
 Type: files; Name: "{app}\bin\yt-dlp.*.tmp"

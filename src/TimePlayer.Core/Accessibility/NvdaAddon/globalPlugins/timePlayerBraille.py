@@ -15,7 +15,8 @@
 #
 # IPC with TimePlayer (both files in %TEMP%):
 #   timeplayer_hwnd.txt          - main window handle, written on startup
-#   timeplayer_braille_state.txt - "playing 0.4231", "paused 0.4231", "stopped" or "off"
+#   timeplayer_braille_state.txt - "playing 0.4231", "paused 0.4231", "stopped" or "off", optionally followed by
+#                                  where chapters start: "playing 0.4231 0.1200,0.3500,0.8000"
 
 import os
 import time
@@ -41,6 +42,8 @@ _TOGGLE_GESTURE = inputCore.normalizeGestureIdentifier("kb:control+shift+d")
 
 # Dots 2-3-5-6 (U+2836 - U+2800).
 _LOWER_G = 0x36
+# Dots 7-8: where a chapter starts, under the line so the lower g stays readable.
+_CHAPTER = 0xC0
 _POLL_MS = 100
 _BLINK_MS = 600
 
@@ -81,6 +84,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._pid = 0
 		self._state = "off"
 		self._fraction = 0.0
+		self._chapters = []
 		self._blinkEpoch = time.monotonic()
 		self._owning = False
 		self._lastCells = None
@@ -165,10 +169,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				fraction = min(max(float(parts[1]), 0.0), 1.0)
 			except ValueError:
 				pass
+		chapters = []
+		if len(parts) > 2:
+			for item in parts[2].split(","):
+				try:
+					value = float(item)
+				except ValueError:
+					continue
+				if 0.0 < value < 1.0:
+					chapters.append(value)
 		if state == "paused" and self._state != "paused":
 			self._blinkEpoch = time.monotonic()
 		self._state = state
 		self._fraction = fraction
+		self._chapters = chapters
 
 	def _shouldOwn(self):
 		if self._state not in ("playing", "paused") or not self._pid:
@@ -213,8 +227,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		visible = self._state == "playing" or (
 			int((time.monotonic() - self._blinkEpoch) * 1000 / _BLINK_MS) % 2 == 0
 		)
+		if size:
+			for chapter in self._chapters:
+				cells[round(chapter * (size - 1))] = _CHAPTER
 		if visible and size:
-			cells[round(self._fraction * (size - 1))] = _LOWER_G
+			cells[round(self._fraction * (size - 1))] |= _LOWER_G
 		if handler.display is not self._lastDisplay:
 			# The driver was reloaded (e.g. Bluetooth reconnect); its cells are unknown.
 			self._lastDisplay = handler.display

@@ -71,16 +71,20 @@ public sealed partial class MainViewModel
     {
         get
         {
-            var description = string.IsNullOrWhiteSpace(VideoDescription) ? "No description." : VideoDescription;
+            var description = string.IsNullOrWhiteSpace(VideoDescription) ? T("No description.") : VideoDescription;
             return CurrentVotes is { } votes
-                ? $"{votes.Spoken} (dislikes estimated by Return YouTube Dislike).\n\n{description}"
+                ? T("{0} (dislikes estimated by Return YouTube Dislike).", votes.Spoken) + "\n\n" + description
                 : description;
         }
     }
 
     partial void OnPlaybackStateChanged(PlaybackState value) => OnPropertyChanged(nameof(PlayPauseButtonText));
     partial void OnIsMutedChanged(bool value) => OnPropertyChanged(nameof(MuteButtonText));
-    partial void OnVideoDescriptionChanged(string value) => OnPropertyChanged(nameof(VideoDescriptionText));
+    partial void OnVideoDescriptionChanged(string value)
+    {
+        OnPropertyChanged(nameof(VideoDescriptionText));
+        RefreshChapters();
+    }
 
     public int SelectedPlayerPanelIndex
     {
