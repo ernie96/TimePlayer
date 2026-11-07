@@ -12,7 +12,7 @@ public static class KeyboardHelp
 {
     public static string SearchBox =>
         T("Type words or paste a YouTube link, then press Enter. Results open as their own page; Alt+Left goes back.\n") +
-        T("Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos or Playlists) and Settings.\n") +
+        T("Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos, Playlists, Shorts, Live, Newest first or Most viewed) and Settings.\n") +
         T("From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard. Control+Shift+B reports a problem to TimePlayer's developer, and Control+Shift+F suggests a feature.\n") +
         T("A YouTube playlist link opens the playlist.");
 
@@ -71,7 +71,7 @@ public static class KeyboardHelp
             T("Videos picked for you from what you watch, like and subscribe to. Nothing leaves this computer.\n") + VideoListKeys +
             T("\nDelete means not interested; Shift+Delete stops recommending that channel. F5 finds new picks."),
         BrowseSection.Playlists =>
-            T("Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete and Import from Google Takeout.\n") +
+            T("Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete, Import by signing in to YouTube and Import from Google Takeout.\n") +
             T("Control+C copies a link to share the playlist. Delete deletes the selected playlist after asking."),
         BrowseSection.Playlist =>
             T("The videos in this playlist. ") + VideoListKeys + "\n" +
@@ -82,6 +82,7 @@ public static class KeyboardHelp
     };
 
     public static string YouTubeSubscriptionsSteps =>
+        T("The quickest way is Playlists (Control+5), Import by signing in to YouTube. Sign in on Google's page; TimePlayer reads your subscriptions, history, likes, Watch Later and playlists, closes the page, and asks whether to stay signed in. If that doesn't work for you, Google Takeout exports the same lists.\n\n") +
         T("""
         Your YouTube subscriptions, playlists, liked videos and watch history can be exported from Google with Google Takeout. Steps:
 

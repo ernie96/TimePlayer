@@ -1,8 +1,7 @@
 TimePlayer
 ==========
 
-TimePlayer is a YouTube player for Windows made for screen reader and keyboard users
-(NVDA, JAWS, Narrator), with optional braille display support through NVDA.
+TimePlayer is a YouTube player for Windows, with braille display support through NVDA.
 No Google account or sign-in is needed.
 
 
@@ -147,9 +146,13 @@ a video means not interested; Shift+Delete stops recommending that channel.
 
 Playlists (Control+5) holds Liked videos and your own playlists. Paste a YouTube playlist
 link into the search box to open it, and Save to Playlists keeps it. To find playlists,
-choose Playlists in the "Search for" box next to the search box.
+choose Playlists in the "Search for" box next to the search box. The same box has Shorts,
+Live, Newest first and Most viewed.
 
-Bring your YouTube account's data with Google Takeout: in Playlists, "How to get my
+The quickest way to bring your YouTube account's data: in Playlists, "Import by signing
+in to YouTube". Google's sign-in page opens; once you're signed in, TimePlayer reads your
+subscriptions, history, likes, Watch Later and playlists, closes the page and asks whether
+to stay signed in. If that doesn't work for you, use Google Takeout: in Playlists, "How to get my
 YouTube data" walks you through it; then Import from Google Takeout and choose the zip
 Google sends you. It brings subscriptions, playlists, liked videos and watch history.
 NewPipe, LibreTube, FreeTube and OPML subscription files can be imported in Channels

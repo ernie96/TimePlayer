@@ -881,5 +881,28 @@ internal static partial class Romanian
         table["{0}, decibels"] = "{0}, decibeli";
         table["{0}, {1}. S skips it."] = "{0}, {1}. S îl sare.";
         table["{0}: latest uploads"] = "{0}: cele mai noi încărcări";
+        table["Could not read your YouTube lists: {0}"] = "Listele dvs. YouTube nu au putut fi citite: {0}";
+        table["Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos, Playlists, Shorts, Live, Newest first or Most viewed) and Settings.\n"] = "Escape golește caseta, iar Escape din nou revine la listă. Tab trece la Caută (Videoclipuri, Liste de redare, Shorts, În direct, Cele mai noi sau Cele mai vizionate) și la Setări.\n";
+        table["Google sign-in page"] = "Pagina de conectare Google";
+        table["Import by signing in to YouTube"] = "Importă prin conectare la YouTube";
+        table["Import by signing in to _YouTube..."] = "Importă prin conectare la _YouTube...";
+        table["Imported from YouTube: {0}."] = "Importat din YouTube: {0}.";
+        table["Keep TimePlayer signed in to YouTube? It's then used for videos YouTube only plays when signed in, and Settings, YouTube account, can do more with it. Choose No to erase the sign-in now; what was imported stays."] = "Rămâne TimePlayer conectat la YouTube? Conectarea se folosește atunci pentru videoclipurile pe care YouTube le redă doar cu cont, iar Setări, Cont YouTube, permite mai mult. Alegeți Nu pentru a șterge conectarea acum; ce s-a importat rămâne.";
+        table["Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete, Import by signing in to YouTube and Import from Google Takeout.\n"] = "Videoclipurile apreciate și listele dvs. (Control+5). Enter deschide una. Shift+Tab ajunge la Redă tot, Amestecă, Listă nouă, Redenumește, Șterge, Importă prin conectare la YouTube și Importă din Google Takeout.\n";
+        table["Most viewed"] = "Cele mai vizionate";
+        table["Newest first"] = "Cele mai noi";
+        table["Reading your likes and Watch later..."] = "Se citesc aprecierile și Vizionează mai târziu...";
+        table["Reading your playlists..."] = "Se citesc listele de redare...";
+        table["Reading your subscriptions..."] = "Se citesc abonamentele...";
+        table["Reading your watch history..."] = "Se citește istoricul vizionărilor...";
+        table["Sign in to YouTube"] = "Conectare la YouTube";
+        table["Sign in to YouTube first."] = "Conectați-vă mai întâi la YouTube.";
+        table["Signed in. Reading your YouTube lists; this can take a minute."] = "Conectat. Se citesc listele dvs. YouTube; poate dura un minut.";
+        table["Signing in needs the Microsoft Edge WebView2 Runtime. Install it from Microsoft, then try again."] = "Conectarea necesită Microsoft Edge WebView2 Runtime. Instalați-l de la Microsoft, apoi încercați din nou.";
+        table["The quickest way is Playlists (Control+5), Import by signing in to YouTube. Sign in on Google's page; TimePlayer reads your subscriptions, history, likes, Watch Later and playlists, closes the page, and asks whether to stay signed in. If that doesn't work for you, Google Takeout exports the same lists.\n\n"] = "Cel mai rapid: Liste de redare (Control+5), Importă prin conectare la YouTube. Conectați-vă pe pagina Google; TimePlayer citește abonamentele, istoricul, aprecierile, Vizionează mai târziu și listele, închide pagina și întreabă dacă rămâneți conectat. Dacă asta nu merge la dvs., Google Takeout exportă aceleași liste.\n\n";
+        table["The sign-in is erased. What was imported stays."] = "Conectarea a fost ștearsă. Ce s-a importat rămâne.";
+        table["YouTube says you are signed out. Sign in again."] = "YouTube spune că sunteți deconectat. Conectați-vă din nou.";
+        table["YouTube sign-in"] = "Conectare YouTube";
+        table["Your YouTube account has no subscriptions, history, likes or playlists to import."] = "Contul dvs. YouTube nu are abonamente, istoric, aprecieri sau liste de importat.";
     }
 }

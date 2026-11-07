@@ -33,3 +33,5 @@ release/
 
 # Reference documents kept locally, not published
 *.pdf
+
+.backup_graveyard/

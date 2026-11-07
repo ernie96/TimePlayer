@@ -380,7 +380,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
             var searchResult = SelectedSearchKind switch
             {
                 SearchKind.Playlists => await _playlists.SearchAsync(query, null, cancellationToken),
-                SearchKind.Shorts when _innerTubeDirect is not null => await _innerTubeDirect.SearchShortsAsync(query, null, cancellationToken),
+                _ when SearchFilter(SelectedSearchKind) is { } filter && _innerTubeDirect is not null =>
+                    await _innerTubeDirect.SearchFilteredAsync(query, filter, null, cancellationToken),
                 _ => await _playbackCoordinator.SearchAsync(query, cancellationToken)
             };
             if (cancellationToken.IsCancellationRequested)
@@ -405,8 +406,8 @@ public sealed partial class MainViewModel : ViewModelBase, IAsyncDisposable
                 }
                 if (SelectedSearchKind == SearchKind.Playlists)
                     ConfigurePlaylistSearchPaging(query, searchResult.Value.NextPageToken);
-                else if (SelectedSearchKind == SearchKind.Shorts && _innerTubeDirect is not null)
-                    ConfigureShortsSearchPaging(query, searchResult.Value.NextPageToken);
+                else if (SearchFilter(SelectedSearchKind) is { } filter && _innerTubeDirect is not null)
+                    ConfigureFilteredSearchPaging(query, filter, searchResult.Value.NextPageToken);
                 else
                     ConfigureSearchPaging();
 

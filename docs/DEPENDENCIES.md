@@ -1,10 +1,10 @@
-# TimePlayer Dependency Management and Verification Architecture
+# How TimePlayer gets yt-dlp and mpv
 
-This document describes how TimePlayer pins, verifies, updates, and protects local media playback dependencies (`yt-dlp` and `mpv`).
+Where TimePlayer looks for `yt-dlp` and `mpv`, how it downloads and checks them, and how it keeps them up to date.
 
 ---
 
-## 1. Managed Dependencies & Official Sources
+## 1. What it uses and where from
 
 | Dependency | Purpose | Distribution Format | Official Upstream Source | Verification |
 |---|---|---|---|---|
@@ -14,7 +14,7 @@ This document describes how TimePlayer pins, verifies, updates, and protects loc
 
 ---
 
-## 2. Directory Resolution Priority (Portability)
+## 2. Which copy it uses
 
 To ensure TimePlayer can run either as a self-contained portable application (e.g. from a USB drive) or as an installed app, dependencies are resolved in strict priority order:
 
@@ -30,7 +30,7 @@ To ensure TimePlayer can run either as a self-contained portable application (e.
 
 ---
 
-## 3. Safe Download & Verification Strategy
+## 3. Downloading and checking
 
 TimePlayer adheres strictly to the rule: **Never silently install unverified executables.**
 
@@ -51,7 +51,7 @@ TimePlayer adheres strictly to the rule: **Never silently install unverified exe
 
 ---
 
-## 4. Automatic & Manual Update Mechanisms
+## 4. Updates
 
 - **Startup Verification**: At application startup, TimePlayer invokes `EnsureInstalledOrUpdatedAsync()` in the background to verify the binary exists and has valid metadata.
 - **Manual Check**: Users can navigate to the **Settings and Diagnostics** dialog (`F2`), click **"Check for Updates"**, and inspect the verified version report without technical knowledge.

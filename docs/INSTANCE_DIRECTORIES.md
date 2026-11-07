@@ -1,16 +1,16 @@
-# Public Instance Directories & Health Architecture
+# Instance directories
 
-This document specifies the official directory endpoints, schemas, validation rules, health checks, and caching strategies implemented in **TimePlayer**.
+The public Piped and Invidious directories, what TimePlayer reads from them, and how it checks an instance before using it. TimePlayer now finds videos through TubeRepair, Invidious, InnerTube and yt-dlp (see the README), so the Piped part may be out of date.
 
 ---
 
 ## 1. Piped API Directory
 
-### Official Maintained Source
+### Source
 - **Documentation**: https://github.com/TeamPiped/documentation/blob/main/content/docs/public-instances/index.md
 - **Raw Machine-Readable Source**: `https://raw.githubusercontent.com/TeamPiped/documentation/main/content/docs/public-instances/index.md`
 
-### Format Specification & Parsing Assumptions
+### Format
 - **Format**: GitHub-Flavored Markdown table with frontmatter.
 - **Headers**:
   ```markdown
@@ -26,7 +26,7 @@ This document specifies the official directory endpoints, schemas, validation ru
   5. Insecure (`http://`) or malformed entries are rejected immediately.
   6. Duplicate entries are deduplicated by base URI.
 
-### Lightweight Health Check
+### Health check
 - **Endpoint**: `GET /trending?region=US` (or `/trending`)
 - **Validation**:
   - Requires HTTP 200 OK.
@@ -38,11 +38,11 @@ This document specifies the official directory endpoints, schemas, validation ru
 
 ## 2. Invidious API Directory
 
-### Official Maintained Source
+### Source
 - **API Endpoint**: `https://api.invidious.io/instances.json?sort_by=health`
 - **Documentation**: https://docs.invidious.io/api/
 
-### Format Specification & Parsing Assumptions
+### Format
 - **Format**: JSON array of tuples:
   ```json
   [
@@ -77,7 +77,7 @@ This document specifies the official directory endpoints, schemas, validation ru
   4. Health score is derived from `"monitor.uptime"` (0.0 to 100.0).
   5. Software version is extracted from `"stats.software.version"`.
 
-### Lightweight Health Check
+### Health check
 - **Endpoint**: `GET /api/v1/stats`
 - **Validation**:
   - Requires HTTP 200 OK.
@@ -88,7 +88,7 @@ This document specifies the official directory endpoints, schemas, validation ru
 
 ---
 
-## 3. Security, Privacy & Validation Rules
+## 3. Validation and privacy
 
 - **Strict HTTPS**: Only `https://` URLs are permitted. `http://`, `ftp://`, `file://`, and relative URLs are rejected.
 - **No Credentials**: Any URL containing `user:pass@` is rejected.
@@ -100,7 +100,7 @@ This document specifies the official directory endpoints, schemas, validation ru
 
 ---
 
-## 4. Local Persistence & Fallback Hierarchy
+## 4. Saved lists and fallbacks
 
 ```mermaid
 flowchart TD

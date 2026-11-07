@@ -26,6 +26,13 @@ public sealed class YtDlpManager : IYtDlpManager
     private const string DownloadUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe";
     private const string ChecksumsUrl = "https://github.com/yt-dlp/yt-dlp/releases/latest/download/SHA2-256SUMS";
 
+    // YouTube now hides most formats behind a JavaScript puzzle that yt-dlp solves with a JavaScript runtime.
+    // Deno is used when installed, then Node; otherwise TimePlayer fetches QuickJS (about 2 MB), pinned to
+    // this release and checksum.
+    private const string QuickJsUrl = "https://github.com/quickjs-ng/quickjs/releases/download/v0.17.0/qjs-windows-x86_64.exe";
+    private const string QuickJsSha256 = "2aeabf0092c3262d6b2609824418f7dd7ed1f1df939f73b2b15645230cac0d77";
+    private const string PlayerClients = "--extractor-args \"youtube:player_client=mweb,default\"";
+
     private readonly IProcessRunner _processRunner;
     private readonly HttpClient _httpClient;
     private readonly IConfigurationService _configService;
@@ -86,7 +93,9 @@ public sealed class YtDlpManager : IYtDlpManager
                 await CheckAndUpdateAsync(cancellationToken);
             }
 
-            EnsureConfigFile();
+            // A yt-dlp of the person's own choosing keeps its own settings.
+            var ownCopy = !string.IsNullOrWhiteSpace(_configService.CurrentConfig.Backend.YtDlpCustomPath);
+            EnsureConfigFile(ownCopy ? null : await EnsureJavaScriptRuntimeAsync(cancellationToken), overwrite: !ownCopy);
             return await GetVersionAsync(cancellationToken);
         }
         catch (Exception ex)
@@ -96,7 +105,11 @@ public sealed class YtDlpManager : IYtDlpManager
         }
     }
 
-    private void EnsureConfigFile()
+    /// <summary>
+    /// The yt-dlp.conf beside yt-dlp.exe, which mpv's yt-dlp hook reads too: the player clients and the
+    /// JavaScript runtime to use.
+    /// </summary>
+    private void EnsureConfigFile(string? runtimeOption, bool overwrite)
     {
         try
         {
@@ -104,16 +117,86 @@ public sealed class YtDlpManager : IYtDlpManager
             if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir))
             {
                 var confPath = Path.Combine(dir, "yt-dlp.conf");
-                if (!File.Exists(confPath))
-                {
-                    File.WriteAllText(confPath, "--extractor-args \"youtube:player_client=mweb,default\"\n");
-                }
+                var wanted = ConfigText(runtimeOption);
+                if (!File.Exists(confPath) || overwrite && File.ReadAllText(confPath) != wanted)
+                    File.WriteAllText(confPath, wanted);
             }
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to create default yt-dlp.conf");
         }
+    }
+
+    public static string ConfigText(string? runtimeOption) =>
+        PlayerClients + "\n" + (string.IsNullOrEmpty(runtimeOption) ? string.Empty : runtimeOption + "\n");
+
+    /// <summary>
+    /// The --js-runtimes line for yt-dlp.conf, or null when Deno is installed (yt-dlp finds it by itself)
+    /// or nothing could be set up.
+    /// </summary>
+    private async Task<string?> EnsureJavaScriptRuntimeAsync(CancellationToken cancellationToken)
+    {
+        if (FindOnPath("deno.exe") is not null)
+            return null;
+        if (FindOnPath("node.exe") is not null)
+            return "--js-runtimes node";
+
+        var quickJs = Path.Combine(Path.GetDirectoryName(ExecutablePath)!, "qjs.exe");
+        if (!File.Exists(quickJs) || !string.Equals(await HashFileAsync(quickJs, cancellationToken), QuickJsSha256, StringComparison.OrdinalIgnoreCase))
+        {
+            var temp = quickJs + $".{Guid.NewGuid():N}.tmp";
+            try
+            {
+                _logger.LogInformation("Downloading QuickJS for yt-dlp from {Url}...", QuickJsUrl);
+                using (var response = await _httpClient.GetAsync(QuickJsUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                {
+                    response.EnsureSuccessStatusCode();
+                    await using var file = new FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None);
+                    await response.Content.CopyToAsync(file, cancellationToken);
+                }
+                var hash = await HashFileAsync(temp, cancellationToken);
+                if (!string.Equals(hash, QuickJsSha256, StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogError("QuickJS checksum mismatch: expected {Expected}, got {Actual}.", QuickJsSha256, hash);
+                    return null;
+                }
+                File.Move(temp, quickJs, overwrite: true);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException or TaskCanceledException)
+            {
+                _logger.LogWarning("QuickJS could not be downloaded: {Message}", ex.Message);
+                return null;
+            }
+            finally
+            {
+                try { if (File.Exists(temp)) File.Delete(temp); } catch (IOException) { }
+            }
+        }
+        return $"--js-runtimes \"quickjs:{quickJs}\"";
+    }
+
+    private static string? FindOnPath(string fileName)
+    {
+        foreach (var dir in (Environment.GetEnvironmentVariable("PATH") ?? string.Empty).Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            try
+            {
+                var candidate = Path.Combine(dir.Trim('"'), fileName);
+                if (File.Exists(candidate))
+                    return candidate;
+            }
+            catch (ArgumentException)
+            {
+            }
+        }
+        return null;
+    }
+
+    private static async Task<string> HashFileAsync(string path, CancellationToken cancellationToken)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+        return Convert.ToHexStringLower(await SHA256.HashDataAsync(stream, cancellationToken));
     }
 
     public async Task<Result<string>> GetVersionAsync(CancellationToken cancellationToken = default)

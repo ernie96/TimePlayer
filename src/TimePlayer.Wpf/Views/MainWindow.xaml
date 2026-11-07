@@ -266,6 +266,9 @@
                     <Button Content="{l:T '_Import from Google Takeout...'}" Click="ImportTakeout_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
                             AutomationProperties.Name="{l:T 'Import from Google Takeout'}"/>
+                    <Button Content="{l:T 'Import by signing in to _YouTube...'}" Click="ImportBySignIn_Click" Style="{StaticResource SmallButtonStyle}"
+                            Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
+                            AutomationProperties.Name="{l:T 'Import by signing in to YouTube'}"/>
                     <Button Content="{l:T '_How to get my YouTube data...'}" Click="YouTubeSubscriptionsHelp_Click" Style="{StaticResource SmallButtonStyle}"
                             Visibility="{Binding IsPlaylistsSection, Converter={StaticResource BooleanToVisibilityConverter}}"
                             AutomationProperties.Name="{l:T 'How to get my YouTube data'}"/>

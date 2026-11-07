@@ -40,6 +40,9 @@ public interface IYouTubeAccount
     /// <summary>Reads the sign-in from an installed browser through yt-dlp ("firefox", "chrome", "edge"...).</summary>
     Task<Result<int>> ImportFromBrowserAsync(string browser, CancellationToken cancellationToken = default);
 
+    /// <summary>Takes the cookies of a sign-in done in TimePlayer's own sign-in window.</summary>
+    Result<int> ImportCookies(IEnumerable<SignInCookie> cookies);
+
     void SignOut();
 
     /// <summary>Headers that make an InnerTube request signed in; empty when not signed in.</summary>
@@ -147,6 +150,8 @@ public sealed class YouTubeAccount : IYouTubeAccount
             TryDelete(jar);
         }
     }
+
+    public Result<int> ImportCookies(IEnumerable<SignInCookie> cookies) => Accept(cookies.ToList());
 
     private Result<int> Accept(List<SignInCookie> cookies)
     {

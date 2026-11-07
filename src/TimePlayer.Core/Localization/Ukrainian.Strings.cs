@@ -881,5 +881,28 @@ internal static partial class Ukrainian
         table["{0}, decibels"] = "{0}, децибели";
         table["{0}, {1}. S skips it."] = "{0}, {1}. S пропускає.";
         table["{0}: latest uploads"] = "{0}: найновіші відео";
+        table["Could not read your YouTube lists: {0}"] = "Не вдалося прочитати ваші списки YouTube: {0}";
+        table["Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos, Playlists, Shorts, Live, Newest first or Most viewed) and Settings.\n"] = "Escape очищує поле, а повторний Escape повертає до списку. Tab переходить до «Шукати» (Відео, Плейлисти, Shorts, Наживо, Спершу нові або Найпопулярніші) і Налаштувань.\n";
+        table["Google sign-in page"] = "Сторінка входу Google";
+        table["Import by signing in to YouTube"] = "Імпорт через вхід у YouTube";
+        table["Import by signing in to _YouTube..."] = "Імпорт через вхід у _YouTube...";
+        table["Imported from YouTube: {0}."] = "Імпортовано з YouTube: {0}.";
+        table["Keep TimePlayer signed in to YouTube? It's then used for videos YouTube only plays when signed in, and Settings, YouTube account, can do more with it. Choose No to erase the sign-in now; what was imported stays."] = "Залишити TimePlayer у вашому обліковому записі YouTube? Тоді вхід використовується для відео, які YouTube показує лише після входу, а «Налаштування», «Обліковий запис YouTube» дають більше можливостей. Виберіть «Ні», щоб стерти вхід зараз; імпортоване залишиться.";
+        table["Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete, Import by signing in to YouTube and Import from Google Takeout.\n"] = "Вподобані відео та ваші плейлисти (Control+5). Enter відкриває плейлист. Shift+Tab переходить до «Відтворити все», «Перемішати», «Новий плейлист», «Перейменувати», «Видалити», «Імпорт через вхід у YouTube» та «Імпорт із Google Takeout».\n";
+        table["Most viewed"] = "Найпопулярніші";
+        table["Newest first"] = "Спершу нові";
+        table["Reading your likes and Watch later..."] = "Читання вподобаних і «Переглянути пізніше»...";
+        table["Reading your playlists..."] = "Читання ваших плейлистів...";
+        table["Reading your subscriptions..."] = "Читання ваших підписок...";
+        table["Reading your watch history..."] = "Читання історії переглядів...";
+        table["Sign in to YouTube"] = "Вхід у YouTube";
+        table["Sign in to YouTube first."] = "Спершу увійдіть у YouTube.";
+        table["Signed in. Reading your YouTube lists; this can take a minute."] = "Вхід виконано. Читання ваших списків YouTube; це може тривати хвилину.";
+        table["Signing in needs the Microsoft Edge WebView2 Runtime. Install it from Microsoft, then try again."] = "Для входу потрібен Microsoft Edge WebView2 Runtime. Установіть його з сайту Microsoft і спробуйте ще раз.";
+        table["The quickest way is Playlists (Control+5), Import by signing in to YouTube. Sign in on Google's page; TimePlayer reads your subscriptions, history, likes, Watch Later and playlists, closes the page, and asks whether to stay signed in. If that doesn't work for you, Google Takeout exports the same lists.\n\n"] = "Найшвидше: «Плейлисти» (Control+5), «Імпорт через вхід у YouTube». Увійдіть на сторінці Google; TimePlayer прочитає ваші підписки, історію, вподобані, «Переглянути пізніше» та плейлисти, закриє сторінку й запитає, чи залишатися в обліковому записі. Якщо це у вас не спрацює, Google Takeout експортує ті самі списки.\n\n";
+        table["The sign-in is erased. What was imported stays."] = "Вхід стерто. Імпортоване залишається.";
+        table["YouTube says you are signed out. Sign in again."] = "YouTube повідомляє, що ви вийшли. Увійдіть знову.";
+        table["YouTube sign-in"] = "Вхід у YouTube";
+        table["Your YouTube account has no subscriptions, history, likes or playlists to import."] = "У вашому обліковому записі YouTube немає підписок, історії, вподобаних або плейлистів для імпорту.";
     }
 }

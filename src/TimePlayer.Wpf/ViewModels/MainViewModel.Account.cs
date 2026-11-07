@@ -214,6 +214,90 @@ public sealed partial class MainViewModel
         _accessibility.Announce(T("Signed out. Your sign-in is erased from this computer."), AnnouncementPriority.High);
     }
 
+    // ----- Bringing your YouTube lists over by signing in (instead of Google Takeout) -----
+
+    /// <summary>For the sign-in window: true once the cookies hold a YouTube sign-in.</summary>
+    public bool AcceptSignInCookies(IReadOnlyList<SignInCookie> cookies) => _account?.ImportCookies(cookies).IsSuccess == true;
+
+    /// <summary>
+    /// After signing in through TimePlayer's sign-in window: reads subscriptions, history, likes, Watch
+    /// later and playlists into the library, then asks whether to keep the sign-in.
+    /// </summary>
+    public async Task ImportFromYouTubeAccountAsync(bool wasSignedIn)
+    {
+        if (_innerTubeDirect is null || _account is null || IsImporting)
+            return;
+        OnPropertyChanged(nameof(IsSignedIn));
+        OnPropertyChanged(nameof(AccountStatus));
+        IsImporting = true;
+        string summary;
+        try
+        {
+            _accessibility.Announce(T("Signed in. Reading your YouTube lists; this can take a minute."), AnnouncementPriority.High);
+            var data = await _innerTubeDirect.ReadAccountAsync(null);
+            if (data.IsFailure)
+            {
+                summary = T("Could not read your YouTube lists: {0}", data.Error?.Message);
+            }
+            else
+            {
+                var report = new List<string>();
+                if (data.Value.Channels.Count > 0)
+                {
+                    int added = _library.ImportSubscriptions(data.Value.Channels);
+                    report.Add(Plural(added, "{0} channel", "{0} channels"));
+                    if (added > 0)
+                        _feed = null;
+                }
+                if (data.Value.History.Count > 0)
+                {
+                    // YouTube lists history newest first without times; keep that order.
+                    var now = DateTimeOffset.UtcNow;
+                    int added = _library.ImportHistory(data.Value.History.Select((v, i) => new Core.Library.HistoryEntry
+                    {
+                        VideoId = v.Id, Title = v.Title, ChannelTitle = v.ChannelTitle, ChannelId = v.ChannelId,
+                        DurationSeconds = v.Duration?.TotalSeconds ?? 0, LastWatchedUtc = now.AddMinutes(-i - 1)
+                    }));
+                    report.Add(Plural(added, "{0} watched video", "{0} watched videos"));
+                }
+                AddImportedLists(data.Value.Liked, data.Value.WatchLater, data.Value.Playlists, report);
+                summary = report.Count == 0
+                    ? T("Your YouTube account has no subscriptions, history, likes or playlists to import.")
+                    : T("Imported from YouTube: {0}.", string.Join(", ", report));
+                if (CurrentSection is BrowseSection.Playlists or BrowseSection.Channels or BrowseSection.History)
+                    _ = ShowSectionAsync(CurrentSection, moveFocus: false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Importing from the YouTube account failed.");
+            summary = T("Could not import: {0}", ex.Message);
+        }
+        finally
+        {
+            IsImporting = false;
+        }
+
+        if (wasSignedIn)
+        {
+            _accessibility.Announce(summary, AnnouncementPriority.High);
+            return;
+        }
+        // Signed in only for this: ask before keeping it.
+        var keep = Confirm?.Invoke(T("YouTube sign-in"),
+            summary + "\n\n" + T("Keep TimePlayer signed in to YouTube? It's then used for videos YouTube only plays when signed in, and Settings, YouTube account, can do more with it. Choose No to erase the sign-in now; what was imported stays.")) == true;
+        if (keep)
+        {
+            AfterSignIn(true, null);
+            return;
+        }
+        _account.SignOut();
+        OnPropertyChanged(nameof(IsSignedIn));
+        OnPropertyChanged(nameof(AccountStatus));
+        RefreshAccountTab();
+        _accessibility.Announce(T("The sign-in is erased. What was imported stays."), AnnouncementPriority.Medium);
+    }
+
     // ----- Likes and subscriptions sent to YouTube too -----
 
     /// <summary>After a like changes in TimePlayer's library: the same on YouTube, when the account is used.</summary>

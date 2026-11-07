@@ -1,6 +1,6 @@
-# Playback Engine Manual Smoke-Test Procedure
+# Playback smoke test
 
-This document provides step-by-step instructions for verifying the **TimePlayer** embedded playback engine (`mpv` embedded via Win32 `HwndHost` and controlled via local Named Pipe JSON IPC).
+Steps for checking by hand that mpv plays inside TimePlayer's window and answers its controls (mpv runs in its own process, embedded with `HwndHost` and controlled over its JSON IPC pipe).
 
 ---
 
@@ -14,9 +14,9 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-## Smoke-Test Execution Steps
+## Steps
 
-### Test 1: Native Video Embedding in Application Window
+### 1. Video inside the window
 
 * **Action**: Launch the application from terminal:
   ```powershell
@@ -30,7 +30,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-### Test 2: Programmatic Playback Control & State Synchronization
+### 2. Play, pause and state
 
 * **Action**:
   1. Press `Space` (or activate the **"Play / Pause"** button).
@@ -44,7 +44,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-### Test 3: Programmatic Seeking & Position Read-Back
+### 3. Seeking
 
 * **Action**:
   1. Activate the **"+5s"** button or press the `Right Arrow` key.
@@ -58,7 +58,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-### Test 4: Volume and Playback Speed Control
+### 4. Volume and speed
 
 * **Action**:
   1. Activate the **"+"** / **"-"** volume buttons or press `+` / `-` keys.
@@ -71,7 +71,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-### Test 5: Audio-Only Playback
+### 5. Audio only
 
 * **Action**: In the search bar, enter an audio stream or direct audio test source:
   `av://lavfi:sine=frequency=440:duration=60`
@@ -83,7 +83,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-### Test 6: Captions & Subtitle Track Management
+### 6. Captions
 
 * **Action**: Load a media file with embedded or sidecar subtitle tracks (`IPlaybackEngine.LoadSubtitleTrackAsync`).
 * **Expected Result**:
@@ -92,7 +92,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-### Test 7: Unexpected Process Termination & Engine Recovery
+### 7. mpv closing unexpectedly
 
 * **Action**:
   1. While test video is playing, open PowerShell and kill the running `mpv` process tree:
@@ -109,7 +109,7 @@ This document provides step-by-step instructions for verifying the **TimePlayer*
 
 ---
 
-## Summary Matrix
+## Summary
 
 | Capability | IPC Mechanism | Verification Method |
 |---|---|---|

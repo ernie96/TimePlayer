@@ -364,9 +364,10 @@ public sealed partial class InnerTubeBackendProvider : IBackendProvider, IVideoC
     private static bool SignedOut(JsonElement root) =>
         InnerTubeJson.FindAll(root, "loggedOut").Any(e => e.ValueKind == JsonValueKind.True);
 
-    private async Task<Result<string>> PostAsync(string endpoint, JsonObject body, CancellationToken cancellationToken, string? region = null, bool signedIn = false)
+    private async Task<Result<string>> PostAsync(string endpoint, JsonObject body, CancellationToken cancellationToken, string? region = null, bool signedIn = false, bool forImport = false)
     {
-        if (signedIn && !CanUseAccount)
+        // Importing works with any account setting: signing in to import is the choice.
+        if (signedIn && !(CanUseAccount || forImport && _account?.IsSignedIn == true))
             return Result<string>.Failure("NOT_SIGNED_IN", T("Sign in to YouTube in Settings, YouTube account, first."));
         body["context"] = JsonSerializer.SerializeToNode(CreateWebContext(region));
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);

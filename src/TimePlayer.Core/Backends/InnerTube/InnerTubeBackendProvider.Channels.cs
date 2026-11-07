@@ -52,10 +52,20 @@ public sealed partial class InnerTubeBackendProvider
     }
 
     /// <summary>Searches Shorts only (YouTube's "Type: Shorts" filter).</summary>
-    public async Task<Result<PagedResult<SearchResult>>> SearchShortsAsync(string query, string? pageToken, CancellationToken cancellationToken = default)
+    public Task<Result<PagedResult<SearchResult>>> SearchShortsAsync(string query, string? pageToken, CancellationToken cancellationToken = default) =>
+        SearchFilteredAsync(query, ShortsFilter, pageToken, cancellationToken);
+
+    // YouTube's own search filters (the "params" its web page sends).
+    public const string ShortsFilter = "EgIQCQ==";
+    public const string LiveFilter = "EgJAAQ==";
+    public const string NewestFilter = "CAISAhAB";      // videos, by upload date
+    public const string MostViewedFilter = "CAMSAhAB";  // videos, by view count
+
+    /// <summary>A search with one of YouTube's filters (Shorts, live, newest first, most viewed).</summary>
+    public async Task<Result<PagedResult<SearchResult>>> SearchFilteredAsync(string query, string filter, string? pageToken, CancellationToken cancellationToken = default)
     {
         var body = string.IsNullOrWhiteSpace(pageToken)
-            ? new JsonObject { ["query"] = query, ["params"] = "EgIQCQ==" }
+            ? new JsonObject { ["query"] = query, ["params"] = filter }
             : new JsonObject { ["continuation"] = pageToken };
         var response = await PostAsync("search", body, cancellationToken);
         return response.IsFailure ? Result<PagedResult<SearchResult>>.Failure(response.Error) : ParseItemsPage(response.Value);

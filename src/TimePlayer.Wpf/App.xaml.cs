@@ -66,6 +66,9 @@ public partial class App : Application
             return;
         }
 
+        // A sign-in window's browser profile left behind (TimePlayer closed while it was open).
+        _ = Task.Run(Views.GoogleSignInWindow.ForgetBrowser);
+
         // Listen straight away: a second link clicked while this copy is still starting would otherwise
         // find nobody listening and be lost. Links that come before the window are opened once it's up.
         _ = SingleInstance.ListenForLinksAsync(

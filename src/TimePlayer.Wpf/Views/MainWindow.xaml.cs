@@ -539,6 +539,14 @@ public partial class MainWindow : Window
         menu.IsOpen = true;
     }
 
+    /// <summary>Google's sign-in page in a window of its own, then your YouTube lists are read in.</summary>
+    private async void ImportBySignIn_Click(object sender, RoutedEventArgs e)
+    {
+        var wasSignedIn = _viewModel.IsSignedIn;
+        if (wasSignedIn || GoogleSignInWindow.SignIn(this, _viewModel.AcceptSignInCookies))
+            await _viewModel.ImportFromYouTubeAccountAsync(wasSignedIn);
+    }
+
     private void ImportTakeout_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new Microsoft.Win32.OpenFileDialog

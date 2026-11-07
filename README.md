@@ -1,8 +1,7 @@
 # TimePlayer
 
-**TimePlayer** is a native, accessible Windows 11 desktop YouTube player built with C# and WPF on **.NET 10 LTS**.
-
-It is designed from the ground up for assistive technologies (screen readers like NVDA, JAWS, and Windows Narrator) and keyboard-only operation, without requiring Google API credentials, OAuth authentication, user registration, or manual server configuration.
+**TimePlayer** is a YouTube player for Windows 11, built with C# and WPF on **.NET 10 LTS**. It needs no Google API
+credentials, sign-in, registration or server setup.
 
 ## Download
 
@@ -19,8 +18,7 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 
 - **No account, no keys.** No Google sign-in, API key or cookies. Everything an account would keep (subscriptions,
   likes, playlists, Watch Later, history) is stored as plain JSON on your computer.
-- **Built for screen readers and the keyboard.** NVDA, JAWS and Narrator. The interface stays quiet: F1 says in a
-  sentence or two where you are and what to press, Control+F1 opens the full help for that place, and captions are
+- **Help where you are.** F1 says in a sentence or two where you are and what to press, Control+F1 opens the full help for that place, and captions are
   read aloud only when you ask (`C`).
 - **Library**: Search, Featured, What's New (subscription feed), Channels, History with resume, Watch Later, Queue,
   For You (local recommendations) and Playlists (Liked videos, your own and saved YouTube playlists).
@@ -70,10 +68,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 
 - [User guide](build/README.txt) (plain text, shipped with the app)
 - [Changelog](CHANGELOG.md)
-- [Accessibility & Screen Reader Checklist](ACCESSIBILITY_CHECKLIST.md)
-- [Dependency Management & Verification](docs/DEPENDENCIES.md)
-- [Public Instance Directories](docs/INSTANCE_DIRECTORIES.md)
-- [Third-Party Notices & Licenses](docs/THIRD_PARTY_NOTICES.md)
+- [Dependencies](docs/DEPENDENCIES.md)
+- [Instance directories](docs/INSTANCE_DIRECTORIES.md)
+- [Third-party notices](docs/THIRD_PARTY_NOTICES.md)
 
 ---
 
@@ -205,7 +202,7 @@ On a channel's page, `Shift+Tab` reaches the Tab box: Videos, Shorts, Live and P
 
 Comments are a tree: `Right` opens a comment's replies (one level deeper, each starting with "Reply from"), `Right` again moves into them, `Left` goes back up and closes. `Enter` also opens or closes; "More replies" loads the rest. `Ctrl+C` copies a comment.
 
-Downloads go to `Downloads\TimePlayer`. With ffmpeg installed (for example `winget install Gyan.FFmpeg`), audio is saved as MP3 and video at full quality; without it, audio is saved as M4A and video as a single MP4.
+Downloads go to `Downloads\TimePlayer`. With ffmpeg installed (for example `winget install Gyan.FFmpeg`), audio is saved as MP3 and video at full quality; without it, audio is saved as M4A and video as a single MP4. yt-dlp needs a JavaScript runtime for some YouTube formats: TimePlayer uses Deno or Node when installed, and otherwise downloads QuickJS (about 2 MB, pinned release and checksum) next to yt-dlp.
 
 ### Braille
 
@@ -225,6 +222,7 @@ in `%LOCALAPPDATA%\TimePlayer\library` (or a `library` folder next to `TimePlaye
 
 - `subscriptions.json` is written in **NewPipe's export format**, so it can be imported directly into NewPipe, Tubular or LibreTube.
 - **Import** (Channels section): the Google Takeout zip (no need to unzip), NewPipe / Tubular / LibreTube JSON, Takeout `subscriptions.csv`, OPML, FreeTube `profiles.db`. The "How to get my YouTube subscriptions" button walks through Google Takeout step by step and opens it.
+- **Import by signing in to YouTube** (Playlists section): Google's sign-in page in a window of its own (WebView2). When it has signed you in, TimePlayer reads subscriptions, watch history, liked videos, Watch later and your playlists through YouTube's InnerTube API, closes the window and deletes its browser data, then asks whether to keep the sign-in. Answer No and the sign-in is erased too. Nothing goes anywhere but youtube.com.
 - **Google Takeout** (Playlists section): one zip brings subscriptions, playlists, liked videos, Watch later and watch history (`history/watch-history.json`, when JSON is chosen in Takeout). Takeout lists only video ids; titles are looked up through YouTube's public oEmbed endpoint.
 - **For You**: recommendations built locally. Recent history, likes and subscription uploads are seeds; each seed's "Up next" list is pooled and scored by how often and how high a video appears, subscribed and familiar channels get a boost, and watched, liked, Not interested and blocked videos are left out, with at most two per channel. Cached in `recommendations.json` for three hours; new users get trending videos.
 - **Playlists** (`playlists.json`): Liked videos, your own playlists (rename, reorder with Alt+Up/Down, Play all, Shuffle) and saved YouTube playlists (refresh with F5). YouTube playlists open from a pasted link or from playlist search (InnerTube `browse VL<id>`, Invidious fallback). Your own playlists share as a `watch_videos` link.

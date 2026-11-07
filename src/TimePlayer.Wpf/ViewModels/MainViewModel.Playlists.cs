@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
 using TimePlayer.Core.Accessibility;
+using TimePlayer.Core.Backends.InnerTube;
 using TimePlayer.Core.Library;
 using TimePlayer.Core.Models;
 using TimePlayer.Core.Playback;
@@ -15,7 +16,10 @@ public enum SearchKind
 {
     Videos,
     Playlists,
-    Shorts
+    Shorts,
+    Live,
+    Newest,
+    MostViewed
 }
 
 /// <summary>
@@ -48,8 +52,25 @@ public sealed partial class MainViewModel
     /// <summary>Set by the window: asks for a name (title, prompt, initial text); null when cancelled.</summary>
     public Func<string, string, string, string?>? AskForText { get; set; }
 
-    public IReadOnlyList<ChoiceOption<SearchKind>> SearchKinds { get; } =
-        Enum.GetValues<SearchKind>().Select(k => new ChoiceOption<SearchKind>(k, T(k.ToString()))).ToList();
+    public IReadOnlyList<ChoiceOption<SearchKind>> SearchKinds { get; } = new[]
+    {
+        new ChoiceOption<SearchKind>(SearchKind.Videos, T("Videos")),
+        new ChoiceOption<SearchKind>(SearchKind.Playlists, T("Playlists")),
+        new ChoiceOption<SearchKind>(SearchKind.Shorts, T("Shorts")),
+        new ChoiceOption<SearchKind>(SearchKind.Live, T("Live")),
+        new ChoiceOption<SearchKind>(SearchKind.Newest, T("Newest first")),
+        new ChoiceOption<SearchKind>(SearchKind.MostViewed, T("Most viewed")),
+    };
+
+    /// <summary>The YouTube search filter for a kind of search, or null for an ordinary one.</summary>
+    private static string? SearchFilter(SearchKind kind) => kind switch
+    {
+        SearchKind.Shorts => InnerTubeBackendProvider.ShortsFilter,
+        SearchKind.Live => InnerTubeBackendProvider.LiveFilter,
+        SearchKind.Newest => InnerTubeBackendProvider.NewestFilter,
+        SearchKind.MostViewed => InnerTubeBackendProvider.MostViewedFilter,
+        _ => null
+    };
 
     [ObservableProperty]
     private SearchKind _selectedSearchKind = SearchKind.Videos;
@@ -94,7 +115,7 @@ public sealed partial class MainViewModel
             _ = SearchAsync();
     }
 
-    private void ConfigureShortsSearchPaging(string query, string? firstToken)
+    private void ConfigureFilteredSearchPaging(string query, string filter, string? firstToken)
     {
         var token = firstToken;
         if (token is null)
@@ -104,7 +125,7 @@ public sealed partial class MainViewModel
         }
         SetLoadMore(async ct =>
         {
-            var page = await _innerTubeDirect!.SearchShortsAsync(query, token, ct);
+            var page = await _innerTubeDirect!.SearchFilteredAsync(query, filter, token, ct);
             if (page.IsFailure)
                 return (Array.Empty<SearchResult>(), false);
             token = page.Value.NextPageToken;
@@ -582,6 +603,27 @@ public sealed partial class MainViewModel
 
     // --- Google Takeout ---
 
+    /// <summary>Liked videos, Watch Later and playlists from Takeout or a YouTube sign-in; playlists already imported are skipped.</summary>
+    private void AddImportedLists(IReadOnlyList<SearchResult> liked, IReadOnlyList<SearchResult> watchLater,
+        IReadOnlyList<(string Name, IReadOnlyList<SearchResult> Videos)> playlists, List<string> report)
+    {
+        if (liked.Count > 0)
+            report.Add(Plural(_library.ImportLikes(liked), "{0} liked video", "{0} liked videos"));
+        if (watchLater.Count > 0)
+            report.Add(Plural(_library.ImportWatchLater(watchLater), "{0} Watch Later video", "{0} Watch Later videos"));
+        int playlistsAdded = 0;
+        var existingNames = _library.Playlists.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var (name, videos) in playlists)
+        {
+            if (!existingNames.Add(name))
+                continue; // imported before
+            _library.CreatePlaylist(name, videos);
+            playlistsAdded++;
+        }
+        if (playlists.Count > 0)
+            report.Add(Plural(playlistsAdded, "{0} playlist", "{0} playlists"));
+    }
+
     /// <summary>Everything in a Takeout zip: subscriptions, playlists, likes, Watch later and history.</summary>
     public async Task ImportTakeoutAsync(string path)
     {
@@ -628,27 +670,8 @@ public sealed partial class MainViewModel
             }
             SearchResult Video(string id) => known.TryGetValue(id, out var v) ? v : TakeoutImport.PlaceholderVideo(id);
 
-            if (contents.LikedVideoIds.Count > 0)
-            {
-                int added = _library.ImportLikes(contents.LikedVideoIds.Select(Video));
-                report.Add(Plural(added, "{0} liked video", "{0} liked videos"));
-            }
-            if (contents.WatchLaterIds.Count > 0)
-            {
-                int added = _library.ImportWatchLater(contents.WatchLaterIds.Select(Video));
-                report.Add(Plural(added, "{0} Watch Later video", "{0} Watch Later videos"));
-            }
-            int playlistsAdded = 0;
-            var existingNames = _library.Playlists.Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            foreach (var playlist in contents.Playlists)
-            {
-                if (!existingNames.Add(playlist.Name))
-                    continue; // imported before
-                _library.CreatePlaylist(playlist.Name, playlist.VideoIds.Select(Video));
-                playlistsAdded++;
-            }
-            if (contents.Playlists.Count > 0)
-                report.Add(Plural(playlistsAdded, "{0} playlist", "{0} playlists"));
+            AddImportedLists(contents.LikedVideoIds.Select(Video).ToList(), contents.WatchLaterIds.Select(Video).ToList(),
+                contents.Playlists.Select(p => (p.Name, (IReadOnlyList<SearchResult>)p.VideoIds.Select(Video).ToList())).ToList(), report);
 
             _accessibility.Announce(T("Imported from Google Takeout: {0}.", string.Join(", ", report)), AnnouncementPriority.High);
             if (CurrentSection is BrowseSection.Playlists or BrowseSection.Channels or BrowseSection.History)

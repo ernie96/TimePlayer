@@ -881,5 +881,28 @@ internal static partial class Spanish
         table["{0}, decibels"] = "{0}, decibelios";
         table["{0}, {1}. S skips it."] = "{0}, {1}. S lo salta.";
         table["{0}: latest uploads"] = "{0}: últimos videos subidos";
+        table["Could not read your YouTube lists: {0}"] = "No se pudieron leer tus listas de YouTube: {0}";
+        table["Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos, Playlists, Shorts, Live, Newest first or Most viewed) and Settings.\n"] = "Escape vacía el cuadro, y Escape otra vez vuelve a la lista. Tab pasa a Buscar (Videos, Listas, Shorts, En vivo, Más recientes o Más vistos) y a Configuración.\n";
+        table["Google sign-in page"] = "Página de inicio de sesión de Google";
+        table["Import by signing in to YouTube"] = "Importar iniciando sesión en YouTube";
+        table["Import by signing in to _YouTube..."] = "Importar iniciando sesión en _YouTube...";
+        table["Imported from YouTube: {0}."] = "Importado desde YouTube: {0}.";
+        table["Keep TimePlayer signed in to YouTube? It's then used for videos YouTube only plays when signed in, and Settings, YouTube account, can do more with it. Choose No to erase the sign-in now; what was imported stays."] = "¿Mantener TimePlayer con la sesión de YouTube iniciada? Se usará para los videos que YouTube solo reproduce con sesión iniciada, y Configuración, Cuenta de YouTube, permite hacer más. Elige No para borrar el inicio de sesión ahora; lo importado se queda.";
+        table["Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete, Import by signing in to YouTube and Import from Google Takeout.\n"] = "Videos que te gustan y tus listas (Control+5). Intro abre una. Mayús+Tab llega a Reproducir todo, Aleatorio, Nueva lista, Cambiar nombre, Eliminar, Importar iniciando sesión en YouTube e Importar desde Google Takeout.\n";
+        table["Most viewed"] = "Más vistos";
+        table["Newest first"] = "Más recientes";
+        table["Reading your likes and Watch later..."] = "Leyendo tus Me gusta y Ver más tarde...";
+        table["Reading your playlists..."] = "Leyendo tus listas...";
+        table["Reading your subscriptions..."] = "Leyendo tus suscripciones...";
+        table["Reading your watch history..."] = "Leyendo tu historial de reproducciones...";
+        table["Sign in to YouTube"] = "Iniciar sesión en YouTube";
+        table["Sign in to YouTube first."] = "Primero inicia sesión en YouTube.";
+        table["Signed in. Reading your YouTube lists; this can take a minute."] = "Sesión iniciada. Leyendo tus listas de YouTube; puede tardar un minuto.";
+        table["Signing in needs the Microsoft Edge WebView2 Runtime. Install it from Microsoft, then try again."] = "Para iniciar sesión se necesita Microsoft Edge WebView2 Runtime. Instálalo desde Microsoft y vuelve a intentarlo.";
+        table["The quickest way is Playlists (Control+5), Import by signing in to YouTube. Sign in on Google's page; TimePlayer reads your subscriptions, history, likes, Watch Later and playlists, closes the page, and asks whether to stay signed in. If that doesn't work for you, Google Takeout exports the same lists.\n\n"] = "La forma más rápida es Listas (Control+5), Importar iniciando sesión en YouTube. Inicia sesión en la página de Google; TimePlayer lee tus suscripciones, historial, Me gusta, Ver más tarde y listas, cierra la página y pregunta si mantener la sesión. Si eso no te funciona, Google Takeout exporta las mismas listas.\n\n";
+        table["The sign-in is erased. What was imported stays."] = "Se borró el inicio de sesión. Lo importado se queda.";
+        table["YouTube says you are signed out. Sign in again."] = "YouTube dice que cerraste sesión. Vuelve a iniciarla.";
+        table["YouTube sign-in"] = "Inicio de sesión de YouTube";
+        table["Your YouTube account has no subscriptions, history, likes or playlists to import."] = "Tu cuenta de YouTube no tiene suscripciones, historial, Me gusta ni listas que importar.";
     }
 }

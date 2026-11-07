@@ -3,6 +3,12 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.12.0
+
+- Import by signing in to YouTube (Playlists, Control+5): Google's sign-in page opens in a small window. Once you're signed in, the window closes and TimePlayer reads your subscriptions, watch history, liked videos, Watch Later and playlists from YouTube, without a Google Takeout zip. Afterwards it asks whether to stay signed in; choose No and the sign-in is erased, and the imported lists stay. The window's browser data is deleted when it closes. It needs the Microsoft Edge WebView2 Runtime, which Windows 10 and 11 usually have.
+- The "Search for" box has Live, Newest first and Most viewed, using YouTube's own search filters.
+- Fixed: video downloads could fail with "Requested format is not available" when ffmpeg wasn't installed. YouTube now hides some formats behind a puzzle that yt-dlp solves with a JavaScript program. TimePlayer uses Deno or Node if you have one; otherwise it downloads QuickJS (about 2 MB, checked against a fixed checksum) the first time it starts.
+
 ## 1.11.0
 
 - Audio description: when a video has a described soundtrack (a narrator says what is on screen), TimePlayer plays it and says "With audio description" once. D in the player switches it; Settings, Playback, can turn it off.

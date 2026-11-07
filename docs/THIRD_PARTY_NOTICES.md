@@ -266,3 +266,24 @@ repository's unofficial translations, under the same license.
 * **URL**: https://github.com/dotnet/runtime
 * **License**: MIT
 * **Used for**: keeping the optional YouTube sign-in encrypted for the Windows user (Windows DPAPI).
+
+---
+
+## 13. QuickJS-ng
+
+* **Project**: QuickJS-ng, a small JavaScript engine
+* **URL**: https://github.com/quickjs-ng/quickjs
+* **License**: MIT
+* **Shipped as**: not shipped. When neither Deno nor Node is installed, TimePlayer downloads `qjs.exe` (release
+  v0.17.0, checked against its SHA-256) into the same folder as yt-dlp, which runs it to solve YouTube's
+  JavaScript challenges.
+
+---
+
+## 14. Microsoft Edge WebView2 SDK (Microsoft.Web.WebView2)
+
+* **Project**: WebView2, by Microsoft
+* **URL**: https://www.nuget.org/packages/Microsoft.Web.WebView2
+* **License**: BSD-style license from Microsoft, included with the package
+* **Used for**: the window that shows Google's sign-in page for "Import by signing in to YouTube". It uses the
+  WebView2 Runtime installed with Windows.
