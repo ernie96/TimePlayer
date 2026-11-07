@@ -3,6 +3,8 @@ using TimePlayer.Core.Common;
 using TimePlayer.Core.Configuration;
 using TimePlayer.Core.Models;
 
+using static TimePlayer.Core.Localization.Loc;
+
 namespace TimePlayer.Core.Library;
 
 public interface IDownloadService
@@ -29,13 +31,18 @@ public sealed class DownloadService : IDownloadService
 {
     private readonly YtDlpBackendProvider _ytDlp;
     private readonly IConfigurationService _config;
+    private readonly Community.IYouTubeAccount? _account;
     private readonly Lazy<string?> _ffmpeg = new(FindFfmpegFolder);
 
-    public DownloadService(YtDlpBackendProvider ytDlp, IConfigurationService config)
+    public DownloadService(YtDlpBackendProvider ytDlp, IConfigurationService config, Community.IYouTubeAccount? account = null)
     {
         _ytDlp = ytDlp;
         _config = config;
+        _account = account;
     }
+
+    // What YouTube says when a video needs a signed-in viewer (age-restricted, members-only, "not a bot").
+    private static readonly string[] SignInErrors = { "AGE_RESTRICTED", "PRIVATE_VIDEO", "COOKIES_REQUIRED" };
 
     public string DownloadFolder =>
         string.IsNullOrWhiteSpace(_config.CurrentConfig.Backend.YtDlpDownloadDirectory)
@@ -71,7 +78,32 @@ public sealed class DownloadService : IDownloadService
         return ReservedNames.Contains(stem, StringComparer.OrdinalIgnoreCase) ? "_" + safe : safe;
     }
 
-    private Task<Result<string>> Download(string videoId, bool audioOnly, string folder, string pattern,
+    /// <summary>
+    /// Downloads without the sign-in first; if YouTube wants a signed-in viewer and the person lets
+    /// TimePlayer use their sign-in, tries again with it, as playback does.
+    /// </summary>
+    private async Task<Result<string>> Download(string videoId, bool audioOnly, string folder, string pattern,
+        IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
+    {
+        var result = await DownloadOnce(videoId, audioOnly, folder, pattern, null, progress, cancellationToken);
+        if (result.IsSuccess || !SignInErrors.Contains(result.Error?.Code))
+            return result;
+        if (_account?.ForRestrictedVideos != true)
+            return Result<string>.Failure(result.Error!.Code, T("YouTube only gives this video to signed-in viewers. Sign in at Settings, YouTube account, and TimePlayer uses it for videos like this one."));
+
+        var cookies = _account.WriteTemporaryCookiesFile();
+        try
+        {
+            return await DownloadOnce(videoId, audioOnly, folder, pattern, cookies, progress, cancellationToken);
+        }
+        finally
+        {
+            if (cookies is not null)
+                try { File.Delete(cookies); } catch (IOException) { }
+        }
+    }
+
+    private Task<Result<string>> DownloadOnce(string videoId, bool audioOnly, string folder, string pattern, string? cookiesFile,
         IProgress<DownloadProgress>? progress, CancellationToken cancellationToken)
     {
         if (!YouTubeVideoId.TryParse(videoId, out var id))
@@ -85,7 +117,8 @@ public sealed class DownloadService : IDownloadService
                 ? QualityPreference.Auto
                 : _config.CurrentConfig.Playback.PreferredQuality,
             FfmpegLocation = _ffmpeg.Value,
-            FileNamePattern = pattern
+            FileNamePattern = pattern,
+            CookiesFile = cookiesFile
         };
         return _ytDlp.DownloadAsync(id, options, progress, cancellationToken);
     }

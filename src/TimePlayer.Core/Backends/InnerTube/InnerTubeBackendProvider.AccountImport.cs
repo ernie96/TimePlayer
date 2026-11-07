@@ -16,8 +16,16 @@ public sealed record AccountData(
     IReadOnlyList<SearchResult> WatchLater,
     IReadOnlyList<(string Name, IReadOnlyList<SearchResult> Videos)> Playlists);
 
+/// <summary>
+/// How far reading an account has got: step <see cref="Step"/> of <see cref="Steps"/>, and what it is doing.
+/// <see cref="NewStep"/> is true when a step starts (worth saying aloud); otherwise only the counts changed.
+/// </summary>
+public sealed record AccountImportProgress(int Step, int Steps, string Text, bool NewStep);
+
 public sealed partial class InnerTubeBackendProvider
 {
+    public const int AccountImportSteps = 5;
+
     // Enough for large accounts without running for ever: a page holds about 30 to 100 items.
     private const int MaxImportPages = 40;
 
@@ -25,12 +33,15 @@ public sealed partial class InnerTubeBackendProvider
     /// Reads the signed-in account's subscriptions, watch history, liked videos, Watch later and own
     /// playlists. Works whatever the account setting is, since the person just chose to sign in for this.
     /// </summary>
-    public async Task<Result<AccountData>> ReadAccountAsync(IProgress<string>? progress, CancellationToken cancellationToken = default)
+    public async Task<Result<AccountData>> ReadAccountAsync(IProgress<AccountImportProgress>? progress, CancellationToken cancellationToken = default)
     {
         if (_account?.IsSignedIn != true)
             return Result<AccountData>.Failure("NOT_SIGNED_IN", T("Sign in to YouTube first."));
 
-        progress?.Report(T("Reading your subscriptions..."));
+        void Step(int step, string text) => progress?.Report(new AccountImportProgress(step, AccountImportSteps, text, NewStep: true));
+        void Count(int step, string text) => progress?.Report(new AccountImportProgress(step, AccountImportSteps, text, NewStep: false));
+
+        Step(1, T("Reading your subscriptions..."));
         var channels = new List<ChannelSubscription>();
         var seenChannels = new HashSet<string>();
         var read = await BrowseAllAsync("FEchannels", root =>
@@ -40,19 +51,22 @@ public sealed partial class InnerTubeBackendProvider
                 foreach (var renderer in InnerTubeJson.FindAll(root, name))
                     if (InnerTubeJson.Str(renderer, "channelId") is { Length: > 0 } id && seenChannels.Add(id))
                         channels.Add(new ChannelSubscription(id, InnerTubeJson.Text(InnerTubeJson.Path(renderer, "title")) ?? id));
+            Count(1, T("Subscriptions: {0} so far.", Plural(channels.Count, "{0} channel", "{0} channels")));
             return channels.Count - before;
         }, cancellationToken);
         if (read.IsFailure)
             return Result<AccountData>.Failure(read.Error);
 
-        progress?.Report(T("Reading your watch history..."));
-        var history = await BrowseVideosAsync("FEhistory", cancellationToken);
+        Step(2, T("Reading your watch history..."));
+        var history = await BrowseVideosAsync("FEhistory", n => Count(2, T("Watch history: {0} so far.", Plural(n, "{0} video", "{0} videos"))), cancellationToken);
 
-        progress?.Report(T("Reading your likes and Watch later..."));
-        var liked = await BrowseVideosAsync("VLLL", cancellationToken);
-        var watchLater = await BrowseVideosAsync("VLWL", cancellationToken);
+        Step(3, T("Reading your liked videos..."));
+        var liked = await BrowseVideosAsync("VLLL", n => Count(3, T("Liked videos: {0} so far.", Plural(n, "{0} video", "{0} videos"))), cancellationToken);
 
-        progress?.Report(T("Reading your playlists..."));
+        Step(4, T("Reading your Watch Later..."));
+        var watchLater = await BrowseVideosAsync("VLWL", n => Count(4, T("Watch Later: {0} so far.", Plural(n, "{0} video", "{0} videos"))), cancellationToken);
+
+        Step(5, T("Reading your playlists..."));
         var playlistIds = new List<(string Id, string Title)>();
         await BrowseAllAsync("FEplaylist_aggregation", root =>
         {
@@ -68,13 +82,16 @@ public sealed partial class InnerTubeBackendProvider
 
         var playlists = new List<(string, IReadOnlyList<SearchResult>)>();
         foreach (var (id, title) in playlistIds)
-            playlists.Add((title, await BrowseVideosAsync("VL" + id, cancellationToken)));
+        {
+            Count(5, T("Playlist {0} of {1}: {2}", playlists.Count + 1, playlistIds.Count, title));
+            playlists.Add((title, await BrowseVideosAsync("VL" + id, null, cancellationToken)));
+        }
 
         return Result<AccountData>.Success(new AccountData(channels, history, liked, watchLater, playlists));
     }
 
     /// <summary>Every video on a signed-in page, following its pages.</summary>
-    private async Task<IReadOnlyList<SearchResult>> BrowseVideosAsync(string browseId, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<SearchResult>> BrowseVideosAsync(string browseId, Action<int>? onCount, CancellationToken cancellationToken)
     {
         var videos = new List<SearchResult>();
         var seen = new HashSet<string>();
@@ -84,6 +101,7 @@ public sealed partial class InnerTubeBackendProvider
             foreach (var video in ParseAccountVideos(root))
                 if (seen.Add(video.Id))
                     videos.Add(video);
+            onCount?.Invoke(videos.Count);
             return videos.Count - before;
         }, cancellationToken);
         return videos;
@@ -109,6 +127,7 @@ public sealed partial class InnerTubeBackendProvider
         JsonObject body = new() { ["browseId"] = browseId };
         for (var page = 0; page < MaxImportPages; page++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var response = await PostAsync("browse", body, cancellationToken, signedIn: true, forImport: true);
             if (response.IsFailure)
                 return page == 0 ? Result<bool>.Failure(response.Error) : Result<bool>.Success(true);

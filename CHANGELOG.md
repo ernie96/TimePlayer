@@ -3,6 +3,11 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 1.12.1
+
+- Importing by signing in to YouTube now shows a progress window: which of the five steps it is on (subscriptions, history, liked videos, Watch Later, playlists), how many it has found so far, and a Cancel button. Each new step is said once; F1 in the window says where it is.
+- Fixed: downloading an age-restricted video failed with "YouTube requires browser cookies or authentication", even when it played. Downloads now use your YouTube sign-in the same way playback does, when you have one and Settings, YouTube account, allows it. Without one, TimePlayer says where to sign in.
+
 ## 1.12.0
 
 - Import by signing in to YouTube (Playlists, Control+5): Google's sign-in page opens in a small window. Once you're signed in, the window closes and TimePlayer reads your subscriptions, watch history, liked videos, Watch Later and playlists from YouTube, without a Google Takeout zip. Afterwards it asks whether to stay signed in; choose No and the sign-in is erased, and the imported lists stay. The window's browser data is deleted when it closes. It needs the Microsoft Edge WebView2 Runtime, which Windows 10 and 11 usually have.

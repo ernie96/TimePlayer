@@ -904,5 +904,21 @@ internal static partial class Spanish
         table["YouTube says you are signed out. Sign in again."] = "YouTube dice que cerraste sesión. Vuelve a iniciarla.";
         table["YouTube sign-in"] = "Inicio de sesión de YouTube";
         table["Your YouTube account has no subscriptions, history, likes or playlists to import."] = "Tu cuenta de YouTube no tiene suscripciones, historial, Me gusta ni listas que importar.";
+        table["YouTube only gives this video to signed-in viewers. Sign in at Settings, YouTube account, and TimePlayer uses it for videos like this one."] = "YouTube solo ofrece este video a quienes iniciaron sesión. Inicia sesión en Configuración, Cuenta de YouTube, y TimePlayer la usará para videos como este.";
+        table["Escape or Cancel stops the import; nothing is imported then."] = "Escape o Cancelar detiene la importación; entonces no se importa nada.";
+        table["Import canceled. Nothing was imported."] = "Importación cancelada. No se importó nada.";
+        table["Import progress"] = "Progreso de la importación";
+        table["Importing from YouTube"] = "Importando desde YouTube";
+        table["Liked videos: {0} so far."] = "Videos que te gustan: {0} hasta ahora.";
+        table["Playlist {0} of {1}: {2}"] = "Lista {0} de {1}: {2}";
+        table["Reading your Watch Later..."] = "Leyendo Ver más tarde...";
+        table["Reading your liked videos..."] = "Leyendo los videos que te gustan...";
+        table["Starting..."] = "Iniciando...";
+        table["Step {0} of {1}"] = "Paso {0} de {1}";
+        table["Step {0} of {1}: {2}"] = "Paso {0} de {1}: {2}";
+        table["Stopping..."] = "Deteniendo...";
+        table["Subscriptions: {0} so far."] = "Suscripciones: {0} hasta ahora.";
+        table["Watch Later: {0} so far."] = "Ver más tarde: {0} hasta ahora.";
+        table["Watch history: {0} so far."] = "Historial de reproducciones: {0} hasta ahora.";
     }
 }

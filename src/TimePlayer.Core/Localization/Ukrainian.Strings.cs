@@ -904,5 +904,21 @@ internal static partial class Ukrainian
         table["YouTube says you are signed out. Sign in again."] = "YouTube повідомляє, що ви вийшли. Увійдіть знову.";
         table["YouTube sign-in"] = "Вхід у YouTube";
         table["Your YouTube account has no subscriptions, history, likes or playlists to import."] = "У вашому обліковому записі YouTube немає підписок, історії, вподобаних або плейлистів для імпорту.";
+        table["YouTube only gives this video to signed-in viewers. Sign in at Settings, YouTube account, and TimePlayer uses it for videos like this one."] = "YouTube показує це відео лише користувачам, які увійшли. Увійдіть у «Налаштування», «Обліковий запис YouTube», і TimePlayer використовуватиме вхід для таких відео.";
+        table["Escape or Cancel stops the import; nothing is imported then."] = "Escape або «Скасувати» зупиняє імпорт; тоді нічого не імпортується.";
+        table["Import canceled. Nothing was imported."] = "Імпорт скасовано. Нічого не імпортовано.";
+        table["Import progress"] = "Перебіг імпорту";
+        table["Importing from YouTube"] = "Імпорт із YouTube";
+        table["Liked videos: {0} so far."] = "Вподобані відео: поки що {0}.";
+        table["Playlist {0} of {1}: {2}"] = "Плейлист {0} з {1}: {2}";
+        table["Reading your Watch Later..."] = "Читання «Переглянути пізніше»...";
+        table["Reading your liked videos..."] = "Читання вподобаних відео...";
+        table["Starting..."] = "Запуск...";
+        table["Step {0} of {1}"] = "Крок {0} з {1}";
+        table["Step {0} of {1}: {2}"] = "Крок {0} з {1}: {2}";
+        table["Stopping..."] = "Зупинка...";
+        table["Subscriptions: {0} so far."] = "Підписки: поки що {0}.";
+        table["Watch Later: {0} so far."] = "«Переглянути пізніше»: поки що {0}.";
+        table["Watch history: {0} so far."] = "Історія переглядів: поки що {0}.";
     }
 }

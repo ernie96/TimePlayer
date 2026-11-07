@@ -77,6 +77,32 @@ public class AccountImportTests
         Assert.All(bodies, b => Assert.Contains("\"context\"", b));
     }
 
+    private sealed class Steps : IProgress<AccountImportProgress>
+    {
+        public List<AccountImportProgress> Seen { get; } = new();
+        public void Report(AccountImportProgress value) => Seen.Add(value);
+    }
+
+    [Fact]
+    public async Task ReadAccount_SaysEachStep_AndHowManySoFar()
+    {
+        var steps = new Steps();
+        await InnerTube(Answer, new List<string>(), new SignedIn()).ReadAccountAsync(steps);
+
+        Assert.Equal(new[] { 1, 2, 3, 4, 5 }, steps.Seen.Where(s => s.NewStep).Select(s => s.Step));
+        Assert.All(steps.Seen, s => Assert.Equal(InnerTubeBackendProvider.AccountImportSteps, s.Steps));
+        Assert.Contains(steps.Seen, s => !s.NewStep && s.Step == 1 && s.Text.Contains("2 channels"));
+        Assert.Contains(steps.Seen, s => !s.NewStep && s.Text.Contains("Road trip"));
+    }
+
+    [Fact]
+    public async Task ReadAccount_CanBeCanceled()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => InnerTube(Answer, new List<string>(), new SignedIn()).ReadAccountAsync(null, cts.Token));
+    }
+
     [Fact]
     public async Task ReadAccount_NeedsASignIn()
     {

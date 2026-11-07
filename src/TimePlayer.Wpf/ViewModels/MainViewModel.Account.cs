@@ -223,7 +223,8 @@ public sealed partial class MainViewModel
     /// After signing in through TimePlayer's sign-in window: reads subscriptions, history, likes, Watch
     /// later and playlists into the library, then asks whether to keep the sign-in.
     /// </summary>
-    public async Task ImportFromYouTubeAccountAsync(bool wasSignedIn)
+    public async Task ImportFromYouTubeAccountAsync(bool wasSignedIn, IProgress<AccountImportProgress>? progress = null,
+        CancellationToken cancellationToken = default, Action? whenRead = null)
     {
         if (_innerTubeDirect is null || _account is null || IsImporting)
             return;
@@ -233,8 +234,10 @@ public sealed partial class MainViewModel
         string summary;
         try
         {
-            _accessibility.Announce(T("Signed in. Reading your YouTube lists; this can take a minute."), AnnouncementPriority.High);
-            var data = await _innerTubeDirect.ReadAccountAsync(null);
+            if (progress is null)
+                _accessibility.Announce(T("Signed in. Reading your YouTube lists; this can take a minute."), AnnouncementPriority.High);
+            var data = await _innerTubeDirect.ReadAccountAsync(progress, cancellationToken);
+            whenRead?.Invoke();
             if (data.IsFailure)
             {
                 summary = T("Could not read your YouTube lists: {0}", data.Error?.Message);
@@ -268,8 +271,14 @@ public sealed partial class MainViewModel
                     _ = ShowSectionAsync(CurrentSection, moveFocus: false);
             }
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            whenRead?.Invoke();
+            summary = T("Import canceled. Nothing was imported.");
+        }
         catch (Exception ex)
         {
+            whenRead?.Invoke();
             _logger.LogError(ex, "Importing from the YouTube account failed.");
             summary = T("Could not import: {0}", ex.Message);
         }

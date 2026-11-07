@@ -482,7 +482,15 @@ public sealed class YtDlpBackendProvider : IBackendProvider, IVideoCatalogProvid
             args.Add("best[ext=mp4]/best");
         }
 
-        AppendCookieArgs(args, options.BrowserCookies);
+        if (options.CookiesFile is not null)
+        {
+            args.Add("--cookies");
+            args.Add(options.CookiesFile);
+        }
+        else
+        {
+            AppendCookieArgs(args, options.BrowserCookies);
+        }
         args.Add(videoId.ToWatchUrl());
 
         var processOptions = new ProcessRunOptions

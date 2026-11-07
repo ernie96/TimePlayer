@@ -904,5 +904,21 @@ internal static partial class Romanian
         table["YouTube says you are signed out. Sign in again."] = "YouTube spune că sunteți deconectat. Conectați-vă din nou.";
         table["YouTube sign-in"] = "Conectare YouTube";
         table["Your YouTube account has no subscriptions, history, likes or playlists to import."] = "Contul dvs. YouTube nu are abonamente, istoric, aprecieri sau liste de importat.";
+        table["YouTube only gives this video to signed-in viewers. Sign in at Settings, YouTube account, and TimePlayer uses it for videos like this one."] = "YouTube oferă acest videoclip doar utilizatorilor conectați. Conectați-vă în Setări, Cont YouTube, iar TimePlayer va folosi conectarea pentru videoclipuri ca acesta.";
+        table["Escape or Cancel stops the import; nothing is imported then."] = "Escape sau Anulare oprește importul; atunci nu se importă nimic.";
+        table["Import canceled. Nothing was imported."] = "Import anulat. Nu s-a importat nimic.";
+        table["Import progress"] = "Progresul importului";
+        table["Importing from YouTube"] = "Import din YouTube";
+        table["Liked videos: {0} so far."] = "Videoclipuri apreciate: {0} până acum.";
+        table["Playlist {0} of {1}: {2}"] = "Lista {0} din {1}: {2}";
+        table["Reading your Watch Later..."] = "Se citește Vizionează mai târziu...";
+        table["Reading your liked videos..."] = "Se citesc videoclipurile apreciate...";
+        table["Starting..."] = "Se pornește...";
+        table["Step {0} of {1}"] = "Pasul {0} din {1}";
+        table["Step {0} of {1}: {2}"] = "Pasul {0} din {1}: {2}";
+        table["Stopping..."] = "Se oprește...";
+        table["Subscriptions: {0} so far."] = "Abonamente: {0} până acum.";
+        table["Watch Later: {0} so far."] = "Vizionează mai târziu: {0} până acum.";
+        table["Watch history: {0} so far."] = "Istoric vizionări: {0} până acum.";
     }
 }

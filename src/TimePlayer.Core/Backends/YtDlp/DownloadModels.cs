@@ -37,6 +37,9 @@ public record DownloadOptions
     /// </summary>
     public string? BrowserCookies { get; init; }
 
+    /// <summary>A cookies.txt with the person's YouTube sign-in, for videos YouTube only gives signed in.</summary>
+    public string? CookiesFile { get; init; }
+
     /// <summary>
     /// Folder containing ffmpeg.exe. Without it, audio is saved in YouTube's own format (m4a)
     /// and video as a single pre-merged file, because converting and merging need ffmpeg.

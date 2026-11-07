@@ -543,8 +543,19 @@ public partial class MainWindow : Window
     private async void ImportBySignIn_Click(object sender, RoutedEventArgs e)
     {
         var wasSignedIn = _viewModel.IsSignedIn;
-        if (wasSignedIn || GoogleSignInWindow.SignIn(this, _viewModel.AcceptSignInCookies))
-            await _viewModel.ImportFromYouTubeAccountAsync(wasSignedIn);
+        if (!wasSignedIn && !GoogleSignInWindow.SignIn(this, _viewModel.AcceptSignInCookies))
+            return;
+        // Reading a big account takes a while: a window says which step it's on and can cancel it.
+        var progress = new ImportProgressWindow(_accessibility) { Owner = this };
+        progress.Show();
+        try
+        {
+            await _viewModel.ImportFromYouTubeAccountAsync(wasSignedIn, progress, progress.Token, progress.Finish);
+        }
+        finally
+        {
+            progress.Finish();
+        }
     }
 
     private void ImportTakeout_Click(object sender, RoutedEventArgs e)
