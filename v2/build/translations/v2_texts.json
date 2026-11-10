@@ -1,0 +1,52 @@
+{
+ "Something went wrong. Details are in the log.": {
+  "ro": "Ceva nu a mers bine. Detaliile sunt în jurnal.",
+  "uk": "Щось пішло не так. Подробиці в журналі.",
+  "es": "Algo salió mal. Los detalles están en el registro."
+ },
+ "TimePlayer couldn't start. Details are in the log.": {
+  "ro": "TimePlayer nu a putut porni. Detaliile sunt în jurnal.",
+  "uk": "Не вдалося запустити TimePlayer. Подробиці в журналі.",
+  "es": "TimePlayer no pudo iniciarse. Los detalles están en el registro."
+ },
+ "Captions Off": {
+  "ro": "Fără subtitrări",
+  "uk": "Без субтитрів",
+  "es": "Sin subtítulos"
+ },
+ "Played": {
+  "ro": "Redat",
+  "uk": "Відтворено",
+  "es": "Reproducido"
+ },
+ "TimePlayer is free. If it's useful to you, you can support its development with a donation.": {
+  "ro": "TimePlayer este gratuit. Dacă vă este util, puteți susține dezvoltarea lui cu o donație.",
+  "uk": "TimePlayer безкоштовний. Якщо він вам корисний, ви можете підтримати його розробку пожертвою.",
+  "es": "TimePlayer es gratuito. Si le resulta útil, puede apoyar su desarrollo con una donación."
+ },
+ "D_onate with PayPal": {
+  "ro": "D_onează prin PayPal",
+  "uk": "П_ожертвувати через PayPal",
+  "es": "D_onar con PayPal"
+ },
+ "Donate on _Ko-fi": {
+  "ro": "Donează pe _Ko-fi",
+  "uk": "Пожертвувати на _Ko-fi",
+  "es": "Donar en _Ko-fi"
+ },
+ "TimePlayer's _website": {
+  "ro": "_Site-ul TimePlayer",
+  "uk": "_Вебсайт TimePlayer",
+  "es": "Sitio _web de TimePlayer"
+ },
+ "Telegram _channel for announcements": {
+  "ro": "_Canalul de anunțuri pe Telegram",
+  "uk": "_Канал оголошень у Telegram",
+  "es": "_Canal de anuncios en Telegram"
+ },
+ "Contact: {0}, or on Mastodon at {1}.": {
+  "ro": "Contact: {0}, sau pe Mastodon la {1}.",
+  "uk": "Контакти: {0} або Mastodon: {1}.",
+  "es": "Contacto: {0}, o en Mastodon en {1}."
+ }
+}

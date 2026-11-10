@@ -3,6 +3,15 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.0
+
+- TimePlayer is rebuilt in Rust with wxWidgets, so it can later run on Linux and macOS too. This release is for Windows only.
+- Your settings, library, history, playlists and YouTube sign-in carry over; nothing needs to be set up again. The keys, menus and help are the same as before.
+- Settings, Updates and help, has donation links (PayPal and Ko-fi), TimePlayer's website, the Telegram announcements channel and contact details.
+- The Visual C++ runtime it needs comes with it, so nothing else has to be installed.
+- Differences from 1.x: the main window stays disabled while Settings is open, and the region list holds the regions YouTube has charts for.
+- If something worked in 1.x and doesn't now, Control+Shift+B reports it.
+
 ## 1.12.1
 
 - Importing by signing in to YouTube now shows a progress window: which of the five steps it is on (subscriptions, history, liked videos, Watch Later, playlists), how many it has found so far, and a Cancel button. Each new step is said once; F1 in the window says where it is.

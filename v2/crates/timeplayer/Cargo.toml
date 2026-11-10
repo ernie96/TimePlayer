@@ -1,0 +1,53 @@
+[package]
+name = "timeplayer"
+description = "TimePlayer: a YouTube player and library for the keyboard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "TimePlayer"
+path = "src/main.rs"
+
+[dependencies]
+timeplayer-core = { path = "../timeplayer-core" }
+serde_json.workspace = true
+log.workspace = true
+# wxDragon from crates.io, the version Tin Pan 2 builds with.
+wxdragon = { version = "0.9.24", default-features = false, features = ["webview"] }
+# The screen-reader pieces: a list that doesn't repeat itself when it refreshes, and announcements through
+# a live region while TimePlayer is in front.
+quiet-list = "0.1.0"
+live-region = "0.3.3"
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+dirs = "6"
+
+[features]
+default = ["background-speech"]
+# Speaks through the screen reader (NVDA, JAWS, Narrator; VoiceOver; Orca) when TimePlayer isn't in front.
+# Building it on Windows needs Visual Studio's "C++ ATL for latest build tools"; --no-default-features
+# builds without it.
+background-speech = ["dep:prismer"]
+
+[target.'cfg(any(windows, target_os = "macos", target_os = "linux"))'.dependencies]
+prismer = { version = "0.1.4", features = ["static"], optional = true }
+
+[target.'cfg(windows)'.dependencies]
+# Window messages from the NVDA add-on, single instance, the registry for links and the browser extension.
+windows = { version = "0.62.2", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging", "Win32_UI_Shell", "Win32_System_Registry", "Win32_System_Threading", "Win32_System_Pipes", "Win32_Storage_FileSystem", "Win32_Security", "Win32_System_IO", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_DataExchange", "Win32_System_Memory"] }
+webview2-com = "0.39.1"
+
+[build-dependencies]
+embed-manifest = "1.4"
+pkg-config = "0.3"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+# Whether TimePlayer is in front (speech) and the sign-in page's cookies, through AppKit and WebKit.
+objc = "0.2.7"
+block = "0.1.6"
+
+# The objc crate's macros check `feature = "cargo-clippy"`, which rustc no longer knows.
+[lints.rust.unexpected_cfgs]
+level = "warn"
+check-cfg = ['cfg(feature, values("cargo-clippy"))']

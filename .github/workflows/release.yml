@@ -11,6 +11,8 @@ permissions:
 
 jobs:
   release:
+    # 1.x only: TimePlayer 2 (tags v2.*) is packaged and signed with v2/build/package.ps1.
+    if: ${{ !startsWith(github.ref_name, 'v2.') }}
     runs-on: windows-latest
     env:
       # The same mpv build TimePlayer downloads itself (MpvManager.DefaultDownloadUrl).
