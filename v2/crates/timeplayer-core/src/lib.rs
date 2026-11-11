@@ -21,6 +21,7 @@ pub mod logging;
 pub mod models;
 pub mod mpv;
 pub mod paths;
+pub mod periodic;
 pub mod playback;
 pub mod process;
 pub mod text;

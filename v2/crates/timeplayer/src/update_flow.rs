@@ -1,7 +1,10 @@
 //! Checking for, downloading and installing a TimePlayer update (1.x's `UpdateFlow`): the quiet check after
-//! startup offers a new version once (No skips it), Check for updates in Settings always says what it found.
+//! startup, repeated every 6 hours while TimePlayer stays open, offers a new version once (No skips it) and
+//! waits to offer it until nothing would be interrupted; Check for updates in Settings always says what it found.
 
 use timeplayer_core::i18n::{t, tf};
+use timeplayer_core::mpv::PlaybackState;
+use timeplayer_core::periodic::Tick;
 use timeplayer_core::updates::{self, UpdateInfo};
 
 use crate::{App, dialogs, speech};
@@ -45,6 +48,43 @@ fn strip_links(line: &str) -> String {
 }
 
 impl App {
+    /// Every minute: runs the repeated update check when it's due, and offers a version it found earlier
+    /// once nothing would be interrupted.
+    pub(crate) fn update_tick(&mut self) {
+        if self.updating {
+            return;
+        }
+        let enabled = self.settings.with(|c| c.update.check_at_startup);
+        let idle = self.quiet_enough_for_update_offer();
+        match self.update_schedule.tick(std::time::Instant::now(), enabled, idle) {
+            Tick::Nothing => {}
+            Tick::Check => {
+                log::info!("Checking for TimePlayer updates (every 6 hours while open).");
+                self.check_for_app_update(false);
+            }
+            Tick::Offer(update) => {
+                // Skipped in the meantime (the start-up check's offer, say): stays skipped.
+                if !self.settings.with(|c| c.update.skipped_version.as_deref() == Some(version_text(&update.version).as_str())) {
+                    self.updating = true;
+                    self.offer_update(update, false);
+                }
+            }
+        }
+    }
+
+    /// No dialog now if TimePlayer isn't the window in front, a window of its own is open, or something is
+    /// starting or being saved: a video opening or buffering, a download, an import.
+    fn quiet_enough_for_update_offer(&self) -> bool {
+        !self.importing
+            && self.import_window.is_none()
+            && self.settings_window.is_none()
+            && self.sign_in_window.is_none()
+            && self.report_window.is_none()
+            && self.download_state.active == 0
+            && !matches!(self.playing.state, PlaybackState::Opening | PlaybackState::Buffering)
+            && speech::app_in_front()
+    }
+
     /// `manual`: Check for updates in Settings. Otherwise the quiet check after startup.
     pub(crate) fn check_for_app_update(&mut self, manual: bool) {
         if self.updating {
@@ -89,6 +129,17 @@ impl App {
             self.updating = false;
             return;
         }
+        if !manual && !self.quiet_enough_for_update_offer() {
+            log::info!("TimePlayer {version} is available; it is offered once nothing would be interrupted.");
+            self.updating = false;
+            self.update_schedule.hold(update);
+            return;
+        }
+        self.offer_update(update, manual);
+    }
+
+    fn offer_update(&mut self, update: UpdateInfo, manual: bool) {
+        let version = version_text(&update.version);
         let notes = plain_text(&update.notes);
         let mut text = tf("TimePlayer {0} is available. You have {1}.\n\n", &[&version, &timeplayer_core::paths::version()]);
         if !notes.is_empty() {

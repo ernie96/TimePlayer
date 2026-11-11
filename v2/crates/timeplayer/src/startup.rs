@@ -122,6 +122,10 @@ pub fn start(link: Option<String>) {
     checks.start(STARTUP_CHECKS_MS, true);
     std::mem::forget(checks);
     crate::selfcheck::start(&frame);
+    let update_ticks = Timer::new(&frame);
+    update_ticks.on_tick(|_| with_app(App::update_tick));
+    update_ticks.start(timeplayer_core::periodic::TICK_EVERY.as_millis() as i32, false);
+    std::mem::forget(update_ticks);
     let blink = Timer::new(&frame);
     blink.on_tick(|_| with_app(App::braille_blink));
     blink.start(BLINK_MS, false);

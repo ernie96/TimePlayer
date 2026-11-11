@@ -9,7 +9,7 @@ credentials, sign-in, registration or server setup.
 - **Portable:** [TimePlayer.zip](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer.zip): extract anywhere you can write to.
 - **Browser extension:** [TimePlayer-browser-extension.zip](https://github.com/ernie96/TimePlayer/releases/latest/download/TimePlayer-browser-extension.zip) (also installed with the app; see Settings, Links and browser).
 
-TimePlayer keeps itself up to date: it checks for a new release at startup and offers to install it.
+TimePlayer keeps itself up to date: it checks for a new release at startup and every 6 hours while it's open, and offers to install it.
 The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELOG.md](CHANGELOG.md) lists what changed in each version.
 
 ---

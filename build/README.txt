@@ -193,8 +193,12 @@ playlist, channel tab or search into its own numbered folder. To install ffmpeg,
 Updates
 -------
 
-TimePlayer checks for a new version when it starts (you can turn this off in Settings, F2)
-and offers it with a list of what changed. Choose Yes and it downloads the update, checks
+TimePlayer checks for a new version when it starts and every 6 hours while it's open (you can
+turn both off in Settings, F2, Updates and help, "Check for TimePlayer updates at startup"),
+and offers it with a list of what changed. It says nothing when there is no new version. The
+offer waits until TimePlayer is the window in front and you aren't opening a video,
+downloading, importing or in another TimePlayer window. If you choose No, that version isn't
+offered again by itself. Choose Yes and it downloads the update, checks
 that it really comes from TimePlayer's publisher, installs it and opens again by itself.
 Settings, Updates and help, also has "Check for TimePlayer updates" to look right away.
 

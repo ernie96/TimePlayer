@@ -93,6 +93,9 @@ pub struct App {
     /// A link that came before the player was ready.
     pub waiting_link: Option<String>,
     pub updating: bool,
+    /// The update check repeated every 6 hours while TimePlayer stays open, and a version it found that waits
+    /// until nothing would be interrupted.
+    pub update_schedule: timeplayer_core::periodic::PeriodicCheck<timeplayer_core::updates::UpdateInfo>,
     pub settings_window: Option<settings_window::SettingsWindow>,
     pub sign_in_window: Option<signin::SignInWindow>,
     pub report_window: Option<report::ReportWindow>,
@@ -215,6 +218,7 @@ impl App {
             import_window: None,
             waiting_link: None,
             updating: false,
+            update_schedule: timeplayer_core::periodic::PeriodicCheck::new(std::time::Instant::now(), timeplayer_core::periodic::CHECK_EVERY),
             settings_window: None,
             sign_in_window: None,
             report_window: None,

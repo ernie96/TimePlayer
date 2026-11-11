@@ -55,6 +55,15 @@ fn speak(text: &str, priority: Priority) {
     }
 }
 
+/// Whether a TimePlayer window is the one in front (true when that can't be told), so an update offer
+/// doesn't pop up behind the app the user is working in.
+pub fn app_in_front() -> bool {
+    #[cfg(all(any(windows, target_os = "macos", target_os = "linux"), feature = "background-speech"))]
+    return background::in_front();
+    #[allow(unreachable_code)]
+    true
+}
+
 #[cfg(all(any(windows, target_os = "macos", target_os = "linux"), feature = "background-speech"))]
 mod background {
     use prismer::{Backend, Prism};

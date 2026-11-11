@@ -3,6 +3,10 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## Unreleased
+
+- TimePlayer now also checks for a new version every 6 hours while it's open, not only when it starts. It says nothing unless there is one, and it waits to ask until TimePlayer is the window in front, no video is opening, no download or import is running and no other TimePlayer window (Settings, sign-in, report) is open. Saying No means that version isn't offered again by itself. "Check for TimePlayer updates at startup" in Settings turns both checks off.
+
 ## 2.0.0
 
 - TimePlayer is rebuilt in Rust with wxWidgets, so it can later run on Linux and macOS too. This release is for Windows only.
