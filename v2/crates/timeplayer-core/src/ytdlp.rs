@@ -104,7 +104,8 @@ impl YtDlp {
         self.settings.with(|c| c.backend.yt_dlp_custom_path.as_deref().is_some_and(|p| !p.trim().is_empty() && Path::new(p).is_file()))
     }
 
-    fn run(&self, args: Vec<String>, timeout: Duration, on_line: Option<crate::process::LineCallback>, cancel: &Cancel) -> Result<Output> {
+    fn run(&self, mut args: Vec<String>, timeout: Duration, on_line: Option<crate::process::LineCallback>, cancel: &Cancel) -> Result<Output> {
+        args.splice(0..0, UTF8_OUTPUT.map(String::from));
         let options = RunOptions { timeout: Some(timeout), ..Default::default() };
         self.runner.run(&self.executable(), &args, &options, on_line, cancel)
     }
@@ -315,7 +316,7 @@ impl YtDlp {
         self.ensure_installed()?;
         std::fs::create_dir_all(&options.output_directory)?;
         let output = options.output_directory.join(&options.file_name_pattern);
-        let mut args: Vec<String> = ["--newline", "--no-playlist", "--no-warnings", "-o"].map(String::from).to_vec();
+        let mut args: Vec<String> = UTF8_OUTPUT.into_iter().chain(["--newline", "--no-playlist", "--no-warnings", "-o"]).map(String::from).collect();
         args.push(output.display().to_string());
         // Converting to MP3 and merging video with audio need ffmpeg; without it, take single files.
         if let Some(ffmpeg) = &options.ffmpeg_location {
@@ -324,9 +325,18 @@ impl YtDlp {
         }
         let has_ffmpeg = options.ffmpeg_location.is_some();
         match (options.audio_only, has_ffmpeg) {
-            (true, true) => args.extend(["-x", "--audio-format", "mp3", "--audio-quality", "0"].map(String::from)),
-            (true, false) => args.extend(["-f".into(), "bestaudio[ext=m4a]/bestaudio".into()]),
-            (false, true) => args.extend(["-f".into(), format_selector(options.quality), "--merge-output-format".into(), "mp4".into()]),
+            (true, true) => {
+                if options.audio_description {
+                    args.extend(["-f".into(), described_first("bestaudio")]);
+                }
+                args.extend(["-x", "--audio-format", "mp3", "--audio-quality", "0"].map(String::from));
+            }
+            (true, false) => {
+                let normal = "bestaudio[ext=m4a]/bestaudio";
+                args.extend(["-f".into(), if options.audio_description { described_first(normal) } else { normal.into() }]);
+            }
+            (false, true) => args.extend(["-f".into(), video_format_selector(options.quality, options.audio_description), "--merge-output-format".into(), "mp4".into()]),
+            // A single file with sound built in: there's no choosing the described track then.
             (false, false) => args.extend(["-f".into(), "best[ext=mp4]/best".into()]),
         }
         self.cookie_args(&mut args, options.cookies_file.as_deref());
@@ -421,6 +431,31 @@ fn checksum_for(sums: &str, file: &str) -> Option<String> {
 }
 
 /// yt-dlp's format choice for video downloads with ffmpeg.
+/// yt-dlp writes its output as UTF-8 (TimePlayer reads it so); otherwise Windows can refuse a line with
+/// characters outside the console's code page, and yt-dlp stops with "[Errno 22] Invalid argument".
+const UTF8_OUTPUT: [&str; 2] = ["--encoding", "utf-8"];
+
+/// The described track (yt-dlp's "descriptive" in the format note) of each audio choice first, then the
+/// choices as they are: "a/b" becomes "a[described]/b[described]/a/b".
+pub fn described_first(selector: &str) -> String {
+    let described: Vec<String> = selector.split('/').map(|choice| format!("{choice}[format_note*=descriptive]")).collect();
+    format!("{}/{selector}", described.join("/"))
+}
+
+/// The video download's formats; with `audio_description`, the described audio track goes with the video
+/// when there is one.
+pub fn video_format_selector(quality: QualityPreference, audio_description: bool) -> String {
+    let normal = format_selector(quality);
+    if !audio_description {
+        return normal;
+    }
+    let video = match quality.max_height() {
+        Some(h) => [format!("bestvideo[height<={h}][ext=mp4]"), format!("bestvideo[height<={h}]")],
+        None => ["bestvideo[ext=mp4]".to_string(), "bestvideo".to_string()],
+    };
+    format!("{}+bestaudio[ext=m4a][format_note*=descriptive]/{}+bestaudio[format_note*=descriptive]/{normal}", video[0], video[1])
+}
+
 pub fn format_selector(quality: QualityPreference) -> String {
     match quality.max_height() {
         Some(h) => format!("bestvideo[height<={h}][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<={h}]+bestaudio/best[height<={h}]/best"),
@@ -438,6 +473,8 @@ pub struct DownloadOptions {
     /// The folder ffmpeg is in; without it audio is M4A and video a single MP4.
     pub ffmpeg_location: Option<PathBuf>,
     pub cookies_file: Option<PathBuf>,
+    /// Take the audio-described track when the video has one (as playback does with audio description on).
+    pub audio_description: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -689,6 +726,13 @@ pub fn classify(exit_code: i32, stderr: &str, stdout: &str, video_id: &str) -> A
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn described_tracks_come_first_when_asked() {
+        assert_eq!(described_first("bestaudio[ext=m4a]/bestaudio"), "bestaudio[ext=m4a][format_note*=descriptive]/bestaudio[format_note*=descriptive]/bestaudio[ext=m4a]/bestaudio");
+        assert_eq!(video_format_selector(QualityPreference::Auto, false), format_selector(QualityPreference::Auto));
+        assert!(video_format_selector(QualityPreference::P720, true).starts_with("bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a][format_note*=descriptive]/bestvideo[height<=720]+bestaudio[format_note*=descriptive]/bestvideo[height<=720][ext=mp4]"));
+    }
 
     fn details_with(formats: &str) -> VideoDetails {
         let v: Value = serde_json::from_str(&format!(r#"{{"id":"x","title":"T","formats":{formats}}}"#)).unwrap();

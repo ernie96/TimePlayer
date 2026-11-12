@@ -128,9 +128,50 @@ pub fn clock(seconds: f64) -> String {
     if h > 0 { format!("{h}:{m:02}:{s:02}") } else { format!("{m}:{s:02}") }
 }
 
+/// What a caption adds to the one before it, for reading captions aloud. YouTube's automatic captions roll:
+/// each one repeats the line before and adds a line, and a line can also grow word by word. Lines already
+/// shown are left out, then words that only continue the previous caption; None when nothing is new.
+pub fn caption_news(previous: Option<&str>, current: &str) -> Option<String> {
+    let lines = |text: &str| -> Vec<String> { text.lines().map(|l| l.split_whitespace().collect::<Vec<_>>().join(" ")).filter(|l| !l.is_empty()).collect() };
+    let current_lines = lines(current);
+    let Some(previous) = previous else {
+        let all = current_lines.join(" ");
+        return (!all.is_empty()).then_some(all);
+    };
+    let previous_lines = lines(previous);
+    let fresh: Vec<&String> = current_lines.iter().skip_while(|line| previous_lines.contains(line)).collect();
+    let words: Vec<&str> = fresh.iter().flat_map(|l| l.split(' ')).collect();
+    let previous_words: Vec<&str> = previous_lines.iter().flat_map(|l| l.split(' ')).collect();
+    // The longest run of the previous caption's last words that the new text starts with: two words or
+    // more (one word alone is too easily a coincidence), or the whole previous caption as it grows.
+    let longest = words.len().min(previous_words.len());
+    let overlap = (1..=longest)
+        .rev()
+        .find(|&k| previous_words[previous_words.len() - k..] == words[..k] && (k >= 2 || k == previous_words.len()))
+        .unwrap_or(0);
+    let news = words[overlap..].join(" ");
+    (!news.is_empty()).then_some(news)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn rolling_captions_read_only_what_is_new() {
+        assert_eq!(caption_news(None, "hello there\nhow are you").as_deref(), Some("hello there how are you"));
+        // A roll: the old bottom line moves up, a new line comes in.
+        assert_eq!(caption_news(Some("hello there\nhow are you"), "how are you\ntoday my friend").as_deref(), Some("today my friend"));
+        // A line growing word by word.
+        assert_eq!(caption_news(Some("today my"), "today my friend").as_deref(), Some("friend"));
+        assert_eq!(caption_news(Some("so"), "so we went").as_deref(), Some("we went"));
+        assert_eq!(caption_news(Some("how are you\ntoday my"), "today my friend we").as_deref(), Some("friend we"));
+        // The same caption again, or part of it as it clears: nothing new.
+        assert_eq!(caption_news(Some("how are you\ntoday"), "how are you\ntoday"), None);
+        assert_eq!(caption_news(Some("how are you\ntoday"), "today"), None);
+        // A new caption that only shares one common word with the end of the last one is read whole.
+        assert_eq!(caption_news(Some("I saw the"), "the end").as_deref(), Some("the end"));
+    }
 
     #[test]
     fn speaks_times_and_counts() {

@@ -3,6 +3,16 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## Unreleased
+
+- TimePlayer for Mac (TimePlayer-macOS.zip, Apple silicon, macOS 13 or later) and Linux (TimePlayer-x86_64.AppImage). Both need mpv installed: on Mac with Homebrew (brew install mpv), on Linux from your package manager. They are new and have had little testing; reports are welcome.
+- Captions read aloud now say only what's new. YouTube's automatic captions repeat the line before each new one, and TimePlayer used to read both, so you heard half of a line again with the next.
+- Captions and sung lyrics go straight to your screen reader (NVDA, JAWS, Narrator, VoiceOver or Orca), even while TimePlayer is in front, so fast captions are no longer skipped.
+- Fixed on Linux: closing Report a problem left focus nowhere; it now goes back where it was.
+
+- Fixed: downloading a video whose title has characters such as curly quotes failed with "yt-dlp was unable to process the video". yt-dlp couldn't write its progress for that title; it now writes its output as UTF-8.
+- Downloads take a video's audio-described track when it has one and audio description is on (D in the player, or Settings, Playback), as playback does. Audio and video downloads both do; a video download without ffmpeg can't, since it's a single file with its sound built in.
+
 ## 2.0.1
 
 - TimePlayer now also checks for a new version every 6 hours while it's open, not only when it starts. It says nothing unless there is one, and it waits to ask until TimePlayer is the window in front, no video is opening, no download or import is running and no other TimePlayer window (Settings, sign-in, report) is open. Saying No means that version isn't offered again by itself. "Check for TimePlayer updates at startup" in Settings turns both checks off.

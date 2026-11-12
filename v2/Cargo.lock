@@ -1676,6 +1676,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "shipfitter"
+version = "0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91ac0595a8daf8c8e137fd328a71fbe7a61dfc2721dc676a17060cf448731300"
+
+[[package]]
 name = "shlex"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2464,6 +2470,13 @@ dependencies = [
  "rawzip",
  "reqwest",
  "sha2 0.11.1",
+]
+
+[[package]]
+name = "xtask"
+version = "2.0.1"
+dependencies = [
+ "shipfitter",
 ]
 
 [[package]]

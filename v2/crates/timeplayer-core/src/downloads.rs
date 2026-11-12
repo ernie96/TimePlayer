@@ -72,6 +72,7 @@ impl Downloads {
             file_name_pattern: pattern,
             ffmpeg_location: ffmpeg_folder(),
             cookies_file: None,
+            audio_description: self.settings.with(|c| c.playback.audio_description),
         };
         let first = self.ytdlp.download(video_id, &options, progress, cancel);
         let error = match first {

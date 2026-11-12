@@ -1,0 +1,11 @@
+[package]
+name = "xtask"
+description = "TimePlayer's packaging tasks: cargo xtask macos"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# The app bundle and its signing, as Tin Pan 2 and fedra package their macOS builds.
+shipfitter = "0.2.4"

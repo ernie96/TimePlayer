@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=TimePlayer
+Comment=A YouTube player and library for the keyboard
+Exec=TimePlayer %u
+Icon=timeplayer
+Categories=AudioVideo;Video;Player;
+MimeType=x-scheme-handler/timeplayer;
+Terminal=false

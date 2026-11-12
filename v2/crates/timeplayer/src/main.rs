@@ -105,6 +105,8 @@ pub struct App {
     pub marked_watched: std::collections::HashSet<String>,
     /// The sign-in page was opened only to sign in (Settings, YouTube account), not to import.
     pub sign_in_only: bool,
+    /// Where focus was when a stay-open window (Report a problem) opened, to go back there when it closes.
+    pub focus_before_window: Option<keys::Focus>,
 }
 
 thread_local! {
@@ -229,6 +231,7 @@ impl App {
             sign_in_browser: "firefox".into(),
             marked_watched: Default::default(),
             sign_in_only: false,
+            focus_before_window: None,
         }
     }
 

@@ -37,7 +37,16 @@ pub fn say_quietly(text: &str) {
 }
 
 /// Captions and sung lyrics read aloud, after what is being said.
+/// They go straight to the screen reader (NVDA, JAWS, Narrator, VoiceOver or Orca, through prism) even while
+/// TimePlayer is in front: a live region that changes as fast as captions do loses some of them.
 pub fn say_caption(text: &str) {
+    if text.trim().is_empty() {
+        return;
+    }
+    #[cfg(all(any(windows, target_os = "macos", target_os = "linux"), feature = "background-speech"))]
+    if background::speak(text, false) {
+        return;
+    }
     speak(text, Priority::Medium);
 }
 
@@ -46,8 +55,7 @@ fn speak(text: &str, priority: Priority) {
         return;
     }
     #[cfg(all(any(windows, target_os = "macos", target_os = "linux"), feature = "background-speech"))]
-    if !background::in_front() {
-        background::speak(text, priority == Priority::High);
+    if !background::in_front() && background::speak(text, priority == Priority::High) {
         return;
     }
     if let Some(label) = LABEL.get() {
@@ -81,12 +89,9 @@ mod background {
         BACKEND.with(|_| {});
     }
 
-    pub fn speak(text: &str, interrupt: bool) {
-        BACKEND.with(|backend| {
-            if let Some(backend) = backend {
-                let _ = backend.speak(text, interrupt);
-            }
-        });
+    /// False when there's no screen reader or speech to send it to.
+    pub fn speak(text: &str, interrupt: bool) -> bool {
+        BACKEND.with(|backend| backend.as_ref().is_some_and(|backend| backend.speak(text, interrupt).is_ok()))
     }
 
     /// Whether one of TimePlayer's windows is the active one; Orca reads its announcements then.

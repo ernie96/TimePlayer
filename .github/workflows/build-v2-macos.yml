@@ -1,0 +1,66 @@
+name: Build 2.x for macOS
+
+# Tests and builds TimePlayer 2 on macOS (Apple silicon) and packages TimePlayer.app as TimePlayer-macOS.zip,
+# whenever v2 changes on main. The zip is kept as the run's artifact; for a v2 tag it is also signed and added
+# to that tag's release (made on Windows by v2/build/package.ps1).
+on:
+  push:
+    branches: [main, ports]
+    tags: ['v2.*']
+    paths: ['v2/**', '.github/workflows/build-v2-macos.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "13.0"
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: CMake and Ninja (wxWidgets builds with them)
+        run: brew install cmake ninja
+
+      - name: Cache the Rust build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            v2/target
+          key: tp-v2-macOS-${{ hashFiles('v2/Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            tp-v2-macOS-
+
+      - name: Test
+        working-directory: v2
+        run: cargo test --release -p timeplayer-core -p timeplayer
+
+      - name: Build and package
+        working-directory: v2
+        run: |
+          cargo build --release -p timeplayer
+          cargo xtask macos
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TimePlayer-macOS
+          path: v2/target/release/TimePlayer-macOS.zip
+          retention-days: 30
+
+      - uses: actions/setup-dotnet@v5
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Sign it and add it to the release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: sh v2/packaging/attach-to-release.sh v2/target/release/TimePlayer-macOS.zip

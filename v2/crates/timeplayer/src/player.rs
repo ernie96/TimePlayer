@@ -473,12 +473,12 @@ impl App {
         if !self.settings.with(|c| c.accessibility.speak_captions) || text.trim().is_empty() {
             return;
         }
-        let spoken = text.split_whitespace().collect::<Vec<_>>().join(" ");
-        if self.playing.last_spoken_caption.as_deref() == Some(&spoken) {
-            return;
+        // Only what this caption adds: YouTube's rolling captions repeat the line before.
+        let news = timeplayer_core::text::caption_news(self.playing.last_spoken_caption.as_deref(), text);
+        self.playing.last_spoken_caption = Some(text.to_owned());
+        if let Some(news) = news {
+            speech::say_caption(&news);
         }
-        self.playing.last_spoken_caption = Some(spoken.clone());
-        speech::say_caption(&spoken);
     }
 
     fn on_queue_changed(&mut self) {
@@ -998,6 +998,7 @@ impl App {
         self.reset_transcript();
         self.reset_lyrics();
         self.playing.segments.reset(video_id.as_deref(), Vec::new());
+        self.playing.last_spoken_caption = None;
         self.playing.votes = None;
         let Some(video_id) = video_id else { return };
         let generation = self.playing.watch_generation;
@@ -1995,6 +1996,7 @@ impl App {
     }
 
     /// A routing key on the NVDA add-on's braille line: go there (to a chapter's start if one is marked there).
+    #[cfg_attr(not(windows), allow(dead_code, reason = "only the NVDA add-on on Windows sends routing keys"))]
     pub(crate) fn braille_touch(&mut self, cell: usize, cell_count: usize) {
         let duration = self.playing.effective_duration();
         if !self.playing.session_open || duration <= 0.0 {

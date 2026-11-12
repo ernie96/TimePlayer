@@ -114,6 +114,23 @@ impl App {
         if self.player_visible { Focus::Other } else { Focus::SectionControls }
     }
 
+    /// Puts focus back where it was before a window opened.
+    pub(crate) fn restore_focus(&self, focus: Focus) {
+        let ui = &self.ui;
+        match focus {
+            Focus::SearchBox | Focus::TopBar => ui.focus_search(),
+            Focus::SectionTabs => ui.focus_section_tabs(),
+            Focus::List | Focus::Empty | Focus::SectionControls | Focus::Error => ui.focus_list(),
+            Focus::NowPlaying => ui.now_play.set_focus(),
+            Focus::Position => ui.position.set_focus(),
+            Focus::Braille => ui.braille.set_focus(),
+            Focus::PanelTabs | Focus::UpNext | Focus::Comments | Focus::Description | Focus::PlayerQueue | Focus::Chapters | Focus::Transcript | Focus::Lyrics => {
+                self.focus_selected_panel()
+            }
+            Focus::PlayerButtons | Focus::Other => ui.play.set_focus(),
+        }
+    }
+
     /// The frame's key hook: true when the key was TimePlayer's.
     pub(crate) fn key(&mut self, key: &KeyboardEvent) -> bool {
         self.key_code(key.get_key_code().unwrap_or(0), key.control_down(), key.shift_down(), key.alt_down())

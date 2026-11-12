@@ -1,8 +1,8 @@
 TimePlayer
 ==========
 
-TimePlayer is a YouTube player for Windows, with braille display support through NVDA.
-No Google account or sign-in is needed.
+TimePlayer is a YouTube player for Windows, Mac and Linux, with braille display support
+through NVDA on Windows. No Google account or sign-in is needed.
 
 
 Installing
@@ -16,6 +16,20 @@ Portable zip (TimePlayer.zip): extract the whole folder anywhere you can write t
 Program Files) and run TimePlayer.exe. Because the folder contains portable.txt, your
 settings, library and logs are kept inside that folder, so you can carry it on a USB drive.
 Delete portable.txt to keep them in %LOCALAPPDATA%\TimePlayer instead.
+
+Mac (TimePlayer-macOS.zip): Apple silicon, macOS 13 or later. Unzip it and move TimePlayer
+to Applications. TimePlayer plays through mpv, which you install once with Homebrew:
+brew install mpv. The app isn't signed by Apple yet, so macOS warns the first time you open
+it; open it from Finder's context menu, Open. The Mac version is new and has had little
+testing.
+
+Linux (TimePlayer-x86_64.AppImage): 64-bit Intel or AMD. It needs GTK 3, WebKitGTK 4.1 and
+mpv from your system (on Ubuntu or Debian: sudo apt install mpv libwebkit2gtk-4.1-0). Make
+the file executable, then run it. Speech goes to Orca. The Linux version is new and has had
+little testing.
+
+On Mac and Linux, TimePlayer offers its own updates as it does on Windows. The NVDA braille
+add-on is Windows only.
 
 
 First start

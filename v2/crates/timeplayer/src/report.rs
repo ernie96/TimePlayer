@@ -25,6 +25,7 @@ impl App {
             open.description.set_focus();
             return;
         }
+        self.focus_before_window = Some(self.focus());
         self.report_window = Some(ReportWindow::open(&self.ui.frame, feature));
     }
 
@@ -87,6 +88,10 @@ impl App {
         if let Some(window) = self.report_window.take() {
             window.dialog.destroy();
             self.ui.frame.raise();
+            // GTK leaves focus nowhere when a window closes; Windows usually puts it back itself.
+            if let Some(focus) = self.focus_before_window.take() {
+                self.restore_focus(focus);
+            }
         }
     }
 }
