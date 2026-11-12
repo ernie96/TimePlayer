@@ -15,11 +15,11 @@ permissions:
 
 jobs:
   build:
-    # macOS 14 (Apple silicon): Homebrew's libmpv, bundled in the app, is built for the system it's installed on,
-    # and TimePlayer supports macOS 14 and later.
-    runs-on: macos-14
+    # macOS 15 (Apple silicon): Homebrew's libmpv, bundled in the app, is built for the system it's installed on,
+    # so TimePlayer supports macOS 15 and later.
+    runs-on: macos-15
     env:
-      MACOSX_DEPLOYMENT_TARGET: "14.0"
+      MACOSX_DEPLOYMENT_TARGET: "15.0"
     steps:
       - uses: actions/checkout@v5
 

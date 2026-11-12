@@ -33,8 +33,8 @@ fn macos() -> Result<(), Box<dyn Error>> {
         identifier: "io.github.ernie96.timeplayer",
         executable: "TimePlayer",
         version: env!("CARGO_PKG_VERSION"),
-        // macOS 14 or later (the mpv build inside needs it), and timeplayer:// links open in TimePlayer.
-        extra: "\t<key>LSMinimumSystemVersion</key>\n\t<string>14.0</string>\n\
+        // macOS 15 or later (Homebrew's libmpv inside is built for it), and timeplayer:// links open in TimePlayer.
+        extra: "\t<key>LSMinimumSystemVersion</key>\n\t<string>15.0</string>\n\
 \t<key>CFBundleURLTypes</key>\n\t<array>\n\t\t<dict>\n\t\t\t<key>CFBundleURLName</key>\n\t\t\t<string>TimePlayer link</string>\n\
 \t\t\t<key>CFBundleURLSchemes</key>\n\t\t\t<array>\n\t\t\t\t<string>timeplayer</string>\n\t\t\t</array>\n\t\t</dict>\n\t</array>\n",
         ..MacApp::default()
