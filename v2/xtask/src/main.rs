@@ -120,7 +120,60 @@ fn bundle_libmpv(bundle: &Path) -> Result<(), Box<dyn Error>> {
     if !status.success() {
         return Err("dylibbundler couldn't gather libmpv's libraries".into());
     }
+    for entry in std::fs::read_dir(&frameworks)? {
+        let path = entry?.path();
+        if path.extension().is_some_and(|e| e == "dylib") {
+            fix_rpaths(&path)?;
+        }
+    }
     println!("Added libmpv to {}", frameworks.display());
+    Ok(())
+}
+
+/// dylibbundler turns each of a library's search paths into "@loader_path/", and macOS refuses to load a
+/// library that lists one path twice. Keeps each path once, and keeps /usr/lib/swift, where macOS has the
+/// Swift libraries mpv's Mac code uses.
+#[cfg(target_os = "macos")]
+fn fix_rpaths(library: &Path) -> Result<(), Box<dyn Error>> {
+    let output = std::process::Command::new("otool").arg("-l").arg(library).output()?;
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut rpaths: Vec<String> = Vec::new();
+    let mut in_rpath = false;
+    for line in text.lines().map(str::trim) {
+        if line.starts_with("cmd ") {
+            in_rpath = line == "cmd LC_RPATH";
+        } else if in_rpath && let Some(rest) = line.strip_prefix("path ") {
+            rpaths.push(rest.rsplit_once(" (offset").map_or(rest, |(p, _)| p).to_owned());
+        }
+    }
+    let had_rpaths = !rpaths.is_empty();
+    let mut wanted: Vec<String> = Vec::new();
+    for path in &rpaths {
+        if !wanted.contains(path) {
+            wanted.push(path.clone());
+        }
+    }
+    if had_rpaths && !wanted.iter().any(|p| p == "/usr/lib/swift") {
+        wanted.push("/usr/lib/swift".into());
+    }
+    if wanted == rpaths {
+        return Ok(());
+    }
+    let tool = |args: &[&str]| -> Result<(), Box<dyn Error>> {
+        let status = std::process::Command::new("install_name_tool").args(args).arg(library).status()?;
+        if status.success() { Ok(()) } else { Err(format!("install_name_tool {args:?} failed on {}", library.display()).into()) }
+    };
+    for path in &rpaths {
+        tool(&["-delete_rpath", path])?;
+    }
+    for path in &wanted {
+        tool(&["-add_rpath", path])?;
+    }
+    let status = std::process::Command::new("codesign").args(["--force", "--sign", "-"]).arg(library).status()?;
+    if !status.success() {
+        return Err(format!("codesign failed on {}", library.display()).into());
+    }
+    println!("Search paths of {}: {}", library.display(), wanted.join(", "));
     Ok(())
 }
 

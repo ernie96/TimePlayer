@@ -76,6 +76,7 @@ jobs:
           log=$(find "$RUNNER_TEMP/check" -name '*.log' -exec cat {} +)
           echo "$log" | grep -E "Self-check|libmpv|Video draws|mpv|OpenGL" || true
           echo "$log" | grep -qE "frames drawn [1-9]" || { echo "No video frames were drawn inside TimePlayer."; exit 1; }
+          echo "$log" | grep -q "Using libmpv from .*TimePlayer.app" || { echo "TimePlayer didn't use the libmpv inside the app."; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:
