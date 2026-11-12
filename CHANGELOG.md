@@ -3,7 +3,7 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
-## Unreleased
+## 2.0.2
 
 - TimePlayer for Mac (TimePlayer-macOS.zip, Apple silicon, macOS 13 or later) and Linux (TimePlayer-x86_64.AppImage). Both need mpv installed: on Mac with Homebrew (brew install mpv), on Linux from your package manager. They are new and have had little testing; reports are welcome.
 - Captions read aloud now say only what's new. YouTube's automatic captions repeat the line before each new one, and TimePlayer used to read both, so you heard half of a line again with the next.
