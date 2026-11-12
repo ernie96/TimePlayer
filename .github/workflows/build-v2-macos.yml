@@ -37,9 +37,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             v2/target
-          key: tp-v2-macOS-${{ hashFiles('v2/Cargo.lock') }}-${{ github.sha }}
+          # Per macOS image: wxWidgets' CMake build remembers the Xcode it was set up with.
+          key: tp-v2-macOS15-${{ hashFiles('v2/Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            tp-v2-macOS-
+            tp-v2-macOS15-
 
       - name: Test
         working-directory: v2
