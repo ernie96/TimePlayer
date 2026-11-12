@@ -3,6 +3,13 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## Unreleased
+
+- Mac: TimePlayer.app now carries its own mpv, so nothing needs installing. It needs macOS 14 or later. Videos play their sound only on Mac for now; showing the picture inside TimePlayer's window there needs more work.
+- Linux: the video now shows inside TimePlayer's window, and TimePlayer uses X11 (XWayland on Wayland desktops) so it can. The AppImage carries its own mpv for systems without one; the system's mpv is used when there is one.
+- mpv never opens a window of its own: where it can't draw inside TimePlayer, it plays sound only.
+- Fixed: on systems with mpv 0.37 (such as Ubuntu 24.04), nothing would play.
+
 ## 2.0.2
 
 - TimePlayer for Mac (TimePlayer-macOS.zip, Apple silicon, macOS 13 or later) and Linux (TimePlayer-x86_64.AppImage). Both need mpv installed: on Mac with Homebrew (brew install mpv), on Linux from your package manager. They are new and have had little testing; reports are welcome.

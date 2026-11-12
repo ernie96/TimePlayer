@@ -57,11 +57,18 @@ pub fn find_mpv(settings: &Settings) -> Option<PathBuf> {
     }
     let exe = if cfg!(windows) { "mpv.exe" } else { "mpv" };
     let program = paths::program_folder();
+    if cfg!(target_os = "linux") {
+        // The system's mpv first: it matches the system's graphics drivers. The AppImage's own copy
+        // (usr/bin/mpv-bundled, beside TimePlayer) is for systems without one.
+        return find_on_path(exe).or_else(|| Some(program.join("mpv-bundled")).filter(|p| p.is_file()));
+    }
     let mut candidates = vec![program.join("bin").join("mpv").join(exe), program.join(exe), paths::data_folder().join("bin").join("mpv").join(exe)];
     if cfg!(windows) {
         candidates.push(paths::data_folder().join("bin").join("mpv").join("mpv.com"));
     }
     if cfg!(target_os = "macos") {
+        // The copy inside TimePlayer.app (Contents/Resources/mpv), then one installed separately.
+        candidates.insert(0, program.join("..").join("Resources").join("mpv").join("mpv"));
         candidates.push(PathBuf::from("/opt/homebrew/bin/mpv"));
         candidates.push(PathBuf::from("/usr/local/bin/mpv"));
         candidates.push(PathBuf::from("/Applications/mpv.app/Contents/MacOS/mpv"));
@@ -76,7 +83,7 @@ pub fn ensure_mpv(http: &Http, settings: &Settings) -> Result<PathBuf> {
     if !cfg!(windows) {
         return Err(AppError::dependency_not_found(
             "mpv",
-            if cfg!(target_os = "macos") { "Install it with Homebrew: brew install mpv" } else { "Install it with your package manager, for example: sudo apt install mpv" },
+            if cfg!(target_os = "macos") { "TimePlayer.app should contain it; download TimePlayer again, or install it with Homebrew: brew install mpv" } else { "Install it with your package manager, for example: sudo apt install mpv" },
         ));
     }
     let folder = paths::data_folder().join("bin").join("mpv");
@@ -141,6 +148,16 @@ struct Shared {
     last_report: Option<Instant>,
 }
 
+/// mpv run inside TimePlayer (libmpv) instead of as its own program: on macOS, where only mpv inside the app
+/// can draw into the app's window. It's started with the same options (as "name=value", without "--") and
+/// opens the same control channel, so everything else works as with the program.
+pub trait InProcessPlayer: Send + Sync {
+    /// Creates and starts mpv with these options; false when libmpv isn't there.
+    fn start(&self, options: &[String]) -> bool;
+    /// Destroys mpv.
+    fn stop(&self);
+}
+
 /// Choices kept across videos and restarts.
 #[derive(Clone)]
 struct Sticky {
@@ -162,6 +179,9 @@ pub struct Engine {
     intentional_stop: Arc<AtomicBool>,
     on_event: Arc<dyn Fn(EngineEvent) + Send + Sync>,
     ytdlp_path: Mutex<Option<PathBuf>>,
+    in_process: Mutex<Option<Arc<dyn InProcessPlayer>>>,
+    /// mpv runs inside TimePlayer now (libmpv), not as a program.
+    running_in_process: AtomicBool,
 }
 
 impl Engine {
@@ -180,12 +200,24 @@ impl Engine {
             intentional_stop: Arc::new(AtomicBool::new(false)),
             on_event,
             ytdlp_path: Mutex::new(None),
+            in_process: Mutex::new(None),
+            running_in_process: AtomicBool::new(false),
         })
+    }
+
+    /// mpv inside TimePlayer (macOS); the program stays the fallback when it can't start.
+    pub fn set_in_process(&self, player: Arc<dyn InProcessPlayer>) {
+        *self.in_process.lock().unwrap() = Some(player);
     }
 
     /// The window mpv draws into, and the yt-dlp it should use for links it opens itself.
     pub fn attach(self: &Arc<Self>, window_handle: i64, ytdlp: Option<PathBuf>) {
         *self.window.lock().unwrap() = Some(window_handle);
+        *self.ytdlp_path.lock().unwrap() = ytdlp;
+    }
+
+    /// The yt-dlp mpv uses for links it opens itself, when there's no window to attach (sound only).
+    pub fn set_ytdlp(&self, ytdlp: Option<PathBuf>) {
         *self.ytdlp_path.lock().unwrap() = ytdlp;
     }
 
@@ -214,8 +246,10 @@ impl Engine {
     }
 
     pub fn is_alive(&self) -> bool {
-        self.client.lock().unwrap().as_ref().is_some_and(|c| c.is_connected())
-            && self.child.lock().unwrap().as_mut().is_some_and(|c| c.try_wait().ok().flatten().is_none())
+        let connected = self.client.lock().unwrap().as_ref().is_some_and(|c| c.is_connected());
+        connected
+            && (self.running_in_process.load(Ordering::SeqCst)
+                || self.child.lock().unwrap().as_mut().is_some_and(|c| c.try_wait().ok().flatten().is_none()))
     }
 
     fn client(&self) -> Result<Arc<ipc::Client>> {
@@ -232,13 +266,19 @@ impl Engine {
     /// Starts mpv (downloading it first if needed) and connects.
     pub fn start(&self) -> Result<()> {
         self.terminate();
-        let exe = ensure_mpv(&self.http, &self.settings)?;
+        let in_process = self.in_process.lock().unwrap().clone();
         let endpoint = ipc::new_endpoint();
         let playback = self.settings.with(|c| c.playback.clone());
         let sticky = self.sticky.lock().unwrap().clone();
         let mut args: Vec<String> = vec![
             format!("--input-ipc-server={}", ipc::server_argument(&endpoint)),
             "--idle=yes".into(),
+            // A plain command-line player whatever an mpv.conf says: mpv.app's own config asks for its GUI
+            // mode, which opens a window.
+            "--player-operation-mode=cplayer".into(),
+            // Not in Windows' media pop-up as "mpv"; TimePlayer handles the media keys itself.
+            #[cfg(windows)]
+            "--media-controls=no".into(),
             "--keep-open=yes".into(),
             "--osc=no".into(),
             "--osd-level=0".into(),
@@ -253,7 +293,9 @@ impl Engine {
             format!("--volume-max={}", sticky.max_volume),
             format!("--speed={}", self.speed()),
         ];
-        match *self.window.lock().unwrap() {
+        match self.embedding_window() {
+            // Inside TimePlayer, mpv hands its frames to TimePlayer, which draws them in its window.
+            _ if in_process.is_some() => args.push("--vo=libmpv".into()),
             Some(wid) => {
                 args.push(format!("--wid={wid}"));
                 args.push("--force-window=yes".into());
@@ -261,7 +303,9 @@ impl Engine {
                     args.push("--gpu-context=d3d11".into());
                 }
             }
-            None => args.push("--force-window=no".into()),
+            // Nothing to draw into: sound only, with no video output at all, so mpv can never open a window
+            // of its own.
+            None => args.extend(["--force-window=no", "--vid=no", "--vo=null"].map(String::from)),
         }
         if sticky.audio_device != "auto" && !sticky.audio_device.is_empty() {
             args.push(format!("--audio-device={}", sticky.audio_device));
@@ -269,12 +313,26 @@ impl Engine {
         if let Some(ytdlp) = self.ytdlp_path.lock().unwrap().as_ref().filter(|p| p.is_file()) {
             args.push(format!("--script-opts=ytdl_hook-ytdl_path={}", ytdlp.display()));
         }
-        log::info!("Starting mpv ({}) with IPC at {endpoint}.", exe.display());
-        let mut command = Command::new(&exe);
-        command.args(&args).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
-        hide_window(&mut command);
-        let child = command.spawn().map_err(|e| AppError::playback(format!("mpv could not start: {e}")))?;
-        *self.child.lock().unwrap() = Some(child);
+        let options: Vec<String> = args.iter().map(|a| a.trim_start_matches("--").to_owned()).collect();
+        let started_inside = in_process.as_ref().is_some_and(|player| {
+            log::info!("Starting mpv inside TimePlayer with IPC at {endpoint}.");
+            player.start(&options)
+        });
+        self.running_in_process.store(started_inside, Ordering::SeqCst);
+        if !started_inside {
+            if in_process.is_some() {
+                log::warn!("mpv couldn't start inside TimePlayer; playing sound only through the mpv program.");
+                args.retain(|a| a != "--vo=libmpv");
+                args.extend(["--force-window=no", "--vid=no", "--vo=null"].map(String::from));
+            }
+            let exe = ensure_mpv(&self.http, &self.settings)?;
+            log::info!("Starting mpv ({}) with IPC at {endpoint}.", exe.display());
+            let mut command = Command::new(&exe);
+            command.args(&args).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null());
+            hide_window(&mut command);
+            let child = command.spawn().map_err(|e| AppError::playback(format!("mpv could not start: {e}")))?;
+            *self.child.lock().unwrap() = Some(child);
+        }
         self.intentional_stop.store(false, Ordering::SeqCst);
 
         let shared = self.shared.clone();
@@ -320,8 +378,12 @@ impl Engine {
             Some(s) => format!("start={s}"),
             None => "start=none".into(),
         };
-        let reply = client.command(json!(["loadfile", url, "replace", -1, options]))
-            .or_else(|_| client.command(json!(["loadfile", url, "replace"])))?;
+        // mpv 0.38 added an index before the options; older mpv (Ubuntu 24.04 has 0.37) answers that with
+        // "invalid parameter" and takes the options third.
+        let mut reply = client.command(json!(["loadfile", url, "replace", -1, options]))?;
+        if reply.get("error").and_then(Value::as_str) == Some("invalid parameter") {
+            reply = client.command(json!(["loadfile", url, "replace", options]))?;
+        }
         if reply.get("error").and_then(Value::as_str) != Some("success") {
             self.set_state(PlaybackState::Error);
             let message = format!("mpv failed to load media: {}", reply.get("error").and_then(Value::as_str).unwrap_or("unknown"));
@@ -416,9 +478,22 @@ impl Engine {
     /// Music mode: no video decoding.
     pub fn set_video_enabled(&self, enabled: bool) {
         self.sticky.lock().unwrap().video_enabled = enabled;
+        // Without TimePlayer's window to draw into, video stays off whatever music mode says.
+        let shown = enabled && self.can_show_video();
         if let Some(c) = self.live_client() {
-            c.set("vid", json!(if enabled { "auto" } else { "no" }));
+            c.set("vid", json!(if shown { "auto" } else { "no" }));
         }
+    }
+
+    /// The window mpv draws into: TimePlayer's video area. On macOS there is none, since a separate mpv
+    /// process can't draw into another app's view there; mpv inside TimePlayer draws there instead.
+    fn embedding_window(&self) -> Option<i64> {
+        if cfg!(target_os = "macos") { None } else { *self.window.lock().unwrap() }
+    }
+
+    /// Whether video can show inside TimePlayer: mpv drawing into its window, or mpv inside it.
+    fn can_show_video(&self) -> bool {
+        self.running_in_process.load(Ordering::SeqCst) || self.embedding_window().is_some()
     }
 
     pub fn set_audio_device(&self, device: &str) {
@@ -480,6 +555,11 @@ impl Engine {
         self.intentional_stop.store(true, Ordering::SeqCst);
         if let Some(c) = self.client.lock().unwrap().take() {
             let _ = c.command(json!(["quit"]));
+        }
+        if self.running_in_process.swap(false, Ordering::SeqCst)
+            && let Some(player) = self.in_process.lock().unwrap().clone()
+        {
+            player.stop();
         }
         if let Some(mut child) = self.child.lock().unwrap().take() {
             let deadline = Instant::now() + Duration::from_secs(1);

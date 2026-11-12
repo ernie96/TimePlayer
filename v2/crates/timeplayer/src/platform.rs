@@ -42,6 +42,70 @@ pub fn show_in_folder(file: &Path) {
     }
 }
 
+/// The native window mpv can draw into, from TimePlayer's video area: the HWND on Windows, the X11 window
+/// on Linux. None on macOS (another process can't draw into an app's view there) and when Linux has no X11.
+pub fn video_window_id(video: &Panel) -> Option<i64> {
+    #[cfg(windows)]
+    {
+        let handle = video.get_handle();
+        (!handle.is_null()).then_some(handle as i64)
+    }
+    #[cfg(target_os = "linux")]
+    {
+        x11::window_id(video.get_handle())
+    }
+    #[cfg(not(any(windows, target_os = "linux")))]
+    {
+        let _ = video;
+        None
+    }
+}
+
+/// GTK gives out widgets; mpv needs the X11 window behind one.
+#[cfg(target_os = "linux")]
+mod x11 {
+    use std::ffi::{c_int, c_ulong, c_void};
+
+    #[link(name = "gtk-3")]
+    unsafe extern "C" {
+        fn gtk_widget_realize(widget: *mut c_void);
+        fn gtk_widget_get_window(widget: *mut c_void) -> *mut c_void;
+    }
+
+    #[link(name = "gdk-3")]
+    unsafe extern "C" {
+        fn gdk_window_ensure_native(window: *mut c_void) -> c_int;
+        fn gdk_x11_window_get_xid(window: *mut c_void) -> c_ulong;
+        fn gdk_x11_window_get_type() -> usize;
+    }
+
+    #[link(name = "gobject-2.0")]
+    unsafe extern "C" {
+        fn g_type_check_instance_is_a(instance: *mut c_void, type_: usize) -> c_int;
+    }
+
+    pub fn window_id(widget: *mut c_void) -> Option<i64> {
+        if widget.is_null() {
+            return None;
+        }
+        // SAFETY: GTK calls on the video area's own widget, on the main thread, after the frame is shown.
+        unsafe {
+            gtk_widget_realize(widget);
+            let window = gtk_widget_get_window(widget);
+            // A Wayland window has no X11 id; mpv would then open a window of its own, so it gets none.
+            if window.is_null() || g_type_check_instance_is_a(window, gdk_x11_window_get_type()) == 0 {
+                return None;
+            }
+            // Its own X11 window, rather than one shared with the rest of TimePlayer's window.
+            if gdk_window_ensure_native(window) == 0 {
+                return None;
+            }
+            let xid = gdk_x11_window_get_xid(window);
+            (xid != 0).then_some(xid as i64)
+        }
+    }
+}
+
 /// Brings the window to the front even when another app is in front (Windows only lets the app in front do
 /// that, so TimePlayer joins its input queue for a moment, as Tin Pan does).
 pub fn bring_to_front(frame: &Frame) {

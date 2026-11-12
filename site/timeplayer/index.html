@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>TimePlayer</title>
-<meta name="description" content="TimePlayer, a YouTube player and library for Windows that works with screen readers and braille displays.">
+<meta name="description" content="TimePlayer, a YouTube player and library for Windows, Mac and Linux that works with screen readers and braille displays.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -132,7 +132,7 @@ footer p { margin: 0; font-size: 1rem; color: var(--ink-soft); }
     </g>
   </svg>
   <div class="wrap">
-    <p class="eyebrow">Windows. Free.</p>
+    <p class="eyebrow">Windows, Mac and Linux. Free.</p>
     <h1>TimePlayer</h1>
     <p class="lead">A YouTube player and library for the keyboard. Search, play, subscribe and keep playlists, with NVDA reading it as it reads any other app and the playback position on your braille display.</p>
     <div class="actions">
@@ -210,17 +210,27 @@ footer p { margin: 0; font-size: 1rem; color: var(--ink-soft); }
 
     <section aria-labelledby="get">
       <h2 id="get">Which file to download</h2>
-      <p>The <a href="https://github.com/ernie96/TimePlayer/releases/latest">latest release<span class="sr-only"> on GitHub</span></a> has these files. The installer and the portable zip each include everything TimePlayer needs, and TimePlayer offers its own updates. It runs on 64-bit Windows 10 and 11; Mac and Linux versions are being worked on.</p>
+      <p>The <a href="https://github.com/ernie96/TimePlayer/releases/latest">latest release<span class="sr-only"> on GitHub</span></a> has one file for each system, and TimePlayer offers its own updates on each.</p>
       <div class="systems">
         <div class="system">
-          <h3>Installer</h3>
+          <h3>Windows installer</h3>
           <p class="file">TimePlayer_setup.exe</p>
-          <p>Installs for your Windows user, without asking for administrator rights. Settings and library are kept in your user folder.</p>
+          <p>64-bit Windows 10 and 11. Installs for your Windows user, without asking for administrator rights, and includes everything TimePlayer needs.</p>
         </div>
         <div class="system">
-          <h3>Portable</h3>
+          <h3>Windows, portable</h3>
           <p class="file">TimePlayer.zip</p>
           <p>Extract the folder anywhere you can write to and run TimePlayer.exe. Settings and library stay in that folder.</p>
+        </div>
+        <div class="system">
+          <h3>Mac</h3>
+          <p class="file">TimePlayer-macOS.zip</p>
+          <p>Apple silicon, macOS 13 or later. Unzip it and move TimePlayer to Applications. It plays through mpv, installed once with Homebrew: brew install mpv. The app isn't signed by Apple yet, so macOS warns the first time you open it. The Mac version is new and has had little testing.</p>
+        </div>
+        <div class="system">
+          <h3>Linux</h3>
+          <p class="file">TimePlayer-x86_64.AppImage</p>
+          <p>64-bit Intel or AMD. Needs GTK 3, WebKitGTK 4.1 and mpv from your system. Make the file executable, then run it; speech goes to Orca. The Linux version is new and has had little testing.</p>
         </div>
         <div class="system">
           <h3>Browser extension</h3>

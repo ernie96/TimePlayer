@@ -47,6 +47,9 @@ pkg-config = "0.3"
 objc = "0.2.7"
 block = "0.1.6"
 
+# libmpv, loaded from TimePlayer.app, draws video inside TimePlayer's window on macOS.
+libloading = "0.8"
+
 # The objc crate's macros check `feature = "cargo-clippy"`, which rustc no longer knows.
 [lints.rust.unexpected_cfgs]
 level = "warn"

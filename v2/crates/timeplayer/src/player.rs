@@ -267,6 +267,11 @@ impl App {
         self.ui.library.show(!visible);
         self.ui.player.show(visible);
         self.ui.root.layout();
+        // OpenGL can start once the video area shows, before the first video loads.
+        #[cfg(target_os = "macos")]
+        if visible {
+            self.mac_video_ensure_render();
+        }
         self.update_now_playing();
         self.update_title();
     }

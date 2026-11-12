@@ -15,16 +15,20 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # macOS 14 (Apple silicon): Homebrew's libmpv, bundled in the app, is built for the system it's installed on,
+    # and TimePlayer supports macOS 14 and later.
+    runs-on: macos-14
     env:
-      MACOSX_DEPLOYMENT_TARGET: "13.0"
+      MACOSX_DEPLOYMENT_TARGET: "14.0"
     steps:
       - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@stable
 
-      - name: CMake and Ninja (wxWidgets builds with them)
-        run: brew install cmake ninja
+      - name: CMake and Ninja (wxWidgets builds with them), and libmpv with dylibbundler for the app
+        run: |
+          brew install cmake ninja mpv dylibbundler
+          echo "LIBMPV=$(brew --prefix)/lib/libmpv.2.dylib" >> "$GITHUB_ENV"
 
       - name: Cache the Rust build
         uses: actions/cache@v4
@@ -41,11 +45,35 @@ jobs:
         working-directory: v2
         run: cargo test --release -p timeplayer-core -p timeplayer
 
+      # The mpv TimePlayer.app carries: the Apple silicon build mpv.io points to, pinned to the file checked here.
+      - name: Fetch mpv
+        run: |
+          curl -sSfL -o "$RUNNER_TEMP/mpv.tar.gz" https://laboratory.stolendata.net/~djinn/mpv_osx/mpv-arm64-0.40.0.tar.gz
+          echo "3170fb709defebaba33e9755297d70dc3562220541de54fc3d494a8309ef1260  $RUNNER_TEMP/mpv.tar.gz" | shasum -a 256 -c
+          tar xzf "$RUNNER_TEMP/mpv.tar.gz" -C "$RUNNER_TEMP"
+          echo "MPV_APP=$RUNNER_TEMP/mpv-arm64-0.40.0/mpv.app" >> "$GITHUB_ENV"
+
       - name: Build and package
         working-directory: v2
         run: |
           cargo build --release -p timeplayer
           cargo xtask macos
+          # mpv inside the app starts, and its libraries are found.
+          target/release/TimePlayer.app/Contents/Resources/mpv/mpv --version | head -n 1
+          # libmpv doesn't point outside the app.
+          if otool -L target/release/TimePlayer.app/Contents/Frameworks/*.dylib | grep -E '/(opt/homebrew|usr/local)/'; then
+            echo "A library in TimePlayer.app still points at Homebrew."; exit 1
+          fi
+
+      # The packaged app plays mpv's test pattern; libmpv must draw frames inside TimePlayer's window.
+      - name: Video check
+        working-directory: v2
+        run: |
+          mkdir -p "$RUNNER_TEMP/check"
+          TMPDIR="$RUNNER_TEMP/check/" TIMEPLAYER_SELF_CHECK=video timeout 180 target/release/TimePlayer.app/Contents/MacOS/TimePlayer || true
+          log=$(cat "$RUNNER_TEMP"/check/timeplayer-self-check/logs/*.log)
+          echo "$log" | grep -E "Self-check|libmpv|Video draws|mpv|OpenGL" || true
+          echo "$log" | grep -qE "frames drawn [1-9]" || { echo "No video frames were drawn inside TimePlayer."; exit 1; }
 
       - uses: actions/upload-artifact@v4
         with:

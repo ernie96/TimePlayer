@@ -17,16 +17,17 @@ Program Files) and run TimePlayer.exe. Because the folder contains portable.txt,
 settings, library and logs are kept inside that folder, so you can carry it on a USB drive.
 Delete portable.txt to keep them in %LOCALAPPDATA%\TimePlayer instead.
 
-Mac (TimePlayer-macOS.zip): Apple silicon, macOS 13 or later. Unzip it and move TimePlayer
-to Applications. TimePlayer plays through mpv, which you install once with Homebrew:
-brew install mpv. The app isn't signed by Apple yet, so macOS warns the first time you open
-it; open it from Finder's context menu, Open. The Mac version is new and has had little
-testing.
+Mac (TimePlayer-macOS.zip): Apple silicon, macOS 14 or later. Unzip it and move TimePlayer
+to Applications; it carries its own mpv, so nothing else needs installing. The app isn't
+signed by Apple yet, so macOS warns the first time you open it; open it from Finder's
+context menu, Open. On Mac, videos play their sound only for now. The Mac version is new
+and has had little testing.
 
-Linux (TimePlayer-x86_64.AppImage): 64-bit Intel or AMD. It needs GTK 3, WebKitGTK 4.1 and
-mpv from your system (on Ubuntu or Debian: sudo apt install mpv libwebkit2gtk-4.1-0). Make
-the file executable, then run it. Speech goes to Orca. The Linux version is new and has had
-little testing.
+Linux (TimePlayer-x86_64.AppImage): 64-bit Intel or AMD. It needs GTK 3 and WebKitGTK 4.1
+from your system. It uses your system's mpv when you have one and its own copy when you
+don't. Video shows inside TimePlayer's window through X11 (XWayland on Wayland desktops).
+Make the file executable, then run it. Speech goes to Orca. The Linux version is new and has
+had little testing.
 
 On Mac and Linux, TimePlayer offers its own updates as it does on Windows. The NVDA braille
 add-on is Windows only.

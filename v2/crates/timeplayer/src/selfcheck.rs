@@ -1,8 +1,8 @@
-//! A self-check for debug builds: with TIMEPLAYER_SELF_CHECK=1, TimePlayer starts in a data folder of its own,
+//! A self-check: with TIMEPLAYER_SELF_CHECK=1, TimePlayer starts in a data folder of its own,
 //! goes through the main window's keys one step at a time, logs "Self-check passed" or "Self-check FAILED" for
 //! each, and closes. Keys a control handles itself (the list's arrows) are posted to it as real WM_KEYDOWN
 //! messages; keys TimePlayer handles in its key hook go to that handler directly, since posted keys never reach
-//! a Windows keyboard hook. Nothing here runs in release builds.
+//! a Windows keyboard hook. It only runs when TIMEPLAYER_SELF_CHECK is set.
 
 use wxdragon::prelude::*;
 
@@ -13,7 +13,47 @@ use crate::{App, with_app};
 const VARIABLE: &str = "TIMEPLAYER_SELF_CHECK";
 
 fn enabled() -> bool {
-    cfg!(debug_assertions) && std::env::var(VARIABLE).is_ok_and(|v| v == "1")
+    // Any build, so the macOS build machine can run the video check on the release build it packages.
+    std::env::var(VARIABLE).is_ok_and(|v| v == "1" || v == "video")
+}
+
+/// TIMEPLAYER_SELF_CHECK=video: plays mpv's test pattern in the player for a while, so a script can look at the
+/// window tree and see where mpv's video window is, then closes.
+fn video_mode() -> bool {
+    std::env::var(VARIABLE).is_ok_and(|v| v == "video")
+}
+
+fn start_video_check(frame: &Frame) {
+    log::info!("Self-check (video) starting");
+    let timer = Timer::new(frame);
+    let mut ticks = 0u32;
+    let mut loaded = false;
+    let closing = *frame;
+    timer.on_tick(move |_| {
+        ticks += 1;
+        if !loaded {
+            let ready = crate::with_app_value(|app| app.playing.engine_ready).unwrap_or(false);
+            if ready {
+                with_app(App::load_test_video);
+                loaded = true;
+                ticks = 0;
+                log::info!("Self-check (video): test pattern loading");
+            } else if ticks > 60 {
+                log::error!("Self-check FAILED: mpv didn't start");
+                closing.close(true);
+            }
+            return;
+        }
+        if ticks == 30 {
+            let state = crate::with_app_value(|app| format!("{:?}", app.playing.state)).unwrap_or_default();
+            log::info!("Self-check (video): playback state {state}");
+            #[cfg(target_os = "macos")]
+            log::info!("Self-check (video): frames drawn {}", crate::macvideo::FRAMES.load(std::sync::atomic::Ordering::Relaxed));
+            closing.close(true);
+        }
+    });
+    timer.start(500, false);
+    std::mem::forget(timer);
 }
 
 /// Points the data folder at a fresh temporary one, before anything reads it.
@@ -176,6 +216,10 @@ fn focused_is_empty_panel() -> bool {
 
 pub fn start(frame: &Frame) {
     if !enabled() {
+        return;
+    }
+    if video_mode() {
+        start_video_check(frame);
         return;
     }
     log::info!("Self-check starting");

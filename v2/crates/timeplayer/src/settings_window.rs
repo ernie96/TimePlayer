@@ -582,7 +582,7 @@ impl App {
     }
 
     /// Play test pattern: mpv's own colour bars, to check the video works without YouTube.
-    fn load_test_video(&mut self) {
+    pub(crate) fn load_test_video(&mut self) {
         if !self.playing.engine_ready {
             speech::say(&t("Video engine is not ready."));
             return;

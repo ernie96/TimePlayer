@@ -12,6 +12,8 @@ mod instance;
 mod jobs;
 mod keys;
 mod link_registration;
+#[cfg(target_os = "macos")]
+mod macvideo;
 mod nvda;
 mod platform;
 mod player;
@@ -107,6 +109,9 @@ pub struct App {
     pub sign_in_only: bool,
     /// Where focus was when a stay-open window (Report a problem) opened, to go back there when it closes.
     pub focus_before_window: Option<keys::Focus>,
+    /// The canvas mpv's frames are drawn into on macOS.
+    #[cfg(target_os = "macos")]
+    pub mac_video: macvideo::MacVideo,
 }
 
 thread_local! {
@@ -144,6 +149,13 @@ fn main() {
     // The self-check (debug builds) works in a data folder of its own, so it never touches the user's library.
     selfcheck::prepare();
     SystemOptions::set_option_by_int("msw.no-manifest-check", 1);
+    // On Linux, TimePlayer runs through X11 (XWayland on a Wayland desktop) so mpv can draw video inside its
+    // window: Wayland gives one app no way into another's window.
+    #[cfg(target_os = "linux")]
+    if std::env::var_os("GDK_BACKEND").is_none() && std::env::var_os("DISPLAY").is_some() {
+        // SAFETY: set at startup, before GTK or any other thread reads the environment.
+        unsafe { std::env::set_var("GDK_BACKEND", "x11") };
+    }
     timeplayer_core::logging::init();
     // What went wrong, and where, goes in the log; with_app says so and carries on.
     std::panic::set_hook(Box::new(|info| log::error!("Unexpected error: {info}")));
@@ -194,6 +206,10 @@ impl App {
         let downloads = Downloads::new(ytdlp, settings.clone(), Some(account.clone()));
         let volume = settings.with(|c| c.playback.default_volume_percent);
         let music_mode = settings.with(|c| c.audio.music_mode);
+        #[cfg(target_os = "macos")]
+        let mac_video = macvideo::MacVideo::build(&ui.video);
+        #[cfg(target_os = "macos")]
+        coordinator.engine().set_in_process(macvideo::MacPlayer::new(jobs.sender()));
         let mut browse = Browse::default();
         browse.feed = library.cached_feed();
         App {
@@ -232,6 +248,8 @@ impl App {
             marked_watched: Default::default(),
             sign_in_only: false,
             focus_before_window: None,
+            #[cfg(target_os = "macos")]
+            mac_video,
         }
     }
 
