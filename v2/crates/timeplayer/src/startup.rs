@@ -70,13 +70,16 @@ pub fn start(link: Option<String>) {
 
     frame.show(true);
     // mpv draws into the video area; it starts in the background so the first video starts sooner.
-    // mpv draws into the video area: its HWND on Windows, its X11 window on Linux. Without one (macOS, or a
-    // Linux desktop with no X11) mpv plays sound only and never opens a window of its own.
+    // mpv draws into the video area: its HWND on Windows, its X11 window on Linux. On macOS libmpv draws there
+    // from inside TimePlayer (macvideo.rs). Otherwise (a Linux desktop with no X11, or no libmpv on macOS) mpv
+    // plays sound only and never opens a window of its own.
     let ytdlp_path = app.sources.ytdlp.executable();
     match crate::platform::video_window_id(&app.ui.video) {
         Some(id) => app.coordinator.engine().attach(id, Some(ytdlp_path)),
         None => {
-            log::info!("No window for mpv to draw into here; videos play their sound only.");
+            if cfg!(not(target_os = "macos")) {
+                log::info!("No window for mpv to draw into here; videos play their sound only.");
+            }
             app.coordinator.engine().set_ytdlp(Some(ytdlp_path));
         }
     }

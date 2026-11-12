@@ -17,11 +17,11 @@ Program Files) and run TimePlayer.exe. Because the folder contains portable.txt,
 settings, library and logs are kept inside that folder, so you can carry it on a USB drive.
 Delete portable.txt to keep them in %LOCALAPPDATA%\TimePlayer instead.
 
-Mac (TimePlayer-macOS.zip): Apple silicon, macOS 14 or later. Unzip it and move TimePlayer
-to Applications; it carries its own mpv, so nothing else needs installing. The app isn't
-signed by Apple yet, so macOS warns the first time you open it; open it from Finder's
-context menu, Open. On Mac, videos play their sound only for now. The Mac version is new
-and has had little testing.
+Mac (TimePlayer-macOS.zip): Apple silicon, macOS 15 or later. Unzip it and move TimePlayer
+to Applications; it carries its own mpv, so nothing else needs installing. Video shows
+inside TimePlayer's window. The app isn't signed by Apple yet, so macOS warns the first
+time you open it; open it from Finder's context menu, Open. The Mac version is new and has
+had little testing.
 
 Linux (TimePlayer-x86_64.AppImage): 64-bit Intel or AMD. It needs GTK 3 and WebKitGTK 4.1
 from your system. It uses your system's mpv when you have one and its own copy when you
