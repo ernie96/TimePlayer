@@ -71,8 +71,9 @@ jobs:
         working-directory: v2
         run: |
           mkdir -p "$RUNNER_TEMP/check"
-          TMPDIR="$RUNNER_TEMP/check/" TIMEPLAYER_SELF_CHECK=video timeout 180 target/release/TimePlayer.app/Contents/MacOS/TimePlayer || true
-          log=$(cat "$RUNNER_TEMP"/check/timeplayer-self-check/logs/*.log)
+          # macOS has no timeout command; perl's alarm ends TimePlayer if it hangs.
+          TMPDIR="$RUNNER_TEMP/check/" TIMEPLAYER_SELF_CHECK=video perl -e 'alarm 180; exec @ARGV' target/release/TimePlayer.app/Contents/MacOS/TimePlayer || true
+          log=$(find "$RUNNER_TEMP/check" -name '*.log' -exec cat {} +)
           echo "$log" | grep -E "Self-check|libmpv|Video draws|mpv|OpenGL" || true
           echo "$log" | grep -qE "frames drawn [1-9]" || { echo "No video frames were drawn inside TimePlayer."; exit 1; }
 
