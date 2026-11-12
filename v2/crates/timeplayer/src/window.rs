@@ -56,18 +56,14 @@ pub struct Ui {
     pub new_playlist: Button,
     pub rename_playlist: Button,
     pub delete_playlist: Button,
-    pub import_takeout: Button,
-    pub import_signin: Button,
-    pub how_data: Button,
+    /// Playlists and Channels: Settings at its Import page.
+    pub import_export: Button,
     category_label: StaticText,
     pub category: Choice,
     channel_tab_label: StaticText,
     pub channel_tab: Choice,
     account_page_label: StaticText,
     pub account_page: Choice,
-    pub import_subscriptions: Button,
-    pub how_subscriptions: Button,
-    pub export_subscriptions: Button,
     pub clear_history: Button,
     pub clear_queue: Button,
     pub refresh: Button,
@@ -165,9 +161,7 @@ impl Ui {
         let new_playlist = button(&library, "_New playlist...", "New playlist");
         let rename_playlist = button(&library, "_Rename...", "Rename playlist");
         let delete_playlist = button(&library, "_Delete playlist...", "Delete playlist");
-        let import_takeout = button(&library, "_Import from Google Takeout...", "Import from Google Takeout");
-        let import_signin = button(&library, "Import by signing in to _YouTube...", "Import by signing in to YouTube");
-        let how_data = button(&library, "_How to get my YouTube data...", "How to get my YouTube data");
+        let import_export = button(&library, "_Import and export...", "Import and export");
         let category_label = StaticText::builder(&library).with_label(&wx_label("_Category:")).build();
         let category = Choice::builder(&library).with_choices(FEATURED_CATEGORIES.iter().map(|c| category_label_text(*c)).collect()).build();
         category.set_name(&t("Category"));
@@ -180,9 +174,6 @@ impl Ui {
         let account_page = Choice::builder(&library).with_choices(AccountPage::ALL.iter().map(|p| p.label()).collect()).build();
         account_page.set_name(&t("YouTube page"));
         account_page.set_selection(0);
-        let import_subscriptions = button(&library, "_Import subscriptions...", "Import subscriptions");
-        let how_subscriptions = button(&library, "_How to get my YouTube subscriptions...", "How to get my YouTube subscriptions");
-        let export_subscriptions = button(&library, "E_xport subscriptions...", "Export subscriptions");
         let clear_history = button(&library, "_Clear history...", "Clear history");
         let clear_queue = button(&library, "_Clear queue", "Clear queue");
         let refresh = button(&library, "Refresh (F5)", "Refresh");
@@ -216,7 +207,7 @@ impl Ui {
         top.add(&search_kind, 0, SizerFlag::Right, 12);
         top.add(&settings_button, 0, SizerFlag::All, 0);
         let controls = BoxSizer::builder(Orientation::Horizontal).build();
-        for b in [&back, &play_all, &shuffle, &save_playlist, &copy_playlist_link, &new_playlist, &rename_playlist, &delete_playlist, &import_takeout, &import_signin, &how_data] {
+        for b in [&back, &play_all, &shuffle, &save_playlist, &copy_playlist_link, &new_playlist, &rename_playlist, &delete_playlist, &import_export] {
             controls.add(b, 0, SizerFlag::Right, 6);
         }
         controls.add(&category_label, 0, SizerFlag::AlignCenterVertical | SizerFlag::Right, 4);
@@ -225,7 +216,7 @@ impl Ui {
         controls.add(&channel_tab, 0, SizerFlag::Right, 6);
         controls.add(&account_page_label, 0, SizerFlag::AlignCenterVertical | SizerFlag::Right, 4);
         controls.add(&account_page, 0, SizerFlag::Right, 6);
-        for b in [&import_subscriptions, &how_subscriptions, &export_subscriptions, &clear_history, &clear_queue, &refresh] {
+        for b in [&clear_history, &clear_queue, &refresh] {
             controls.add(b, 0, SizerFlag::Right, 6);
         }
         let library_sizer = BoxSizer::builder(Orientation::Vertical).build();
@@ -348,18 +339,13 @@ impl Ui {
             new_playlist,
             rename_playlist,
             delete_playlist,
-            import_takeout,
-            import_signin,
-            how_data,
+            import_export,
             category_label,
             category,
             channel_tab_label,
             channel_tab,
             account_page_label,
             account_page,
-            import_subscriptions,
-            how_subscriptions,
-            export_subscriptions,
             clear_history,
             clear_queue,
             refresh,
@@ -422,12 +408,7 @@ impl Ui {
         on_click(&self.new_playlist, App::create_playlist);
         on_click(&self.rename_playlist, App::rename_playlist);
         on_click(&self.delete_playlist, App::delete_playlist);
-        on_click(&self.import_takeout, App::import_takeout_from_file);
-        on_click(&self.import_signin, App::import_by_signing_in);
-        on_click(&self.how_data, App::show_youtube_data_steps);
-        on_click(&self.how_subscriptions, App::show_youtube_data_steps);
-        on_click(&self.import_subscriptions, App::import_subscriptions_from_file);
-        on_click(&self.export_subscriptions, App::export_subscriptions_to_file);
+        on_click(&self.import_export, App::open_import_settings);
         on_click(&self.clear_history, App::clear_history);
         on_click(&self.clear_queue, App::clear_queue);
         on_click(&self.refresh, App::refresh_section);
@@ -519,9 +500,7 @@ impl Ui {
         self.new_playlist.show(playlists);
         self.rename_playlist.show(can_edit);
         self.delete_playlist.show(can_edit);
-        self.import_takeout.show(playlists);
-        self.import_signin.show(playlists);
-        self.how_data.show(playlists);
+        self.import_export.show(playlists || section == Section::Channels);
         let featured = section == Section::Featured && !music;
         self.category_label.show(featured);
         self.category.show(featured);
@@ -530,9 +509,6 @@ impl Ui {
         self.channel_tab.set_selection(ChannelTab::ALL.iter().position(|t| *t == browse.channel_tab).unwrap_or(0) as u32);
         self.account_page_label.show(section == Section::YouTube);
         self.account_page.show(section == Section::YouTube);
-        self.import_subscriptions.show(section == Section::Channels);
-        self.how_subscriptions.show(section == Section::Channels);
-        self.export_subscriptions.show(section == Section::Channels);
         self.clear_history.show(section == Section::History);
         self.clear_queue.show(section == Section::Queue);
         self.refresh.show(section != Section::Queue);
@@ -573,6 +549,28 @@ impl Ui {
     pub fn focus_search(&self) {
         self.search_box.set_focus();
         self.search_box.select_all();
+    }
+
+    /// The first of the section's buttons and boxes that shows, else the list (Tab from the section tabs).
+    pub fn first_section_control(&self) -> Option<&dyn WxWidget> {
+        let controls: [&dyn WxWidget; 15] = [
+            &self.back,
+            &self.play_all,
+            &self.shuffle,
+            &self.save_playlist,
+            &self.copy_playlist_link,
+            &self.new_playlist,
+            &self.rename_playlist,
+            &self.delete_playlist,
+            &self.import_export,
+            &self.category,
+            &self.channel_tab,
+            &self.account_page,
+            &self.clear_history,
+            &self.clear_queue,
+            &self.refresh,
+        ];
+        controls.into_iter().find(|c| c.is_shown())
     }
 
     pub fn focus_section_tabs(&self) {

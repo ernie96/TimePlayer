@@ -61,10 +61,15 @@ impl App {
     /// Import by signing in to YouTube: the page, then the import, or the import at once when signed in.
     pub(crate) fn import_by_signing_in(&mut self) {
         if self.account.is_signed_in() {
-            self.import_from_account(true);
+            if std::mem::take(&mut self.sign_in_only) {
+                crate::speech::say(&self.account_status());
+            } else {
+                self.import_from_account(true);
+            }
             return;
         }
         if cfg!(windows) && !WebView::is_backend_available(WebViewBackend::Edge) {
+            self.sign_in_only = false;
             dialogs::warning(&self.ui.frame, &t("Signing in needs the Microsoft Edge WebView2 Runtime. Install it from Microsoft, then try again."), &t("Sign in to YouTube"));
             return;
         }
@@ -87,11 +92,16 @@ impl App {
         }
         std::thread::spawn(forget_browser);
         self.ui.frame.raise();
-        self.import_from_account(false);
+        if std::mem::take(&mut self.sign_in_only) {
+            self.after_sign_in(Ok(()));
+        } else {
+            self.import_from_account(false);
+        }
     }
 
     fn sign_in_closed(&mut self) {
         if self.sign_in_window.take().is_some() {
+            self.sign_in_only = false;
             std::thread::spawn(forget_browser);
             self.ui.focus_list();
         }

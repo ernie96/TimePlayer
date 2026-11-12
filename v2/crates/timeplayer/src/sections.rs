@@ -375,7 +375,7 @@ impl App {
             Section::WhatsNew => self.show_whats_new(move_focus, force_refresh),
             Section::Channels => {
                 self.browse.title = t("Channels");
-                self.browse.empty_text = t("You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files.");
+                self.browse.empty_text = t("You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose Import and export above to bring them from YouTube, Google Takeout, NewPipe, LibreTube or FreeTube.");
                 let items = self.library.subscriptions().iter().map(|s| s.to_search_result()).collect();
                 self.show_items(items, move_focus, None, None);
             }
@@ -819,7 +819,7 @@ impl App {
         self.browse.title = t("What's New");
         let subs = self.library.subscriptions();
         if subs.is_empty() {
-            self.browse.empty_text = t("You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions.");
+            self.browse.empty_text = t("You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or bring them in from Settings (F2), Import.");
             self.show_items(Vec::new(), move_focus, None, None);
             return;
         }

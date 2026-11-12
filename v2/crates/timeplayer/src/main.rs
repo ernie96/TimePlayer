@@ -101,6 +101,10 @@ pub struct App {
     pub report_window: Option<report::ReportWindow>,
     /// The browser Settings reads a sign-in from.
     pub sign_in_browser: String,
+    /// Videos already put in the YouTube account's history this run.
+    pub marked_watched: std::collections::HashSet<String>,
+    /// The sign-in page was opened only to sign in (Settings, YouTube account), not to import.
+    pub sign_in_only: bool,
 }
 
 thread_local! {
@@ -223,6 +227,8 @@ impl App {
             sign_in_window: None,
             report_window: None,
             sign_in_browser: "firefox".into(),
+            marked_watched: Default::default(),
+            sign_in_only: false,
         }
     }
 

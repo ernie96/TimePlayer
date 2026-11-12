@@ -184,6 +184,12 @@ section!(RunsConfig {
 section!(AccountConfig {
     #[serde(rename = "Use")]
     use_: AccountUse = AccountUse::Off,
+    /// Mark videos played in TimePlayer as watched in the YouTube account's history (needs Use = Full).
+    send_history: bool = false,
+    /// Add and remove Watch Later videos in the YouTube account too (needs Use = Full).
+    send_watch_later: bool = false,
+    /// At startup, bring in what's new in the account's subscriptions, history, likes, Watch Later and playlists.
+    sync_at_startup: bool = false,
 });
 
 section!(AppConfig {
@@ -203,6 +209,8 @@ section!(AppConfig {
     open_links_from_other_apps: bool = true,
     /// What Control+C shares: "ask", "youtube" or "timeplayer".
     share_links: String = "ask".into(),
+    /// The first start has offered to sign in or import YouTube data (2.0.1); asked once.
+    import_offered: bool = false,
 });
 
 impl AppConfig {

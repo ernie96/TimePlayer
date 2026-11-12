@@ -104,15 +104,30 @@
   "uk": "1. Виберіть «Копіювати розташування папки розширення» вище.",
   "es": "1. Elige «Copiar la ubicación de la carpeta de la extensión» arriba."
  },
+ "1. Sign in to YouTube: Google's own sign-in page opens in a TimePlayer window. Once you're signed in, the window closes by itself. This is the easiest.": {
+  "ro": "1. Conectare la YouTube: pagina de conectare a Google se deschide într-o fereastră TimePlayer. După ce v-ați conectat, fereastra se închide singură. Aceasta este cea mai ușoară cale.",
+  "uk": "1. Увійти в YouTube: власна сторінка входу Google відкривається у вікні TimePlayer. Щойно ви ввійдете, вікно закриється саме. Це найпростіше.",
+  "es": "1. Iniciar sesión en YouTube: la página de inicio de sesión de Google se abre en una ventana de TimePlayer. Cuando hayas iniciado sesión, la ventana se cierra sola. Es lo más fácil."
+ },
  "1080p, full HD": {
   "ro": "1080p, full HD",
   "uk": "1080p, Full HD",
   "es": "1080p, Full HD"
  },
+ "2. Import a sign-in file: in the Play in TimePlayer browser extension's options, choose \"Export my YouTube sign-in\" while signed in to YouTube. It saves a file to Downloads; choose \"Import a sign-in file\" here and pick it. TimePlayer deletes that file after reading it.": {
+  "ro": "2. Importarea unui fișier de conectare: în opțiunile extensiei de browser Play in TimePlayer, alegeți \"Export my YouTube sign-in\" cât sunteți conectat la YouTube. Se salvează un fișier în Descărcări; alegeți aici \"Importă un fișier de conectare\" și selectați-l. TimePlayer șterge fișierul după ce îl citește.",
+  "uk": "2. Імпортувати файл входу: у параметрах розширення Play in TimePlayer виберіть «Export my YouTube sign-in», коли ви ввійшли в YouTube. Файл збережеться в «Завантаженнях»; виберіть тут «Імпортувати файл входу» і вкажіть його. TimePlayer видаляє цей файл після прочитання.",
+  "es": "2. Importar un archivo de inicio de sesión: en las opciones de la extensión Play in TimePlayer, elige \"Export my YouTube sign-in\" con la sesión de YouTube iniciada. Guarda un archivo en Descargas; elige aquí \"Importar un archivo de inicio de sesión\" y selecciónalo. TimePlayer borra ese archivo después de leerlo."
+ },
  "2. In Chrome, Edge or Brave, type chrome://extensions in the address bar (edge://extensions in Edge, brave://extensions in Brave) and press Enter.": {
   "ro": "2. În Chrome, Edge sau Brave, tastați chrome://extensions în bara de adrese (edge://extensions în Edge, brave://extensions în Brave) și apăsați Enter.",
   "uk": "2. У Chrome, Edge або Brave введіть chrome://extensions в адресному рядку (edge://extensions в Edge, brave://extensions у Brave) і натисніть Enter.",
   "es": "2. En Chrome, Edge o Brave, escribe chrome://extensions en la barra de direcciones (edge://extensions en Edge, brave://extensions en Brave) y pulsa Intro."
+ },
+ "3. Read the sign-in from the browser: works with Firefox. Chrome-based browsers lock their cookies, so use one of the other ways there.": {
+  "ro": "3. Citirea conectării din browser: merge cu Firefox. Browserele bazate pe Chrome își blochează cookie-urile, așa că folosiți acolo una dintre celelalte căi.",
+  "uk": "3. Прочитати вхід із браузера: працює з Firefox. Браузери на основі Chrome блокують свої файли cookie, тож для них скористайтеся іншим способом.",
+  "es": "3. Leer el inicio de sesión del navegador: funciona con Firefox. Los navegadores basados en Chrome bloquean sus cookies, así que ahí usa una de las otras formas."
  },
  "3. Turn on Developer mode. It's a switch on that page.": {
   "ro": "3. Activați Modul pentru dezvoltatori. Este un comutator pe acea pagină.",
@@ -188,6 +203,11 @@
   "ro": "Acțiuni",
   "uk": "Дії",
   "es": "Acciones"
+ },
+ "Add and remove Watch Later videos on YouTube too": {
+  "ro": "Adaugă și elimină videoclipurile Vizionează mai târziu și pe YouTube",
+  "uk": "Додавати й прибирати відео «Переглянути пізніше» також у YouTube",
+  "es": "Añadir y quitar los videos de Ver más tarde también en YouTube"
  },
  "Add my runs to the total for everyone (only adds 1 per start, nothing about you)": {
   "ro": "Adaugă pornirile mele la totalul tuturor (doar 1 la fiecare pornire, nimic despre dvs.)",
@@ -303,6 +323,11 @@
   "ro": "Întreabă de fiecare dată",
   "uk": "Питати щоразу",
   "es": "Preguntar cada vez"
+ },
+ "At startup, bring in what's new from my YouTube account: subscriptions, history, likes, Watch Later and playlists": {
+  "ro": "La pornire, adu ce e nou din contul meu YouTube: abonamente, istoric, aprecieri, Vizionează mai târziu și liste de redare",
+  "uk": "Під час запуску переносити нове з мого облікового запису YouTube: підписки, історію, вподобання, «Переглянути пізніше» та списки відтворення",
+  "es": "Al iniciar, traer lo nuevo de mi cuenta de YouTube: suscripciones, historial, me gusta, Ver más tarde y listas de reproducción"
  },
  "Audio d_escription": {
   "ro": "Audiodes_criere",
@@ -438,6 +463,11 @@
   "ro": "Bara de progres Braille este activată ({0} celule).",
   "uk": "Смугу прогресу на брайлі увімкнено ({0} комірок).",
   "es": "Barra de progreso braille activada ({0} celdas)."
+ },
+ "Bring your YouTube subscriptions, watch history, likes, Watch Later and playlists into TimePlayer. What's already in TimePlayer stays, and nothing is added twice.": {
+  "ro": "Aduceți în TimePlayer abonamentele YouTube, istoricul vizionărilor, aprecierile, Vizionează mai târziu și listele de redare. Ce există deja în TimePlayer rămâne, și nimic nu se adaugă de două ori.",
+  "uk": "Перенесіть у TimePlayer свої підписки YouTube, історію переглядів, вподобання, «Переглянути пізніше» та списки відтворення. Те, що вже є в TimePlayer, залишається, і нічого не додається двічі.",
+  "es": "Trae a TimePlayer tus suscripciones de YouTube, historial de reproducciones, me gusta, Ver más tarde y listas de reproducción. Lo que ya está en TimePlayer se queda y nada se añade dos veces."
  },
  "Browser": {
   "ro": "Browser",
@@ -1374,6 +1404,11 @@
   "uk": "Перейти до _каналу",
   "es": "Ir _al canal"
  },
+ "Google Takeout makes a zip of your YouTube data, sent to you by email. TimePlayer reads the zip as it is.": {
+  "ro": "Google Takeout face o arhivă zip cu datele YouTube, trimisă prin e-mail. TimePlayer citește arhiva așa cum este.",
+  "uk": "Google Takeout створює zip-архів ваших даних YouTube і надсилає його електронною поштою. TimePlayer читає архів як є.",
+  "es": "Google Takeout crea un zip con tus datos de YouTube y te lo envía por correo. TimePlayer lee el zip tal cual."
+ },
  "Google Takeout zip (*.zip)|*.zip|All files|*.*": {
   "ro": "Arhivă Google Takeout (*.zip)|*.zip|Toate fișierele|*.*",
   "uk": "Архів Google Takeout (*.zip)|*.zip|Усі файли|*.*",
@@ -1383,6 +1418,11 @@
   "ro": "Pagina de conectare Google",
   "uk": "Сторінка входу Google",
   "es": "Página de inicio de sesión de Google"
+ },
+ "Google's own sign-in page opens in a TimePlayer window. TimePlayer reads your lists, closes the page, and asks whether to stay signed in.": {
+  "ro": "Pagina de conectare a Google se deschide într-o fereastră TimePlayer. TimePlayer citește listele, închide pagina și întreabă dacă rămâneți conectat.",
+  "uk": "Власна сторінка входу Google відкривається у вікні TimePlayer. TimePlayer читає ваші списки, закриває сторінку й запитує, чи залишатися в обліковому записі.",
+  "es": "La página de inicio de sesión de Google se abre en una ventana de TimePlayer. TimePlayer lee tus listas, cierra la página y pregunta si quieres seguir con la sesión iniciada."
  },
  "Hall": {
   "ro": "Sală mare",
@@ -1449,10 +1489,30 @@
   "uk": "Якщо посилання перестали відкриватися в TimePlayer (наприклад, після перенесення портативної копії), виберіть «Знову зареєструвати TimePlayer для посилань».",
   "es": "Si los enlaces dejan de abrirse en TimePlayer (por ejemplo, después de mover una copia portátil), elige «Registrar TimePlayer para enlaces de nuevo»."
  },
+ "Import": {
+  "ro": "Import",
+  "uk": "Імпорт",
+  "es": "Importar"
+ },
+ "Import _subscriptions from a file...": {
+  "ro": "Importă _abonamente dintr-un fișier...",
+  "uk": "Імпортувати _підписки з файлу...",
+  "es": "Importar _suscripciones desde un archivo..."
+ },
+ "Import a sign-in _file...": {
+  "ro": "Importă un _fișier de conectare...",
+  "uk": "Імпортувати _файл входу...",
+  "es": "Importar un _archivo de inicio de sesión..."
+ },
  "Import a sign-in file": {
   "ro": "Importă un fișier de conectare",
   "uk": "Імпортувати файл входу",
   "es": "Importar un archivo de inicio de sesión"
+ },
+ "Import and export": {
+  "ro": "Import și export",
+  "uk": "Імпорт і експорт",
+  "es": "Importar y exportar"
  },
  "Import by signing in to YouTube": {
   "ro": "Importă prin conectare la YouTube",
@@ -1473,6 +1533,11 @@
   "ro": "Importă din Google Takeout",
   "uk": "Імпорт із Google Takeout",
   "es": "Importar desde Google Takeout"
+ },
+ "Import from Google _Takeout...": {
+  "ro": "Importă din Google _Takeout...",
+  "uk": "Імпортувати з Google _Takeout...",
+  "es": "Importar desde Google _Takeout..."
  },
  "Import progress": {
   "ro": "Progresul importului",
@@ -1544,6 +1609,11 @@
   "uk": "Зберігати історію переглядів на цьому комп’ютері (потрібно для продовження й «Для вас»)",
   "es": "Guardar un historial de reproducciones en este equipo (necesario para continuar y para Para ti)"
  },
+ "Keeping in step with your account works when it's used for your home, subscriptions, history and likes (above). Likes and subscriptions are always sent to YouTube then; these choose what else is.": {
+  "ro": "Sincronizarea cu contul funcționează când acesta e folosit pentru pagina principală, abonamente, istoric și aprecieri (mai sus). Aprecierile și abonamentele se trimit atunci mereu la YouTube; opțiunile de mai jos aleg ce se mai trimite.",
+  "uk": "Синхронізація з обліковим записом працює, коли його використано для головної сторінки, підписок, історії та вподобань (вище). Тоді вподобання й підписки завжди надсилаються в YouTube; ці параметри вибирають, що ще надсилати.",
+  "es": "Mantenerte al día con tu cuenta funciona cuando se usa para tu inicio, suscripciones, historial y me gusta (arriba). Entonces los me gusta y las suscripciones siempre se envían a YouTube; estas opciones eligen qué más."
+ },
  "L in the player reads timed lyrics aloud as they're sung, like captions; Settings, Speech and braille, can keep it on.": {
   "ro": "L în player citește cu voce versurile sincronizate pe măsură ce sunt cântate, ca subtitrările; Setări, Vorbire și Braille, le poate lăsa activate.",
   "uk": "L у програвачі читає синхронізований текст уголос під час співу, як субтитри; «Налаштування», «Мовлення й брайль» можуть залишити це ввімкненим.",
@@ -1613,6 +1683,11 @@
   "ro": "Videoclipurile apreciate și listele dvs. (Control+5). Enter deschide una. Shift+Tab ajunge la Redă tot, Amestecă, Listă nouă, Redenumește, Șterge, Importă prin conectare la YouTube și Importă din Google Takeout.\n",
   "uk": "Вподобані відео та ваші плейлисти (Control+5). Enter відкриває плейлист. Shift+Tab переходить до «Відтворити все», «Перемішати», «Новий плейлист», «Перейменувати», «Видалити», «Імпорт через вхід у YouTube» та «Імпорт із Google Takeout».\n",
   "es": "Videos que te gustan y tus listas (Control+5). Intro abre una. Mayús+Tab llega a Reproducir todo, Aleatorio, Nueva lista, Cambiar nombre, Eliminar, Importar iniciando sesión en YouTube e Importar desde Google Takeout.\n"
+ },
+ "Liked videos and your playlists (Control+5). Enter opens one. Shift+Tab reaches Play all, Shuffle, New playlist, Rename, Delete, and Import and export, which opens the Import page of Settings.\n": {
+  "ro": "Videoclipurile apreciate și listele de redare (Control+5). Enter deschide una. Shift+Tab ajunge la Redă tot, Amestecă, Listă nouă, Redenumește, Șterge și Import și export, care deschide pagina Import din Setări.\n",
+  "uk": "Вподобані відео та ваші списки відтворення (Control+5). Enter відкриває список. Shift+Tab переходить до «Відтворити все», «Перемішати», «Новий список», «Перейменувати», «Видалити» та «Імпорт і експорт», що відкриває сторінку «Імпорт» у налаштуваннях.\n",
+  "es": "Videos que te gustan y tus listas de reproducción (Control+5). Enter abre una. Mayús+Tab llega a Reproducir todo, Aleatorio, Nueva lista, Cambiar nombre, Eliminar e Importar y exportar, que abre la página Importar de la configuración.\n"
  },
  "Liked videos can't be deleted. Remove videos with Delete instead.": {
   "ro": "Videoclipurile apreciate nu pot fi șterse. Eliminați videoclipurile cu Delete.",
@@ -1823,6 +1898,11 @@
   "ro": "Nou",
   "uk": "Нове",
   "es": "Nuevo"
+ },
+ "New from your YouTube account: {0}.": {
+  "ro": "Nou din contul YouTube: {0}.",
+  "uk": "Нове з облікового запису YouTube: {0}.",
+  "es": "Nuevo de tu cuenta de YouTube: {0}."
  },
  "New name:": {
   "ro": "Nume nou:",
@@ -2294,6 +2374,11 @@
   "uk": "Проблема: {0}",
   "es": "Problema: {0}"
  },
+ "Put videos I play in my YouTube watch history": {
+  "ro": "Pune videoclipurile redate în istoricul meu de vizionări YouTube",
+  "uk": "Додавати відео, які я відтворюю, до моєї історії переглядів YouTube",
+  "es": "Poner los videos que reproduzco en mi historial de YouTube"
+ },
  "Queue": {
   "ro": "Coadă",
   "uk": "Черга",
@@ -2383,6 +2468,11 @@
   "ro": "Se citește istoricul vizionărilor...",
   "uk": "Читання історії переглядів...",
   "es": "Leyendo tu historial de reproducciones..."
+ },
+ "Reads NewPipe, LibreTube and Tubular exports, FreeTube profiles, OPML files, and Takeout's subscriptions.csv.": {
+  "ro": "Citește exporturi NewPipe, LibreTube și Tubular, profiluri FreeTube, fișiere OPML și subscriptions.csv din Takeout.",
+  "uk": "Читає експорти NewPipe, LibreTube і Tubular, профілі FreeTube, файли OPML і subscriptions.csv із Takeout.",
+  "es": "Lee exportaciones de NewPipe, LibreTube y Tubular, perfiles de FreeTube, archivos OPML y el subscriptions.csv de Takeout."
  },
  "Recently played": {
   "ro": "Redate recent",
@@ -2579,6 +2669,11 @@
   "uk": "«{0}» збережено в Плейлисти, {1}. Натисніть Control+5, щоб знайти.",
   "es": "{0} guardada en Listas, {1}. Pulsa Control+5 para encontrarla."
  },
+ "Saves your subscriptions for NewPipe, LibreTube, Tubular, FreeTube or an RSS reader.": {
+  "ro": "Salvează abonamentele pentru NewPipe, LibreTube, Tubular, FreeTube sau un cititor RSS.",
+  "uk": "Зберігає ваші підписки для NewPipe, LibreTube, Tubular, FreeTube або RSS-читача.",
+  "es": "Guarda tus suscripciones para NewPipe, LibreTube, Tubular, FreeTube o un lector RSS."
+ },
  "Saving playlist...": {
   "ro": "Se salvează lista...",
   "uk": "Збереження плейлиста...",
@@ -2694,6 +2789,11 @@
   "uk": "Налаштування мають вісім сторінок: Відтворення, Звук, Мовлення й брайль, Бібліотека, SponsorBlock і дизлайки, Посилання й браузер, Обліковий запис YouTube, Оновлення й довідка. ",
   "es": "Configuración tiene ocho páginas: Reproducción, Sonido, Voz y braille, Biblioteca, SponsorBlock y no me gusta, Enlaces y navegador, Cuenta de YouTube, y Actualizaciones y ayuda. "
  },
+ "Settings has nine pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, YouTube account, Import, and Updates and help. ": {
+  "ro": "Setările au nouă pagini: Redare, Sunet, Vorbire și braille, Bibliotecă, SponsorBlock și dislike-uri, Linkuri și browser, Cont YouTube, Import, și Actualizări și ajutor. ",
+  "uk": "Налаштування мають дев'ять сторінок: «Відтворення», «Звук», «Мовлення і Брайль», «Бібліотека», «SponsorBlock і дизлайки», «Посилання і браузер», «Обліковий запис YouTube», «Імпорт» та «Оновлення і довідка». ",
+  "es": "La configuración tiene nueve páginas: Reproducción, Sonido, Voz y braille, Biblioteca, SponsorBlock y no me gusta, Enlaces y navegador, Cuenta de YouTube, Importar, y Actualizaciones y ayuda. "
+ },
  "Settings pages": {
   "ro": "Paginile setărilor",
   "uk": "Сторінки налаштувань",
@@ -2733,6 +2833,11 @@
   "ro": "Shift+Tab ajunge la Import și Export, pentru fișiere NewPipe, LibreTube, FreeTube, Google Takeout și OPML.",
   "uk": "Shift+Tab переходить до імпорту й експорту для файлів NewPipe, LibreTube, FreeTube, Google Takeout і OPML.",
   "es": "Mayús+Tab llega a Importar y Exportar, para archivos de NewPipe, LibreTube, FreeTube, Google Takeout y OPML."
+ },
+ "Shift+Tab reaches Import and export, the Import page of Settings: sign in to YouTube, Google Takeout, and files from NewPipe, LibreTube, FreeTube and OPML.": {
+  "ro": "Shift+Tab ajunge la Import și export, pagina Import din Setări: conectare la YouTube, Google Takeout și fișiere din NewPipe, LibreTube, FreeTube și OPML.",
+  "uk": "Shift+Tab переходить до «Імпорт і експорт», сторінки «Імпорт» у налаштуваннях: вхід у YouTube, Google Takeout і файли з NewPipe, LibreTube, FreeTube та OPML.",
+  "es": "Mayús+Tab llega a Importar y exportar, la página Importar de la configuración: iniciar sesión en YouTube, Google Takeout y archivos de NewPipe, LibreTube, FreeTube y OPML."
  },
  "Shift+Tab reaches Play all, Shuffle, Copy link, and Save to Playlists for YouTube playlists. F5 updates a saved YouTube playlist. ": {
   "ro": "Shift+Tab ajunge la Redă tot, Amestecă, Copiază linkul și Salvează în Liste de redare pentru listele YouTube. F5 actualizează o listă YouTube salvată. ",
@@ -2789,6 +2894,11 @@
   "uk": "Відтворюємо вперемішку {0}.",
   "es": "Reproduciendo {0} en orden aleatorio."
  },
+ "Sign _in to YouTube...": {
+  "ro": "_Conectare la YouTube...",
+  "uk": "_Увійти в YouTube...",
+  "es": "_Iniciar sesión en YouTube..."
+ },
  "Sign _out": {
   "ro": "_Deconectare",
   "uk": "_Вийти",
@@ -2813,6 +2923,11 @@
   "ro": "Conectați-vă mai întâi la YouTube în Setări, Cont YouTube.",
   "uk": "Спершу увійдіть у YouTube в «Налаштування», «Обліковий запис YouTube».",
   "es": "Primero inicia sesión en YouTube en Configuración, Cuenta de YouTube."
+ },
+ "Sign in to _YouTube and import...": {
+  "ro": "Conectează-te la _YouTube și importă...",
+  "uk": "Увійти в _YouTube та імпортувати...",
+  "es": "Iniciar sesión en _YouTube e importar..."
  },
  "Sign-in files (*.txt)|*.txt|All files|*.*": {
   "ro": "Fișiere de conectare (*.txt)|*.txt|Toate fișierele|*.*",
@@ -3204,6 +3319,11 @@
   "uk": "Найшвидше: «Плейлисти» (Control+5), «Імпорт через вхід у YouTube». Увійдіть на сторінці Google; TimePlayer прочитає ваші підписки, історію, вподобані, «Переглянути пізніше» та плейлисти, закриє сторінку й запитає, чи залишатися в обліковому записі. Якщо це у вас не спрацює, Google Takeout експортує ті самі списки.\n\n",
   "es": "La forma más rápida es Listas (Control+5), Importar iniciando sesión en YouTube. Inicia sesión en la página de Google; TimePlayer lee tus suscripciones, historial, Me gusta, Ver más tarde y listas, cierra la página y pregunta si mantener la sesión. Si eso no te funciona, Google Takeout exporta las mismas listas.\n\n"
  },
+ "The quickest way is Settings (F2), Import, Sign in to YouTube and import. Sign in on Google's page; TimePlayer reads your subscriptions, history, likes, Watch Later and playlists, closes the page, and asks whether to stay signed in. If that doesn't work for you, Google Takeout exports the same lists.\n\n": {
+  "ro": "Cel mai rapid este Setări (F2), Import, Conectează-te la YouTube și importă. Conectați-vă pe pagina Google; TimePlayer citește abonamentele, istoricul, aprecierile, Vizionează mai târziu și listele de redare, închide pagina și întreabă dacă rămâneți conectat. Dacă nu merge pentru dumneavoastră, Google Takeout exportă aceleași liste.\n\n",
+  "uk": "Найшвидше: Налаштування (F2), «Імпорт», «Увійти в YouTube та імпортувати». Увійдіть на сторінці Google; TimePlayer прочитає підписки, історію, вподобання, «Переглянути пізніше» та списки відтворення, закриє сторінку й запитає, чи залишатися в обліковому записі. Якщо так не вийде, Google Takeout експортує ті самі списки.\n\n",
+  "es": "Lo más rápido es Configuración (F2), Importar, Iniciar sesión en YouTube e importar. Inicia sesión en la página de Google; TimePlayer lee tus suscripciones, historial, me gusta, Ver más tarde y listas, cierra la página y pregunta si quieres seguir con la sesión iniciada. Si no te funciona, Google Takeout exporta las mismas listas.\n\n"
+ },
  "The radio has run out of songs.": {
   "ro": "Radioul a rămas fără melodii.",
   "uk": "У радіо закінчилися пісні.",
@@ -3268,6 +3388,11 @@
   "ro": "Aici nu sunt videoclipuri de descărcat.",
   "uk": "Тут немає відео для завантаження.",
   "es": "Aquí no hay videos para descargar."
+ },
+ "There are three ways to sign in:": {
+  "ro": "Există trei moduri de conectare:",
+  "uk": "Є три способи ввійти:",
+  "es": "Hay tres formas de iniciar sesión:"
  },
  "There is no log yet.": {
   "ro": "Încă nu există un jurnal.",
@@ -3439,6 +3564,11 @@
   "uk": "TimePlayer використовуватиме {0} після перезапуску.",
   "es": "TimePlayer usará {0} cuando lo reinicies."
  },
+ "TimePlayer works without an account. Signing in is only for what YouTube keeps behind its sign-in, and for keeping TimePlayer and your account in step.": {
+  "ro": "TimePlayer funcționează fără cont. Conectarea e doar pentru ce ține YouTube în spatele conectării și pentru a ține TimePlayer și contul sincronizate.",
+  "uk": "TimePlayer працює без облікового запису. Вхід потрібен лише для того, що YouTube показує після входу, і щоб TimePlayer і ваш обліковий запис були синхронізовані.",
+  "es": "TimePlayer funciona sin cuenta. Iniciar sesión solo sirve para lo que YouTube guarda tras el inicio de sesión y para mantener TimePlayer y tu cuenta al día."
+ },
  "TimePlayer works without an account. Signing in is only for what YouTube keeps behind its sign-in.": {
   "ro": "TimePlayer funcționează fără cont. Conectarea este doar pentru ce ține YouTube în spatele conectării.",
   "uk": "TimePlayer працює без облікового запису. Вхід потрібен лише для того, що YouTube приховує за входом.",
@@ -3458,6 +3588,11 @@
   "ro": "_Site-ul TimePlayer",
   "uk": "_Вебсайт TimePlayer",
   "es": "Sitio _web de TimePlayer"
+ },
+ "To bring in your subscriptions, history, likes and playlists, use the Import page.": {
+  "ro": "Pentru a aduce abonamentele, istoricul, aprecierile și listele de redare, folosiți pagina Import.",
+  "uk": "Щоб перенести підписки, історію, вподобання та списки відтворення, скористайтеся сторінкою «Імпорт».",
+  "es": "Para traer tus suscripciones, historial, me gusta y listas de reproducción, usa la página Importar."
  },
  "Too many reports were sent from this connection just now. Wait a minute and try again.": {
   "ro": "Au fost trimise prea multe rapoarte de pe această conexiune. Așteptați un minut și încercați din nou.",
@@ -3724,6 +3859,11 @@
   "uk": "Переглянуто",
   "es": "Visto"
  },
+ "Welcome to TimePlayer": {
+  "ro": "Bun venit în TimePlayer",
+  "uk": "Ласкаво просимо до TimePlayer",
+  "es": "Te damos la bienvenida a TimePlayer"
+ },
  "What went wrong? What were you doing when it happened?": {
   "ro": "Ce nu a funcționat? Ce făceați când s-a întâmplat?",
   "uk": "Що пішло не так? Що ви робили, коли це сталося?",
@@ -3779,10 +3919,30 @@
   "uk": "Без розширення: виберіть «Копіювати закладку для браузера», додайте закладку в браузері й вставте це як її адресу. На сторінці YouTube виберіть цю закладку.",
   "es": "Sin la extensión: elige «Copiar el marcador del navegador», agrega un marcador en tu navegador y pégalo como dirección. En una página de YouTube, elige ese marcador."
  },
+ "Would you like to bring in your YouTube subscriptions, watch history, likes and playlists?": {
+  "ro": "Doriți să aduceți abonamentele YouTube, istoricul vizionărilor, aprecierile și listele de redare?",
+  "uk": "Бажаєте перенести свої підписки YouTube, історію переглядів, вподобання та списки відтворення?",
+  "es": "¿Quieres traer tus suscripciones de YouTube, historial de reproducciones, me gusta y listas de reproducción?"
+ },
  "You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose \"How to get my YouTube subscriptions\" above to bring them from YouTube. Import subscriptions also reads NewPipe, LibreTube and FreeTube files.": {
   "ro": "Încă nu sunteți abonat la niciun canal.\nApăsați Control+S pe un videoclip pentru a vă abona la canalul lui sau alegeți „Cum îmi obțin abonamentele YouTube” mai sus pentru a le aduce de pe YouTube. Importă abonamente citește și fișiere NewPipe, LibreTube și FreeTube.",
   "uk": "Ви ще не підписані на жоден канал.\nНатисніть Control+S на відео, щоб підписатися на його канал, або виберіть вище «Як отримати мої підписки YouTube», щоб перенести їх з YouTube. «Імпортувати підписки» читає також файли NewPipe, LibreTube і FreeTube.",
   "es": "Todavía no estás suscrito a ningún canal.\nPulsa Control+S en un video para suscribirte a su canal, o elige «Cómo obtener mis suscripciones de YouTube» arriba para traerlas desde YouTube. Importar suscripciones también lee archivos de NewPipe, LibreTube y FreeTube."
+ },
+ "You are not subscribed to any channels yet.\nPress Control+S on a video to subscribe to its channel, or choose Import and export above to bring them from YouTube, Google Takeout, NewPipe, LibreTube or FreeTube.": {
+  "ro": "Nu sunteți abonat încă la niciun canal.\nApăsați Control+S pe un videoclip pentru a vă abona la canalul lui, sau alegeți Import și export mai sus pentru a le aduce din YouTube, Google Takeout, NewPipe, LibreTube sau FreeTube.",
+  "uk": "Ви ще не підписані на жоден канал.\nНатисніть Control+S на відео, щоб підписатися на його канал, або виберіть «Імпорт і експорт» вище, щоб перенести підписки з YouTube, Google Takeout, NewPipe, LibreTube чи FreeTube.",
+  "es": "Todavía no estás suscrito a ningún canal.\nPulsa Control+S en un video para suscribirte a su canal, o elige Importar y exportar arriba para traerlos de YouTube, Google Takeout, NewPipe, LibreTube o FreeTube."
+ },
+ "You can sign in to YouTube, or import a Google Takeout file or an export from another app. Choose No to start with an empty library; Settings (F2), Import, has these any time.": {
+  "ro": "Vă puteți conecta la YouTube sau puteți importa un fișier Google Takeout ori un export din altă aplicație. Alegeți Nu pentru a începe cu o bibliotecă goală; Setări (F2), Import, le are oricând.",
+  "uk": "Ви можете ввійти в YouTube або імпортувати файл Google Takeout чи експорт з іншої програми. Виберіть «Ні», щоб почати з порожньої бібліотеки; Налаштування (F2), «Імпорт», мають це будь-коли.",
+  "es": "Puedes iniciar sesión en YouTube o importar un archivo de Google Takeout o una exportación de otra aplicación. Elige No para empezar con la biblioteca vacía; Configuración (F2), Importar, lo tiene en cualquier momento."
+ },
+ "You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or bring them in from Settings (F2), Import.": {
+  "ro": "Nu aveți încă abonamente.\nApăsați Control+S pe orice videoclip pentru a vă abona la canalul lui, sau aduceți-le din Setări (F2), Import.",
+  "uk": "У вас ще немає підписок.\nНатисніть Control+S на будь-якому відео, щоб підписатися на його канал, або перенесіть їх через Налаштування (F2), «Імпорт».",
+  "es": "Todavía no tienes suscripciones.\nPulsa Control+S en cualquier video para suscribirte a su canal, o tráelas desde Configuración (F2), Importar."
  },
  "You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or press Control+4 and import your subscriptions.": {
   "ro": "Încă nu aveți abonamente.\nApăsați Control+S pe orice videoclip pentru a vă abona la canalul lui sau apăsați Control+4 și importați-vă abonamentele.",
@@ -3863,6 +4023,11 @@
   "ro": "Contul dvs. YouTube nu are abonamente, istoric, aprecieri sau liste de importat.",
   "uk": "У вашому обліковому записі YouTube немає підписок, історії, вподобаних або плейлистів для імпорту.",
   "es": "Tu cuenta de YouTube no tiene suscripciones, historial, Me gusta ni listas que importar."
+ },
+ "Your YouTube subscriptions, playlists, liked videos and watch history can be exported from Google with Google Takeout. Steps:\n1. Choose Yes below to open Google Takeout in your browser, set to YouTube only. Sign in to Google if asked.\n2. YouTube and YouTube Music is already checked. Activate the button \"All YouTube data included\", choose Deselect all, check \"subscriptions\", \"playlists\" and \"history\", then OK.\n3. For watch history, activate \"Multiple formats\" and set history to JSON instead of HTML. Otherwise history is skipped.\n4. Activate \"Next step\". Leave the delivery method as \"Send download link via email\" and the file type as .zip, then activate \"Create export\".\n5. Google emails you a download link, usually within a few minutes. Download the zip file.\n6. Back in TimePlayer: Settings (F2), Import, Import from Google Takeout, and choose that zip. There is no need to unzip it.\nOpen Google Takeout now?": {
+  "ro": "Abonamentele YouTube, listele de redare, videoclipurile apreciate și istoricul vizionărilor pot fi exportate de la Google cu Google Takeout. Pașii:\n1. Alegeți Da mai jos pentru a deschide Google Takeout în browser, setat doar pentru YouTube. Conectați-vă la Google dacă vi se cere.\n2. YouTube și YouTube Music este deja bifat. Activați butonul „All YouTube data included”, alegeți Deselect all, bifați „subscriptions”, „playlists” și „history”, apoi OK.\n3. Pentru istoricul vizionărilor, activați „Multiple formats” și setați history la JSON în loc de HTML. Altfel istoricul e omis.\n4. Activați „Next step”. Lăsați metoda de livrare „Send download link via email” și tipul de fișier .zip, apoi activați „Create export”.\n5. Google vă trimite prin e-mail un link de descărcare, de obicei în câteva minute. Descărcați fișierul zip.\n6. Înapoi în TimePlayer: Setări (F2), Import, Importă din Google Takeout, și alegeți acel zip. Nu e nevoie să-l dezarhivați.\nDeschideți Google Takeout acum?",
+  "uk": "Ваші підписки YouTube, списки відтворення, вподобані відео та історію переглядів можна експортувати з Google через Google Takeout. Кроки:\n1. Виберіть «Так» нижче, щоб відкрити Google Takeout у браузері, налаштований лише на YouTube. Увійдіть у Google, якщо попросять.\n2. YouTube і YouTube Music уже позначено. Натисніть кнопку «All YouTube data included», виберіть Deselect all, позначте «subscriptions», «playlists» і «history», потім OK.\n3. Для історії переглядів натисніть «Multiple formats» і встановіть для history формат JSON замість HTML. Інакше історію буде пропущено.\n4. Натисніть «Next step». Залиште спосіб доставки «Send download link via email» і тип файлу .zip, потім натисніть «Create export».\n5. Google надішле посилання для завантаження електронною поштою, зазвичай за кілька хвилин. Завантажте zip-файл.\n6. Поверніться в TimePlayer: Налаштування (F2), «Імпорт», «Імпортувати з Google Takeout», і виберіть цей zip. Розпаковувати його не потрібно.\nВідкрити Google Takeout зараз?",
+  "es": "Tus suscripciones de YouTube, listas de reproducción, videos que te gustan e historial se pueden exportar de Google con Google Takeout. Pasos:\n1. Elige Sí abajo para abrir Google Takeout en tu navegador, solo con YouTube. Inicia sesión en Google si te lo pide.\n2. YouTube y YouTube Music ya está marcado. Activa el botón \"All YouTube data included\", elige Deselect all, marca \"subscriptions\", \"playlists\" e \"history\" y luego OK.\n3. Para el historial, activa \"Multiple formats\" y pon history en JSON en lugar de HTML. Si no, el historial se omite.\n4. Activa \"Next step\". Deja el método de entrega \"Send download link via email\" y el tipo de archivo .zip, y activa \"Create export\".\n5. Google te envía por correo un enlace de descarga, normalmente en pocos minutos. Descarga el archivo zip.\n6. De vuelta en TimePlayer: Configuración (F2), Importar, Importar desde Google Takeout, y elige ese zip. No hace falta descomprimirlo.\n¿Abrir Google Takeout ahora?"
  },
  "Your _email or name, if you would like an answer (optional):": {
   "ro": "_E-mailul sau numele dvs., dacă doriți un răspuns (opțional):",
@@ -3979,6 +4144,11 @@
   "uk": "_Як додати розширення «Відтворити в TimePlayer»:",
   "es": "Cómo a_gregar la extensión Reproducir en TimePlayer:"
  },
+ "_How to get a Google Takeout file...": {
+  "ro": "_Cum obțin un fișier Google Takeout...",
+  "uk": "_Як отримати файл Google Takeout...",
+  "es": "_Cómo conseguir un archivo de Google Takeout..."
+ },
  "_How to get my YouTube data...": {
   "ro": "_Cum îmi obțin datele YouTube...",
   "uk": "_Як отримати мої дані YouTube...",
@@ -3993,6 +4163,11 @@
   "ro": "_Importă un fișier de conectare...",
   "uk": "_Імпортувати файл входу...",
   "es": "_Importar un archivo de inicio de sesión..."
+ },
+ "_Import and export...": {
+  "ro": "_Import și export...",
+  "uk": "_Імпорт і експорт...",
+  "es": "_Importar y exportar..."
  },
  "_Import from Google Takeout...": {
   "ro": "_Importă din Google Takeout...",

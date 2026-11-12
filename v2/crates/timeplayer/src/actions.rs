@@ -166,6 +166,7 @@ impl App {
             return;
         }
         let saved = self.library.toggle_watch_later(item);
+        self.sync_watch_later_to_youtube(&item.id, saved);
         speech::say(&if saved { tf("Saved to Watch Later: {0}.", &[&item.title]) } else { tf("Removed from Watch Later: {0}.", &[&item.title]) });
         if !saved && self.browse.current() == Section::WatchLater {
             self.remove_item_keeping_position(&item.id);
@@ -225,6 +226,7 @@ impl App {
             }
             Section::WatchLater => {
                 self.library.remove_from_watch_later(&item.id);
+                self.sync_watch_later_to_youtube(&item.id, false);
                 speech::say(&tf("Removed from Watch Later: {0}.", &[&item.title]));
             }
             Section::Channels => {
@@ -333,6 +335,7 @@ impl App {
             return;
         };
         let saved = self.library.toggle_watch_later(&video);
+        self.sync_watch_later_to_youtube(&video.id, saved);
         speech::say(&if saved { t("Saved to Watch Later.") } else { t("Removed from Watch Later.") });
     }
 
@@ -1122,28 +1125,7 @@ impl App {
                 _ if canceled => t("Import canceled. Nothing was imported."),
                 Err(e) => tf("Could not read your YouTube lists: {0}", &[&e.message]),
                 Ok(data) => {
-                    let mut report = Vec::new();
-                    if !data.channels.is_empty() {
-                        report.push(plural(library.import_subscriptions(&data.channels) as i64, "{0} channel", "{0} channels"));
-                    }
-                    if !data.history.is_empty() {
-                        let now = Utc::now();
-                        let entries = data
-                            .history
-                            .iter()
-                            .enumerate()
-                            .map(|(i, v)| {
-                                let mut entry = HistoryEntry::new(&v.id, &v.title);
-                                entry.channel_title = v.channel_title.clone();
-                                entry.channel_id = v.channel_id.clone();
-                                entry.duration_seconds = v.duration.map(|d| d.as_secs_f64()).unwrap_or(0.0);
-                                entry.last_watched_utc = now - chrono::TimeDelta::minutes(i as i64 + 1);
-                                entry
-                            })
-                            .collect();
-                        report.push(plural(library.import_history(entries) as i64, "{0} watched video", "{0} watched videos"));
-                    }
-                    add_imported_lists(&library, &data.liked, &data.watch_later, &data.playlists, &mut report);
+                    let report: Vec<String> = merge_account_data(&library, &data).into_iter().map(|(_, text)| text).collect();
                     if report.is_empty() {
                         t("Your YouTube account has no subscriptions, history, likes or playlists to import.")
                     } else {
@@ -1215,6 +1197,65 @@ impl App {
 
     // ----- Likes and subscriptions sent to YouTube -----
 
+    fn sync_watch_later_to_youtube(&self, video_id: &str, add: bool) {
+        if !self.account_features_on() || !self.settings.with(|c| c.account.send_watch_later) {
+            return;
+        }
+        let inner_tube = self.sources.inner_tube.clone();
+        let id = video_id.to_owned();
+        self.jobs.run("watch later", move || {
+            let result = inner_tube.set_in_watch_later(&id, add);
+            move |_: &mut App| report_youtube_result(result)
+        });
+    }
+
+    /// A video started playing: it goes in the YouTube account's history too, once a run, when Settings says so.
+    pub(crate) fn sync_history_to_youtube(&mut self, video_id: &str) {
+        if !self.account_features_on() || !self.settings.with(|c| c.account.send_history) || !self.marked_watched.insert(video_id.to_owned()) {
+            return;
+        }
+        let inner_tube = self.sources.inner_tube.clone();
+        let id = video_id.to_owned();
+        self.jobs.run("mark watched", move || {
+            let result = inner_tube.mark_watched(&id);
+            move |_: &mut App| {
+                if let Err(e) = result {
+                    log::info!("Marking as watched on YouTube failed: {}", e.message);
+                }
+            }
+        });
+    }
+
+    /// At startup, when Settings says so: what's new in the YouTube account comes into the library, quietly.
+    pub(crate) fn sync_from_youtube(&mut self) {
+        if !self.account.is_signed_in() || !self.settings.with(|c| c.account.sync_at_startup) || self.importing {
+            return;
+        }
+        self.importing = true;
+        let inner_tube = self.sources.inner_tube.clone();
+        let library = self.library.clone();
+        self.jobs.run("account sync", move || {
+            let report = match inner_tube.read_account(&|_| {}, &Cancel::new()) {
+                Ok(data) => Ok(merge_account_data(&library, &data).into_iter().filter(|(added, _)| *added > 0).map(|(_, text)| text).collect::<Vec<_>>()),
+                Err(e) => Err(e.message),
+            };
+            move |app: &mut App| {
+                app.importing = false;
+                match report {
+                    Ok(report) if !report.is_empty() => {
+                        app.browse.forget_feed();
+                        speech::say_quietly(&tf("New from your YouTube account: {0}.", &[&report.join(", ")]));
+                        if matches!(app.browse.current(), Section::Playlists | Section::Channels | Section::History | Section::WatchLater) {
+                            app.show_section(app.browse.current(), false, false);
+                        }
+                    }
+                    Ok(_) => {}
+                    Err(e) => log::warn!("Syncing from YouTube failed: {e}"),
+                }
+            }
+        });
+    }
+
     fn sync_like_to_youtube(&self, video_id: &str, liked: bool) {
         if !self.account_features_on() {
             return;
@@ -1238,6 +1279,54 @@ impl App {
             move |_: &mut App| report_youtube_result(result)
         });
     }
+}
+
+/// Puts what was read from a YouTube account into the library; what's already there is left out. Each part
+/// comes with how many were added and its spoken count.
+pub(crate) fn merge_account_data(library: &timeplayer_core::library::Library, data: &timeplayer_core::innertube::AccountData) -> Vec<(usize, String)> {
+    let mut report = Vec::new();
+    if !data.channels.is_empty() {
+        let added = library.import_subscriptions(&data.channels);
+        report.push((added, plural(added as i64, "{0} channel", "{0} channels")));
+    }
+    if !data.history.is_empty() {
+        let now = Utc::now();
+        let entries = data
+            .history
+            .iter()
+            .enumerate()
+            .map(|(i, v)| {
+                let mut entry = HistoryEntry::new(&v.id, &v.title);
+                entry.channel_title = v.channel_title.clone();
+                entry.channel_id = v.channel_id.clone();
+                entry.duration_seconds = v.duration.map(|d| d.as_secs_f64()).unwrap_or(0.0);
+                entry.last_watched_utc = now - chrono::TimeDelta::minutes(i as i64 + 1);
+                entry
+            })
+            .collect();
+        let added = library.import_history(entries);
+        report.push((added, plural(added as i64, "{0} watched video", "{0} watched videos")));
+    }
+    if !data.liked.is_empty() {
+        let added = library.import_likes(&data.liked);
+        report.push((added, plural(added as i64, "{0} liked video", "{0} liked videos")));
+    }
+    if !data.watch_later.is_empty() {
+        let added = library.import_watch_later(&data.watch_later);
+        report.push((added, plural(added as i64, "{0} Watch Later video", "{0} Watch Later videos")));
+    }
+    if !data.playlists.is_empty() {
+        let mut existing: std::collections::HashSet<String> = library.playlists().iter().map(|p| p.name.to_lowercase()).collect();
+        let mut added = 0;
+        for (name, videos) in &data.playlists {
+            if existing.insert(name.to_lowercase()) {
+                library.create_playlist(name, videos);
+                added += 1;
+            }
+        }
+        report.push((added, plural(added as i64, "{0} playlist", "{0} playlists")));
+    }
+    report
 }
 
 fn report_youtube_result(result: timeplayer_core::Result<()>) {

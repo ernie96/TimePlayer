@@ -3,9 +3,15 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
-## Unreleased
+## 2.0.1
 
 - TimePlayer now also checks for a new version every 6 hours while it's open, not only when it starts. It says nothing unless there is one, and it waits to ask until TimePlayer is the window in front, no video is opening, no download or import is running and no other TimePlayer window (Settings, sign-in, report) is open. Saying No means that version isn't offered again by itself. "Check for TimePlayer updates at startup" in Settings turns both checks off.
+- Settings has a new Import page with every way to bring in your YouTube data: signing in to YouTube, Google Takeout, and subscription files from NewPipe, LibreTube, Tubular, FreeTube and OPML. Playlists and Channels have an Import and export button that opens it, in place of their separate import buttons.
+- The first time TimePlayer starts with an empty library, it asks whether you'd like to bring in your YouTube data, and takes you to the Import page if so.
+- Settings, YouTube account, has a Sign in to YouTube button (Google's own page) and can keep TimePlayer and your account in step: put videos you play in your YouTube history, add and remove Watch Later videos on YouTube too, and bring in what's new from your account at startup. Each is off until you turn it on.
+- The sign-in and import instructions now cover every way, not only the browser extension, and the Google Takeout steps are translated.
+- Fixed: the screen reader called the main list "Featured" in every section; it now says the section's name.
+- Fixed: Tab stopped on a blank "panel" after the section tabs and in the player.
 
 ## 2.0.0
 

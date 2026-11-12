@@ -66,6 +66,18 @@ fn web_context(region: Option<&str>) -> Value {
     json!({ "client": { "clientName": "WEB", "clientVersion": "2.20261015.00.00", "hl": "en", "gl": gl } })
 }
 
+/// 16 characters from YouTube's alphabet, as its player makes for each playback.
+fn client_playback_nonce() -> String {
+    const ALPHABET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_";
+    (0..16).map(|_| ALPHABET[(crate::discovery::random_unit() * 64.0) as usize % 64] as char).collect()
+}
+
+/// The playback statistics address with the version and nonce YouTube's player adds.
+fn playback_stats_url(base: &str, nonce: &str) -> String {
+    let separator = if base.contains('?') { '&' } else { '?' };
+    format!("{base}{separator}ver=2&cpn={nonce}")
+}
+
 fn now_unix() -> i64 {
     chrono::Utc::now().timestamp()
 }
@@ -321,6 +333,38 @@ impl InnerTube {
         self.post(endpoint, json!({ "target": { "videoId": video_id } }), None, true, false).map(|_| ())
     }
 
+    /// Adds a video to, or takes it out of, the account's Watch Later.
+    pub fn set_in_watch_later(&self, video_id: &str, add: bool) -> Result<()> {
+        let action = if add {
+            json!({ "action": "ACTION_ADD_VIDEO", "addedVideoId": video_id })
+        } else {
+            json!({ "action": "ACTION_REMOVE_VIDEO_BY_VIDEO_ID", "removedVideoId": video_id })
+        };
+        self.post("browse/edit_playlist", json!({ "playlistId": "WL", "actions": [action] }), None, true, false).map(|_| ())
+    }
+
+    /// Puts a video in the account's watch history, the way YouTube's own player reports a play (and yt-dlp's
+    /// --mark-watched): the signed-in player answer has a playback statistics address, which is then called with
+    /// a new client playback nonce.
+    pub fn mark_watched(&self, video_id: &str) -> Result<()> {
+        let player = self.post("player", json!({ "videoId": video_id }), None, true, false)?;
+        let Some(base) = player.pointer("/playbackTracking/videostatsPlaybackUrl/baseUrl").and_then(Value::as_str) else {
+            return Err(AppError::new("NO_PLAYBACK_TRACKING", "YouTube gave no playback statistics address for this video."));
+        };
+        let url = playback_stats_url(base, &client_playback_nonce());
+        let mut request = Request::get(url).timeout(self.timeout()).header("User-Agent", BROWSER_USER_AGENT);
+        if let Some(account) = &self.account {
+            for (name, value) in account.request_headers(now_unix()) {
+                request = request.header(&name, &value);
+            }
+        }
+        let response = self.http.send(request)?;
+        if response.status >= 400 {
+            return Err(AppError::new("INNERTUBE_HTTP_ERROR", format!("Marking as watched returned status {}.", response.status)));
+        }
+        Ok(())
+    }
+
     pub fn set_subscribed(&self, channel_id: &str, subscribe: bool) -> Result<()> {
         let endpoint = if subscribe { "subscription/subscribe" } else { "subscription/unsubscribe" };
         self.post(endpoint, json!({ "channelIds": [channel_id] }), None, true, false).map(|_| ())
@@ -503,6 +547,14 @@ fn captions(root: &Value) -> Vec<CaptionTrack> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn playback_stats_address_gets_version_and_nonce() {
+        let nonce = client_playback_nonce();
+        assert_eq!(nonce.len(), 16);
+        assert_eq!(playback_stats_url("https://s.youtube.com/api/stats/playback?cl=1&docid=abc", "N"), "https://s.youtube.com/api/stats/playback?cl=1&docid=abc&ver=2&cpn=N");
+        assert_eq!(playback_stats_url("https://s.youtube.com/api/stats/playback", "N"), "https://s.youtube.com/api/stats/playback?ver=2&cpn=N");
+    }
     use crate::config::AppConfig;
     use crate::http::Response;
 

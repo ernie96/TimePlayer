@@ -102,11 +102,21 @@ Your YouTube account (optional)
 TimePlayer needs no account. If you want, Settings (F2), YouTube account, can use yours:
 only for videos YouTube won't play without signing in (age-restricted, members-only), or
 also to show your YouTube home, subscriptions, history and likes (Control+9) and to send
-your likes and subscriptions to YouTube. To sign in, use the Play in TimePlayer browser
-extension's "Export my YouTube sign-in" button, then "Import a sign-in file" in TimePlayer;
-with Firefox, "Read the sign-in from the browser" also works. The sign-in is stored
-encrypted for your Windows user, only sent to youtube.com, and never logged. Sign out
-erases it.
+your likes and subscriptions to YouTube.
+
+There are three ways to sign in, all on that page: "Sign in to YouTube" opens Google's own
+sign-in page in a TimePlayer window, which closes by itself once you're signed in; "Import
+a sign-in file" reads the file the Play in TimePlayer browser extension's "Export my YouTube
+sign-in" button saves; with Firefox, "Read the sign-in from the browser" also works. The
+sign-in is stored encrypted for your Windows user, only sent to youtube.com, and never
+logged. Sign out erases it.
+
+When the account is used for your home, subscriptions, history and likes, the same page can
+keep TimePlayer and your account in step. Each of these is off until you turn it on:
+- Put videos you play in your YouTube watch history.
+- Add and remove Watch Later videos on YouTube too.
+- At startup, bring in what's new from your account: subscriptions, history, likes, Watch
+  Later and playlists.
 
 
 Languages
@@ -139,7 +149,8 @@ Subscriptions, playlists and For You
 ------------------------------------
 
 Everything an account would keep stays on this computer instead: subscriptions, likes,
-playlists, Watch Later and history. Nothing is sent to Google.
+playlists, Watch Later and history. Nothing is sent to Google unless you choose to use your
+YouTube account (see above).
 
 For You (Control+2) suggests videos from what you watch, like and subscribe to. Delete on
 a video means not interested; Shift+Delete stops recommending that channel.
@@ -149,14 +160,26 @@ link into the search box to open it, and Save to Playlists keeps it. To find pla
 choose Playlists in the "Search for" box next to the search box. The same box has Shorts,
 Live, Newest first and Most viewed.
 
-The quickest way to bring your YouTube account's data: in Playlists, "Import by signing
-in to YouTube". Google's sign-in page opens; once you're signed in, TimePlayer reads your
-subscriptions, history, likes, Watch Later and playlists, closes the page and asks whether
-to stay signed in. If that doesn't work for you, use Google Takeout: in Playlists, "How to get my
-YouTube data" walks you through it; then Import from Google Takeout and choose the zip
-Google sends you. It brings subscriptions, playlists, liked videos and watch history.
-NewPipe, LibreTube, FreeTube and OPML subscription files can be imported in Channels
-(Control+4), and Export subscriptions saves a file NewPipe can read.
+
+Bringing your YouTube data
+--------------------------
+
+Settings (F2), Import, has every way to bring your subscriptions, watch history, likes,
+Watch Later and playlists into TimePlayer. The Import and export button in Playlists
+(Control+5) and Channels (Control+4) opens the same page. The first time TimePlayer starts
+with an empty library, it offers to take you there. What's already in TimePlayer stays, and
+nothing is added twice.
+
+- Sign in to YouTube and import: the quickest. Google's own sign-in page opens in a
+  TimePlayer window; once you're signed in, TimePlayer reads your lists, closes the page
+  and asks whether to stay signed in.
+- Import from Google Takeout: if signing in doesn't work for you. "How to get a Google
+  Takeout file" walks you through asking Google for the zip; then choose the zip Google
+  sends you, without unzipping it. It brings subscriptions, playlists, liked videos and
+  watch history.
+- Import subscriptions from a file: NewPipe, LibreTube and Tubular exports, FreeTube
+  profiles, OPML files, and Takeout's subscriptions.csv.
+- Export subscriptions saves them for NewPipe, LibreTube, Tubular, FreeTube or an RSS reader.
 
 
 Sound and music mode

@@ -1299,8 +1299,6 @@ dependencies = [
 [[package]]
 name = "quiet-list"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "db0c782c6c505eca6d1df8254e97b419c80ec7a4a87dcb977ef14745507d1420"
 dependencies = [
  "accesskit",
  "accesskit_windows",
@@ -1850,7 +1848,7 @@ dependencies = [
 
 [[package]]
 name = "timeplayer"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "block",
  "chrono",
@@ -1871,7 +1869,7 @@ dependencies = [
 
 [[package]]
 name = "timeplayer-core"
-version = "2.0.0"
+version = "2.0.1"
 dependencies = [
  "base64 0.22.1",
  "chrono",

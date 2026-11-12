@@ -425,6 +425,7 @@ impl App {
             && self.playing.resume_handled_for.as_deref() != Some(&id)
         {
             self.playing.resume_handled_for = Some(id.clone());
+            self.sync_history_to_youtube(&id);
             let (resume, record) = self.settings.with(|c| (c.library.resume_playback, c.library.record_history));
             if resume
                 && record

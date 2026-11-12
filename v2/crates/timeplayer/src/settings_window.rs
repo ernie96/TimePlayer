@@ -11,6 +11,8 @@ use wxdragon::prelude::*;
 use crate::window::wx_label;
 use crate::{App, dialogs, help, speech, with_app};
 
+/// The Import page's place among the pages.
+const IMPORT_PAGE: usize = 7;
 const SMALL_SEEKS: [f64; 5] = [2.0, 5.0, 10.0, 15.0, 30.0];
 const LARGE_SEEKS: [f64; 5] = [15.0, 30.0, 60.0, 120.0, 300.0];
 const VOLUME_STEPS: [f64; 4] = [1.0, 2.0, 5.0, 10.0];
@@ -264,7 +266,7 @@ impl App {
         if let Some(window) = &self.settings_window {
             dialogs::message(
                 &window.dialog,
-                &(t("Settings has eight pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, YouTube account, and Updates and help. ")
+                &(t("Settings has nine pages: Playback, Sound, Speech and braille, Library, SponsorBlock and dislikes, Links and browser, YouTube account, Import, and Updates and help. ")
                     + &t("Control+Tab and Control+Shift+Tab move between pages; on the page names, Left and Right do too.\n")
                     + &t("Tab and Shift+Tab move between settings. Space toggles a check box; Up and Down change a choice. ")
                     + &t("Alt plus the underlined letter jumps to a setting on the current page.\n")
@@ -446,6 +448,46 @@ impl App {
     }
 
     // ----- Updates and help -----
+
+    /// Settings at its Import page (the Import and export button, and the first-start offer).
+    pub(crate) fn open_import_settings(&mut self) {
+        self.open_settings();
+        if let Some(window) = &self.settings_window {
+            window.pages.set_selection(IMPORT_PAGE);
+            window.pages.set_focus();
+        }
+    }
+
+    fn settings_sign_in(&mut self) {
+        self.close_settings();
+        self.sign_in_only = true;
+        self.import_by_signing_in();
+    }
+
+    fn settings_import_by_signing_in(&mut self) {
+        self.close_settings();
+        self.import_by_signing_in();
+    }
+
+    fn settings_import_takeout(&mut self) {
+        self.close_settings();
+        self.import_takeout_from_file();
+    }
+
+    fn settings_takeout_steps(&mut self) {
+        self.close_settings();
+        self.show_youtube_data_steps();
+    }
+
+    fn settings_import_subscriptions(&mut self) {
+        self.close_settings();
+        self.import_subscriptions_from_file();
+    }
+
+    fn settings_export_subscriptions(&mut self) {
+        self.close_settings();
+        self.export_subscriptions_to_file();
+    }
 
     fn settings_check_updates(&mut self) {
         self.close_settings();
@@ -797,21 +839,51 @@ impl SettingsWindow {
             ACCOUNT_USES.iter().position(|u| *u == c.account.use_).unwrap_or(0),
             App::account_use_changed,
         );
-        p.button("_Import a sign-in file...", App::import_sign_in_file);
+        p.button("Sign _in to YouTube...", App::settings_sign_in);
+        p.button("Import a sign-in _file...", App::import_sign_in_file);
         p.button("Sign _out", App::sign_out);
         let browser_index = SIGN_IN_BROWSERS.iter().position(|(code, _)| *code == app.sign_in_browser).unwrap_or(0);
         p.choice("_Browser:", "Browser", SIGN_IN_BROWSERS.iter().map(|(_, name)| (*name).to_owned()).collect(), browser_index, |app, i| app.sign_in_browser = SIGN_IN_BROWSERS[i].0.to_owned());
         p.button("Read the sign-in from the bro_wser", App::sign_in_from_browser);
-        let about = t("TimePlayer works without an account. Signing in is only for what YouTube keeps behind its sign-in.")
+        p.text(&t("Keeping in step with your account works when it's used for your home, subscriptions, history and likes (above). Likes and subscriptions are always sent to YouTube then; these choose what else is."));
+        p.check("Put videos I play in my YouTube watch history", c.account.send_history, |app, on| app.settings.update(|c| c.account.send_history = on));
+        p.check("Add and remove Watch Later videos on YouTube too", c.account.send_watch_later, |app, on| app.settings.update(|c| c.account.send_watch_later = on));
+        p.check(
+            "At startup, bring in what's new from my YouTube account: subscriptions, history, likes, Watch Later and playlists",
+            c.account.sync_at_startup,
+            |app, on| app.settings.update(|c| c.account.sync_at_startup = on),
+        );
+        let about = t("TimePlayer works without an account. Signing in is only for what YouTube keeps behind its sign-in, and for keeping TimePlayer and your account in step.")
             + "\n\n"
-            + &t("Easiest: in the Play in TimePlayer browser extension's options, choose \"Export my YouTube sign-in\" while signed in to YouTube. It saves a file to Downloads; choose \"Import a sign-in file\" here and pick it. TimePlayer deletes that file after reading it.")
+            + &t("There are three ways to sign in:")
+            + "\n"
+            + &t("1. Sign in to YouTube: Google's own sign-in page opens in a TimePlayer window. Once you're signed in, the window closes by itself. This is the easiest.")
+            + "\n"
+            + &t("2. Import a sign-in file: in the Play in TimePlayer browser extension's options, choose \"Export my YouTube sign-in\" while signed in to YouTube. It saves a file to Downloads; choose \"Import a sign-in file\" here and pick it. TimePlayer deletes that file after reading it.")
+            + "\n"
+            + &t("3. Read the sign-in from the browser: works with Firefox. Chrome-based browsers lock their cookies, so use one of the other ways there.")
             + "\n\n"
-            + &t("With Firefox, \"Read the sign-in from the browser\" works too. Chrome-based browsers now lock their cookies, so use the extension there.")
+            + &t("To bring in your subscriptions, history, likes and playlists, use the Import page.")
             + "\n\n"
             + &t("The sign-in is stored encrypted for your Windows user, only sent to youtube.com, and never included in logs or problem reports. Sign out erases it. YouTube sometimes flags accounts used outside the browser, so a spare account is safest.");
         p.document("About si_gning in:", "About signing in", &about, 200);
         page_names.push(t("YouTube account"));
         p.finish(&pages, "YouTube account");
+
+        // Import
+        let p = Page::new(&pages);
+        p.text(&t("Bring your YouTube subscriptions, watch history, likes, Watch Later and playlists into TimePlayer. What's already in TimePlayer stays, and nothing is added twice."));
+        p.button("Sign in to _YouTube and import...", App::settings_import_by_signing_in);
+        p.text(&t("Google's own sign-in page opens in a TimePlayer window. TimePlayer reads your lists, closes the page, and asks whether to stay signed in."));
+        p.button("Import from Google _Takeout...", App::settings_import_takeout);
+        p.button("_How to get a Google Takeout file...", App::settings_takeout_steps);
+        p.text(&t("Google Takeout makes a zip of your YouTube data, sent to you by email. TimePlayer reads the zip as it is."));
+        p.button("Import _subscriptions from a file...", App::settings_import_subscriptions);
+        p.text(&t("Reads NewPipe, LibreTube and Tubular exports, FreeTube profiles, OPML files, and Takeout's subscriptions.csv."));
+        p.button("E_xport subscriptions...", App::settings_export_subscriptions);
+        p.text(&t("Saves your subscriptions for NewPipe, LibreTube, Tubular, FreeTube or an RSS reader."));
+        page_names.push(t("Import"));
+        p.finish(&pages, "Import");
 
         // Updates and help
         let p = Page::new(&pages);
@@ -896,6 +968,12 @@ impl SettingsWindow {
             devices,
             loading_custom: std::cell::Cell::new(false),
         }
+    }
+
+    /// The page showing, for the self-check.
+    #[allow(dead_code)]
+    pub fn page(&self) -> Option<usize> {
+        usize::try_from(self.pages.selection()).ok()
     }
 
     /// Control+M while Settings is open, so the Music mode box agrees.

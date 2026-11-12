@@ -33,6 +33,12 @@ with NVDA has gone through it. Not started: packaging, CI, the Linux and macOS b
 Ernesto ran the release build with NVDA on 2026-11-10 and reported that everything he tried works. Which
 features he tried wasn't listed one by one, so the lines below stay `[~]` until each is confirmed.
 
+Since 2.0.0 (unreleased): an Import page in Settings, a first-start import offer, YouTube sync options (watch
+history and Watch Later sent to the account, new items brought in at startup; written against YouTube's own
+calls but not yet tried on a real account), the main list named after its section (quiet-list vendored in
+`vendor/quiet-list` with `set_name` added), and Tab from the section tabs going straight to the section's first
+control instead of the tab's empty page. The self-check has 28 steps, all passing, including the Tab order.
+
 Fixed by the self-check: the startup questions blocked the first steps (the check now presets them), and
 TimePlayer aborted at exit, because Windows runs the main thread's destructors after the other threads have
 ended and dropping the HTTP client then waited on a thread that was gone (the app is now let go at exit

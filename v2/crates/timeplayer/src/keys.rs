@@ -214,6 +214,25 @@ impl App {
 
     fn library_key(&mut self, code: i32, ctrl: bool, shift: bool, alt: bool, focus: Focus) -> bool {
         let none = !ctrl && !shift && !alt;
+        // The section tabs' pages are empty; wxWidgets would stop on one ("panel"), so Tab and Shift+Tab
+        // go between the tabs and the section's first control here.
+        if code == WXK_TAB && !ctrl && !alt {
+            if focus == Focus::SectionTabs && !shift {
+                match self.ui.first_section_control() {
+                    Some(control) => control.set_focus(),
+                    None => self.ui.focus_list(),
+                }
+                return true;
+            }
+            let first_is_focused = match self.ui.first_section_control() {
+                Some(control) => control.has_focus(),
+                None => matches!(focus, Focus::List | Focus::Empty),
+            };
+            if shift && first_is_focused {
+                self.ui.focus_section_tabs();
+                return true;
+            }
+        }
         let ctrl_only = ctrl && !shift && !alt;
         let detail = self.browse.current().is_detail();
         if code == WXK_ESCAPE && none {

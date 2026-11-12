@@ -169,6 +169,7 @@ impl App {
             self.ui.focus_search();
         }
         self.count_this_run();
+        self.offer_import();
         if let Some(link) = self.waiting_link.take() {
             if self.playing.engine_ready {
                 self.open_link_from_other_app(&link);
@@ -179,7 +180,36 @@ impl App {
         self.read_replies();
     }
 
+    /// The very first start (an empty library): offers to bring YouTube data in, once.
+    fn offer_import(&mut self) {
+        if self.settings.with(|c| c.import_offered) {
+            return;
+        }
+        self.settings.update(|c| c.import_offered = true);
+        let library = &self.library;
+        let empty = library.subscriptions().is_empty()
+            && library.history().is_empty()
+            && library.watch_later().is_empty()
+            && library.playlists().iter().all(|p| p.videos.is_empty());
+        if !empty {
+            return;
+        }
+        let wanted = dialogs::ask(
+            &self.ui.frame,
+            &t("Welcome to TimePlayer"),
+            &(t("Would you like to bring in your YouTube subscriptions, watch history, likes and playlists?")
+                + "\n\n"
+                + &t("You can sign in to YouTube, or import a Google Takeout file or an export from another app. Choose No to start with an empty library; Settings (F2), Import, has these any time.")),
+        );
+        if wanted {
+            self.open_import_settings();
+        } else {
+            self.ui.focus_search();
+        }
+    }
+
     fn startup_checks(&mut self) {
+        self.sync_from_youtube();
         self.check_feed_in_background();
         if self.settings.with(|c| c.update.check_at_startup) {
             self.check_for_app_update(false);
