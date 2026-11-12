@@ -102,6 +102,14 @@ fn bundle_libmpv(bundle: &Path) -> Result<(), Box<dyn Error>> {
     let mut permissions = std::fs::metadata(&library)?.permissions();
     std::os::unix::fs::PermissionsExt::set_mode(&mut permissions, 0o755);
     std::fs::set_permissions(&library, permissions)?;
+    // Its own name still says Homebrew; name it after where it now sits.
+    let renamed = std::process::Command::new("install_name_tool")
+        .args(["-id", "@loader_path/libmpv.2.dylib"])
+        .arg(&library)
+        .status()?;
+    if !renamed.success() {
+        return Err("install_name_tool couldn't rename libmpv".into());
+    }
     let status = std::process::Command::new("dylibbundler")
         .args(["-of", "-b", "-cd", "-x"])
         .arg(&library)
