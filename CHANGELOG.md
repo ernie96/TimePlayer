@@ -3,7 +3,7 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
-## Unreleased
+## 2.0.3
 
 - Mac: the video now shows inside TimePlayer's window. TimePlayer.app carries its own mpv, so nothing needs installing. It now needs macOS 15 or later. Mac video has so far been checked only on GitHub's build machine, not on a Mac someone uses.
 - Linux: the video now shows inside TimePlayer's window, and TimePlayer uses X11 (XWayland on Wayland desktops) so it can. The AppImage carries its own mpv for systems without one; the system's mpv is used when there is one.
