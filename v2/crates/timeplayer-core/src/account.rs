@@ -265,7 +265,26 @@ mod platform {
     }
 }
 
-#[cfg(not(windows))]
+/// Tests keep the sign-in in a file at the test's own path: the system keychain has one entry shared by every
+/// test (and the developer's real sign-in), and on a build server it can wait for a permission no one gives.
+#[cfg(all(not(windows), test))]
+mod platform {
+    use std::path::Path;
+
+    pub fn load(store: &Path) -> Option<String> {
+        std::fs::read_to_string(store).ok()
+    }
+
+    pub fn save(store: &Path, text: &str) -> Result<(), String> {
+        crate::paths::write_atomic(store, text.as_bytes()).map_err(|e| e.to_string())
+    }
+
+    pub fn forget(store: &Path) {
+        let _ = std::fs::remove_file(store);
+    }
+}
+
+#[cfg(all(not(windows), not(test)))]
 mod platform {
     use std::path::Path;
 
