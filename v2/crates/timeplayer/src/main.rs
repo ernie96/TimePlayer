@@ -109,6 +109,8 @@ pub struct App {
     pub sign_in_only: bool,
     /// Where focus was when a stay-open window (Report a problem) opened, to go back there when it closes.
     pub focus_before_window: Option<keys::Focus>,
+    /// A message from TimePlayer's developer (its number and text), waiting until nothing would be interrupted.
+    pub pending_message: Option<(i64, String)>,
     /// The canvas mpv's frames are drawn into on macOS.
     #[cfg(target_os = "macos")]
     pub mac_video: macvideo::MacVideo,
@@ -248,6 +250,7 @@ impl App {
             marked_watched: Default::default(),
             sign_in_only: false,
             focus_before_window: None,
+            pending_message: None,
             #[cfg(target_os = "macos")]
             mac_video,
         }

@@ -15,7 +15,7 @@ timeplayer-core = { path = "../timeplayer-core" }
 serde_json.workspace = true
 log.workspace = true
 # wxDragon from crates.io, the version Tin Pan 2 builds with.
-wxdragon = { version = "0.9.24", default-features = false, features = ["webview"] }
+wxdragon = { version = "0.9.25", default-features = false, features = ["webview"] }
 # The screen-reader pieces: a list that doesn't repeat itself when it refreshes, and announcements through
 # a live region while TimePlayer is in front.
 quiet-list = "0.1.0"

@@ -142,6 +142,8 @@ section!(UpdateConfig {
     check_at_startup: bool = true,
     repository: String = OFFICIAL_REPOSITORY.into(),
     skipped_version: Option<String> = None,
+    /// The number of the last message from TimePlayer's developer that was shown (message.txt on the website).
+    seen_message: i64 = 0,
 });
 
 section!(SponsorBlockConfig {

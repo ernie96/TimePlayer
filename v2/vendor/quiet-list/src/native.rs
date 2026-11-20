@@ -271,6 +271,16 @@ impl<K: Clone + Eq + Hash + 'static> QuietList<K> {
 		self.replace(|current| current.replace_labelled(rows), select);
 	}
 
+	/// Replaces the rows with the open rows of a tree. A native list has no levels, so each row is
+	/// indented by its depth, and the app says when rows open or close. Added by TimePlayer.
+	pub fn update_outlined(&self, rows: Vec<(K, String, crate::Outline<K>)>, select: Select<K>) {
+		let labelled = rows
+			.into_iter()
+			.map(|(key, label, outline)| (key, format!("{}{label}", "    ".repeat(outline.level))))
+			.collect();
+		self.update_labelled(labelled, select);
+	}
+
 	fn replace(&self, replace: impl FnOnce(&mut LazyRows<K>), select: Select<K>) {
 		let fresh = select == Select::Start;
 		let previous = self

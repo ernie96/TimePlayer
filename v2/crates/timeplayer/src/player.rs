@@ -15,6 +15,8 @@ use timeplayer_core::playback::{AudioDescriptionState, Event};
 use timeplayer_core::{audio, braille, text};
 use wxdragon::prelude::*;
 
+use quiet_list::{Outline, Select};
+
 use crate::sections::Section;
 use crate::speech;
 use crate::window::PlayerPanel;
@@ -71,10 +73,13 @@ pub struct Comments {
     requested: bool,
     loading: bool,
     speak_next: bool,
-    /// What each tree item stands for, by the number stored on it.
+    /// What each row stands for, by its key in the list.
     nodes: HashMap<u64, Node>,
-    /// The tree item of each node (tree items stay on the window's thread).
-    items: HashMap<u64, TreeItemId>,
+    /// Each comment's replies, then its "More replies", in order.
+    children: HashMap<u64, Vec<u64>>,
+    parents: HashMap<u64, u64>,
+    /// Comments whose replies show.
+    open: HashSet<u64>,
     next_id: u64,
     top_level: Vec<u64>,
     top_level_ids: HashSet<String>,
@@ -84,7 +89,7 @@ pub struct Comments {
 enum Node {
     Comment { comment: Comment, level: usize, replies_loaded: bool },
     /// "More replies": loads the rest of a reply list.
-    MoreReplies { parent: Comment, token: String },
+    MoreReplies { token: String },
 }
 
 #[derive(Default)]
@@ -1111,7 +1116,7 @@ impl App {
     fn focus_panel(&self, panel: PlayerPanel) {
         match panel {
             PlayerPanel::UpNext if !self.ui.up_next.is_empty() => self.ui.up_next.set_focus(),
-            PlayerPanel::Comments if self.ui.comments.get_count() > 0 => self.ui.comments.set_focus(),
+            PlayerPanel::Comments if !self.ui.comments.is_empty() => self.ui.comments.set_focus(),
             PlayerPanel::Description => self.ui.description.set_focus(),
             PlayerPanel::Queue if !self.ui.queue.is_empty() => self.ui.queue.set_focus(),
             PlayerPanel::Chapters if !self.ui.chapters.is_empty() => self.ui.chapters.set_focus(),
@@ -1129,8 +1134,7 @@ impl App {
 
     fn reset_comments(&mut self) {
         self.playing.comments = Comments::default();
-        self.ui.comments.delete_all_items();
-        self.ui.comments.add_root("", None, None);
+        self.ui.comments.update_outlined(Vec::new(), Select::Start);
         self.ui.comments_status.set_label(&t("Open this tab to load comments."));
     }
 
@@ -1179,26 +1183,20 @@ impl App {
                 return;
             }
         };
-        let Some(root) = self.ui.comments.get_root_item() else { return };
         let mut added = 0;
-        let mut first_item = None;
         for mut comment in page.comments.clone() {
             if !self.playing.comments.top_level_ids.insert(comment.id.clone()) {
                 continue;
             }
             comment.is_reply = false;
-            let id = self.add_comment_node(&root, Node::Comment { comment, level: 1, replies_loaded: false });
-            self.playing.comments.top_level.push(id.0);
-            first_item.get_or_insert(id.1);
+            self.add_comment_node(None, Node::Comment { comment, level: 1, replies_loaded: false });
             added += 1;
         }
+        self.show_comments(if first_page { Select::Start } else { Select::Keep });
         self.playing.comments.last_page = Some(page);
         let count = self.playing.comments.top_level.len();
         if first_page {
             self.ui.comments_status.set_label(&if count == 0 { t("No comments yet.") } else { String::new() });
-            if let Some(item) = first_item {
-                self.ui.comments.select_item(&item);
-            }
             if announce {
                 speech::say_quietly(&if count == 0 { t("No comments yet.") } else { tf("{0} loaded.", &[&plural(count as i64, "{0} comment", "{0} comments")]) });
             }
@@ -1211,35 +1209,74 @@ impl App {
         }
     }
 
-    /// Adds a node under `parent`; a comment with replies can be opened.
-    fn add_comment_node(&mut self, parent: &TreeItemId, node: Node) -> (u64, TreeItemId) {
-        let label = match &node {
-            Node::Comment { comment, .. } => comment.accessible_summary(),
-            Node::MoreReplies { .. } => t("More replies, press Enter to load"),
-        };
-        let id = self.playing.comments.next_id;
-        self.playing.comments.next_id += 1;
-        let item = self.ui.comments.append_item_with_data(parent, &label, id, None, None).expect("a tree item");
-        if let Node::Comment { comment, .. } = &node
-            && comment.has_replies()
-            && !comment.is_reply
-        {
-            self.ui.comments.set_item_has_children(&item, true);
+    /// Adds a node at the end of `parent`'s replies, or of the comments when it's `None`.
+    fn add_comment_node(&mut self, parent: Option<u64>, node: Node) -> u64 {
+        let comments = &mut self.playing.comments;
+        let id = comments.next_id;
+        comments.next_id += 1;
+        comments.nodes.insert(id, node);
+        match parent {
+            Some(parent) => {
+                comments.children.entry(parent).or_default().push(id);
+                comments.parents.insert(id, parent);
+            }
+            None => comments.top_level.push(id),
         }
-        self.playing.comments.nodes.insert(id, node);
-        self.playing.comments.items.insert(id, item.clone());
-        (id, item)
+        id
     }
 
-    fn node_id(&self, item: &TreeItemId) -> Option<u64> {
-        self.ui.comments.get_custom_data_direct(item).and_then(|d| d.downcast_ref::<u64>().copied())
+    /// Whether a node is a comment whose replies can be opened.
+    fn can_open(&self, id: u64) -> bool {
+        matches!(self.playing.comments.nodes.get(&id), Some(Node::Comment { comment, .. }) if comment.has_replies() && !comment.is_reply)
     }
 
-    /// Right arrow, or a click on the expander: replies load the first time.
-    pub(crate) fn comment_expanding(&mut self, item: &TreeItemId) {
-        let Some(id) = self.node_id(item) else { return };
+    /// The open rows of the comment tree, in order, each with its place in the tree.
+    fn comment_rows(&self) -> Vec<(u64, String, Outline<u64>)> {
+        let mut rows = Vec::new();
+        self.push_comment_rows(None, &self.playing.comments.top_level, 0, &mut rows);
+        rows
+    }
+
+    fn push_comment_rows(&self, parent: Option<u64>, ids: &[u64], level: usize, rows: &mut Vec<(u64, String, Outline<u64>)>) {
+        let comments = &self.playing.comments;
+        for (position, &id) in ids.iter().enumerate() {
+            let Some(node) = comments.nodes.get(&id) else { continue };
+            let label = match node {
+                Node::Comment { comment, .. } => comment.accessible_summary(),
+                Node::MoreReplies { .. } => t("More replies, press Enter to load"),
+            };
+            let open = comments.open.contains(&id);
+            let expanded = self.can_open(id).then_some(open);
+            rows.push((id, label, Outline { parent, level, expanded, position, siblings: ids.len() }));
+            if open && let Some(children) = comments.children.get(&id) {
+                self.push_comment_rows(Some(id), children, level + 1, rows);
+            }
+        }
+    }
+
+    /// Shows the comment tree as it is now.
+    fn show_comments(&self, select: Select<u64>) {
+        self.ui.comments.update_outlined(self.comment_rows(), select);
+    }
+
+    /// Opens a comment's replies, loading them the first time.
+    fn open_replies(&mut self, id: u64) {
+        if !self.can_open(id) || self.playing.comments.open.contains(&id) {
+            return;
+        }
         if let Some(Node::Comment { replies_loaded: false, .. }) = self.playing.comments.nodes.get(&id) {
             self.load_replies(id, None, None);
+            return;
+        }
+        self.playing.comments.open.insert(id);
+        self.show_comments(Select::Keep);
+        say_tree_change(&t("Replies open."));
+    }
+
+    fn close_replies(&mut self, id: u64) {
+        if self.playing.comments.open.remove(&id) {
+            self.show_comments(Select::Key(id));
+            say_tree_change(&t("Replies closed."));
         }
     }
 
@@ -1265,13 +1302,17 @@ impl App {
                 if app.playing.watch_generation != generation {
                     return;
                 }
-                if let Some(item) = replace.and_then(|id| {
-                    app.playing.comments.nodes.remove(&id);
-                    app.playing.comments.items.remove(&id)
-                }) {
-                    app.ui.comments.delete(&item);
+                if let Some(id) = replace {
+                    let comments = &mut app.playing.comments;
+                    comments.nodes.remove(&id);
+                    comments.parents.remove(&id);
+                    if let Some(children) = comments.children.get_mut(&parent_id) {
+                        children.retain(|child| *child != id);
+                    }
                 }
-                let Some(parent_item) = app.playing.comments.items.get(&parent_id).cloned() else { return };
+                if !app.playing.comments.nodes.contains_key(&parent_id) {
+                    return;
+                }
                 let page = match result {
                     Ok(page) if !page.comments.is_empty() => page,
                     _ => {
@@ -1279,56 +1320,93 @@ impl App {
                             if let Some(Node::Comment { replies_loaded, .. }) = app.playing.comments.nodes.get_mut(&parent_id) {
                                 *replies_loaded = false;
                             }
-                            app.ui.comments.collapse(&parent_item);
                             speech::say_quietly(&t("Replies could not be loaded."));
                         }
                         return;
                     }
                 };
                 let count = page.comments.len();
+                let mut first = None;
                 for mut reply in page.comments {
                     reply.is_reply = true;
-                    app.add_comment_node(&parent_item, Node::Comment { comment: reply, level: level + 1, replies_loaded: true });
+                    let id = app.add_comment_node(Some(parent_id), Node::Comment { comment: reply, level: level + 1, replies_loaded: true });
+                    first.get_or_insert(id);
                 }
                 if let Some(token) = page.next_token.filter(|t| !t.is_empty()) {
-                    app.add_comment_node(&parent_item, Node::MoreReplies { parent: comment.clone(), token });
+                    app.add_comment_node(Some(parent_id), Node::MoreReplies { token });
                 }
+                app.playing.comments.open.insert(parent_id);
                 if page_token.is_none() {
-                    app.ui.comments.expand(&parent_item);
+                    app.show_comments(Select::Keep);
                     speech::say_quietly(&plural(count as i64, "{0} reply", "{0} replies"));
+                } else {
+                    // "More replies" was selected and is gone: the first of the replies it loaded.
+                    app.show_comments(first.map_or(Select::Keep, Select::Key));
                 }
             }
         });
     }
 
+    /// For the self-check: a 600-character comment whose two replies are already loaded, and a short
+    /// comment, with the first selected.
+    pub(crate) fn show_test_comments(&mut self) {
+        self.reset_comments();
+        let comment = |id: &str, text: String, replies: i64| Comment {
+            id: id.into(),
+            author: "@tester".into(),
+            text,
+            reply_count: replies,
+            replies_token: (replies > 0).then(|| "token".into()),
+            ..Comment::default()
+        };
+        let long = self.add_comment_node(None, Node::Comment { comment: comment("long", "x".repeat(600), 2), level: 1, replies_loaded: true });
+        for reply in ["reply 1", "reply 2"] {
+            let mut reply = comment(reply, reply.into(), 0);
+            reply.is_reply = true;
+            self.add_comment_node(Some(long), Node::Comment { comment: reply, level: 2, replies_loaded: true });
+        }
+        self.add_comment_node(None, Node::Comment { comment: comment("short", "short".into(), 0), level: 1, replies_loaded: false });
+        self.show_comments(Select::Start);
+    }
+
     /// Enter on a comment: open or close its replies; on More replies, load them.
     pub(crate) fn toggle_replies(&mut self) {
-        let Some(item) = self.ui.comments.get_selection() else { return };
-        let Some(id) = self.node_id(&item) else { return };
+        let Some(id) = self.ui.comments.selected() else { return };
         match self.playing.comments.nodes.get(&id).cloned() {
-            Some(Node::MoreReplies { parent, token }) => {
-                let Some(parent_item) = self.ui.comments.get_item_parent(&item) else { return };
-                let Some(parent_id) = self.node_id(&parent_item) else { return };
-                let _ = parent;
+            Some(Node::MoreReplies { token, .. }) => {
+                let Some(parent_id) = self.playing.comments.parents.get(&id).copied() else { return };
                 self.load_replies(parent_id, Some(token), Some(id));
             }
-            Some(Node::Comment { comment, .. }) => {
-                if !comment.has_replies() || comment.is_reply {
-                    speech::say_quietly(&t("No replies."));
-                } else if self.ui.comments.is_expanded(&item) {
-                    self.ui.comments.collapse(&item);
-                } else {
-                    self.ui.comments.expand(&item);
-                }
-            }
+            Some(Node::Comment { .. }) if !self.can_open(id) => speech::say_quietly(&t("No replies.")),
+            Some(Node::Comment { .. }) if self.playing.comments.open.contains(&id) => self.close_replies(id),
+            Some(Node::Comment { .. }) => self.open_replies(id),
             None => {}
+        }
+    }
+
+    /// Right and Left in the comments, as in a tree: Right opens a comment's replies, then moves
+    /// into them; Left closes them, or goes up to the comment a reply belongs to.
+    pub(crate) fn comment_tree_key(&mut self, right: bool) {
+        let Some(id) = self.ui.comments.selected() else { return };
+        let open = self.playing.comments.open.contains(&id);
+        if right {
+            if !open {
+                self.open_replies(id);
+            } else if let Some(first) = self.playing.comments.children.get(&id).and_then(|c| c.first()).copied() {
+                self.ui.comments.select(Some(&first));
+                self.comment_selection_changed();
+            }
+        } else if open {
+            self.close_replies(id);
+        } else if let Some(parent) = self.playing.comments.parents.get(&id).copied() {
+            self.ui.comments.select(Some(&parent));
+            self.comment_selection_changed();
         }
     }
 
     /// Near the end of the comments, more load.
     pub(crate) fn comment_selection_changed(&mut self) {
-        let Some(item) = self.ui.comments.get_selection() else { return };
-        let Some(id) = self.node_id(&item) else { return };
+        let Some(id) = self.ui.comments.selected() else { return };
         let Some(index) = self.playing.comments.top_level.iter().position(|c| *c == id) else { return };
         let count = self.playing.comments.top_level.len();
         if index + 5 >= count && self.can_load_more_comments() {
@@ -1341,8 +1419,7 @@ impl App {
 
     /// Control+C on a comment.
     pub(crate) fn copy_comment(&mut self) {
-        let Some(item) = self.ui.comments.get_selection() else { return };
-        let Some(id) = self.node_id(&item) else { return };
+        let Some(id) = self.ui.comments.selected() else { return };
         if let Some(Node::Comment { comment, .. }) = self.playing.comments.nodes.get(&id)
             && self.copy_to_clipboard(&format!("{}: {}", comment.author, comment.text))
         {
@@ -2031,5 +2108,13 @@ fn capitalize(text: &str) -> String {
     match chars.next() {
         Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
         None => String::new(),
+    }
+}
+
+/// A comment's replies opened or closed. On Windows the list tells the screen reader itself
+/// (expanded, collapsed); the plain lists on macOS and Linux can't, so it's said.
+fn say_tree_change(text: &str) {
+    if cfg!(not(windows)) {
+        speech::say_quietly(text);
     }
 }

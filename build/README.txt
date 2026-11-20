@@ -240,6 +240,11 @@ offered again by itself. Choose Yes and it downloads the update, checks
 that it really comes from TimePlayer's publisher, installs it and opens again by itself.
 Settings, Updates and help, also has "Check for TimePlayer updates" to look right away.
 
+When it starts, TimePlayer also looks for a message from its developer on TimePlayer's
+website. If there's a new one, it's shown once in a window titled "Message about
+TimePlayer", with the same wait as the update offer. Close or Escape closes it, and it isn't
+shown again.
+
 
 Problems and ideas
 ------------------

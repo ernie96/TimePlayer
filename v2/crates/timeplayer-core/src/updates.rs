@@ -108,6 +108,32 @@ pub fn effective_repository(configured: &str) -> String {
     if !well_formed || parts[0].eq_ignore_ascii_case("OWNER") { OFFICIAL_REPOSITORY.into() } else { value.into() }
 }
 
+/// A message from TimePlayer's developer on the website: a number on the first line, the message after it.
+/// TimePlayer shows it once, when the number is higher than the last one it showed.
+pub const MESSAGE_URL: &str = "https://www.kurnal.tech/timeplayer/message.txt";
+
+/// The number and the message from message.txt. None when there's no number, the number is 0 or there's no
+/// message (a number with no text takes a message down).
+pub fn read_message_file(text: &str) -> Option<(i64, String)> {
+    let text = text.trim_start_matches('\u{feff}').trim();
+    let (first, rest) = text.split_once('\n')?;
+    let number: i64 = first.trim().parse().ok()?;
+    let message = rest.trim().replace("\r\n", "\n");
+    (number > 0 && !message.is_empty()).then_some((number, message))
+}
+
+/// Fetches message.txt. Ok(None) when there's none (404) or nothing to show.
+pub fn fetch_message(http: &Http) -> Result<Option<(i64, String)>> {
+    let response = http.send(Request::get(MESSAGE_URL).timeout(Duration::from_secs(30)).header("User-Agent", &format!("TimePlayer/{}", paths::version())))?;
+    if response.status == 404 {
+        return Ok(None);
+    }
+    if !response.ok() {
+        return Err(AppError::network(format!("{MESSAGE_URL} answered {}.", response.status)));
+    }
+    Ok(read_message_file(&response.text()))
+}
+
 /// The latest release, if it's newer than this one; None when up to date.
 pub fn check(http: &Http, settings: &Settings) -> Result<Option<UpdateInfo>> {
     let mut repository = effective_repository(&settings.with(|c| c.update.repository.clone()));
@@ -291,6 +317,29 @@ pub fn start_install(file: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_message_file() {
+        assert_eq!(read_message_file("\u{feff}3\r\nServers are down tonight.\r\nBack tomorrow.\r\n"), Some((3, "Servers are down tonight.\nBack tomorrow.".into())));
+        assert_eq!(read_message_file("12\nHello"), Some((12, "Hello".into())));
+        assert_eq!(read_message_file("3\n"), None);
+        assert_eq!(read_message_file("3\r\n  \r\n"), None);
+        assert_eq!(read_message_file("0\nHello"), None);
+        assert_eq!(read_message_file("-2\nHello"), None);
+        assert_eq!(read_message_file("Hello\nthere"), None);
+        assert_eq!(read_message_file("<html>not found</html>\nx"), None);
+        assert_eq!(read_message_file(""), None);
+    }
+
+    #[test]
+    fn a_missing_message_file_is_no_message() {
+        use crate::http::Response;
+        let answer = |status: u16, body: &'static [u8]| Http::with_transport(move |_: Request| Ok(Response { status, body: body.to_vec(), ..Default::default() }));
+        assert_eq!(fetch_message(&answer(404, b"Not found")).unwrap(), None);
+        assert_eq!(fetch_message(&answer(200, b"4\nHi")).unwrap(), Some((4, "Hi".into())));
+        assert_eq!(fetch_message(&answer(200, b"4\n")).unwrap(), None);
+        assert!(fetch_message(&answer(500, b"")).is_err());
+    }
 
     #[test]
     fn versions_compare_like_1x() {

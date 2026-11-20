@@ -1252,9 +1252,9 @@ dependencies = [
 
 [[package]]
 name = "prism-sys"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb7205352adf3f71f6873ea93d0e5d315cf8118c534a4db6343d32a3847d7cfe"
+checksum = "eb2be0a97d8e6d8992fadbccd02a010359b9dabb8db9507b720944ac8d6e88ee"
 dependencies = [
  "cmake",
  "pkg-config",
@@ -1262,9 +1262,9 @@ dependencies = [
 
 [[package]]
 name = "prismer"
-version = "0.1.6"
+version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23252e8edaba03f8a24e833e7383f49b653e5389f7b8546c0ada445097aec2e3"
+checksum = "e3c80e3e73a26f96361003b0be10847b2814070e7d43d38c3151115bd9fcbb92"
 dependencies = [
  "prism-sys",
 ]
@@ -1854,7 +1854,7 @@ dependencies = [
 
 [[package]]
 name = "timeplayer"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "block",
  "chrono",
@@ -1876,7 +1876,7 @@ dependencies = [
 
 [[package]]
 name = "timeplayer-core"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "base64 0.22.1",
  "chrono",
@@ -2434,9 +2434,9 @@ checksum = "3ad82d2a33cdc9674dc7465672f271e096168fcdbe0f799d9e6db8c5892679dc"
 
 [[package]]
 name = "wxdragon"
-version = "0.9.24"
+version = "0.9.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e10bc93e4c8366136a9d1468c7bde5363be8386af52f77f133d7805e09031163"
+checksum = "7c7ada439c6cf4130bad122cb47aff3831e79ea54b2988abebee7f3aa41ba47d"
 dependencies = [
  "bitflags",
  "log",
@@ -2447,9 +2447,9 @@ dependencies = [
 
 [[package]]
 name = "wxdragon-macros"
-version = "0.9.24"
+version = "0.9.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07d53c29add134e7f383ebc1a3ca4bbff5f3840fd2f2d5843168691c5d3648e9"
+checksum = "ebd5ad27a26559b9d0679c82a814f6ead7b59abb3310850dd8409f49d3d8911d"
 dependencies = [
  "proc-macro2",
  "quick-xml 0.42.0",
@@ -2459,9 +2459,9 @@ dependencies = [
 
 [[package]]
 name = "wxdragon-sys"
-version = "0.9.24"
+version = "0.9.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f46998e50d71680abec6360432fca9dd2953066a1f7b64b22b69261e3ce7bf9"
+checksum = "bbd2e7bc93a6a132da79ef2d8ea1d46cf25399f635d18fe2049a39711770c075"
 dependencies = [
  "bindgen",
  "cmake",
@@ -2475,7 +2475,7 @@ dependencies = [
 
 [[package]]
 name = "xtask"
-version = "2.0.3"
+version = "2.0.4"
 dependencies = [
  "shipfitter",
 ]

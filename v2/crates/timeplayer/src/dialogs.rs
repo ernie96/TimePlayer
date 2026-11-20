@@ -104,7 +104,7 @@ impl PopupMenu {
                 ui.actions.popup_menu(&mut self.menu, None);
             }
             MenuTarget::Comments => {
-                ui.comments.popup_menu(&mut self.menu, None);
+                ui.comments.popup_menu(&mut self.menu);
             }
             MenuTarget::Frame => {
                 ui.frame.popup_menu(&mut self.menu, None);
@@ -134,6 +134,28 @@ pub fn message(parent: &impl WxWidget, text: &str, title: &str) {
 
 pub fn warning(parent: &impl WxWidget, text: &str, title: &str) {
     MessageDialog::builder(parent, text, title).with_style(MessageDialogStyle::OK | MessageDialogStyle::IconWarning).build().show_modal();
+}
+
+/// Text to read in a box of its own, caret at the start; Close or Escape closes.
+pub fn show_document(parent: &impl WxWidget, title: &str, text: &str) {
+    let dialog = Dialog::builder(parent, title).with_style(DialogStyle::DefaultDialogStyle | DialogStyle::ResizeBorder).with_size(600, 450).build();
+    let sizer = BoxSizer::builder(Orientation::Vertical).build();
+    // The label just before the box names it for the screen reader.
+    let label = StaticText::builder(&dialog).with_label(title).build();
+    sizer.add(&label, 0, SizerFlag::Left | SizerFlag::Right | SizerFlag::Top, 8);
+    let body = TextCtrl::builder(&dialog)
+        .with_value(&if cfg!(windows) { text.replace('\n', "\r\n") } else { text.to_owned() })
+        .with_style(TextCtrlStyle::MultiLine | TextCtrlStyle::ReadOnly)
+        .build();
+    let close = Button::builder(&dialog).with_id(ID_CANCEL).with_label(&t("Close")).build();
+    sizer.add(&body, 1, SizerFlag::Expand | SizerFlag::All, 8);
+    sizer.add(&close, 0, SizerFlag::AlignRight | SizerFlag::Left | SizerFlag::Right | SizerFlag::Bottom, 8);
+    dialog.set_sizer(sizer, true);
+    dialog.set_escape_id(ID_CANCEL);
+    body.set_insertion_point(0);
+    body.set_focus();
+    dialog.show_modal();
+    dialog.destroy();
 }
 
 /// Yes or No, No first (1.x's Confirm defaulted to No).

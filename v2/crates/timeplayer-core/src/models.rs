@@ -385,13 +385,13 @@ impl Comment {
     pub fn accessible_summary(&self) -> String {
         let mut who = self.author.clone();
         if self.creator {
-            who.push_str(", channel owner");
+            who = t!("{0}, channel owner", who);
         }
         if self.is_reply {
-            who = format!("Reply from {who}");
+            who = t!("Reply from {0}", who);
         }
         if self.pinned {
-            who = format!("Pinned. {who}");
+            who = t!("Pinned. {0}", who);
         }
         let mut details: Vec<String> = Vec::new();
         if let Some(p) = self.published_text.as_ref().filter(|p| !p.trim().is_empty()) {
@@ -401,7 +401,7 @@ impl Comment {
             details.push(l.clone());
         }
         if self.reply_count > 0 {
-            details.push(if self.reply_count == 1 { "1 reply".into() } else { format!("{} replies", self.reply_count) });
+            details.push(plural(self.reply_count, "{0} reply", "{0} replies"));
         }
         if details.is_empty() { format!("{who}: {}", self.text) } else { format!("{who}: {} ({})", self.text, details.join(", ")) }
     }

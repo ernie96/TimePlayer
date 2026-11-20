@@ -64,8 +64,9 @@ pub fn prepare() {
     // One folder for every run, so mpv and yt-dlp are downloaded once; the check only reads the library.
     let folder = std::env::temp_dir().join("timeplayer-self-check");
     let _ = std::fs::create_dir_all(&folder);
-    // The startup questions are answered and the network checks are off, so no dialog stops the check.
-    let settings = r#"{"Accessibility":{"UseBrailleAddon":false,"EnableBrailleProgress":false},"Runs":{"Share":false,"Announce":false},"Update":{"CheckAtStartup":false},"Library":{"CheckFeedOnStartup":false},"ImportOffered":true}"#;
+    // The startup questions are answered, the network checks are off and no message from the website counts as new,
+    // so no dialog stops the check.
+    let settings = r#"{"Accessibility":{"UseBrailleAddon":false,"EnableBrailleProgress":false},"Runs":{"Share":false,"Announce":false},"Update":{"CheckAtStartup":false,"SeenMessage":9223372036854775807},"Library":{"CheckFeedOnStartup":false},"ImportOffered":true}"#;
     let _ = std::fs::write(folder.join("settings.json"), settings);
     timeplayer_core::paths::set_data_folder(folder);
 }
@@ -119,7 +120,17 @@ fn steps() -> Vec<Step> {
         ("closing Settings again returns to the main window", App::close_settings, |app| app.settings_window.is_none() && app.ui.frame.is_enabled()),
         ("Control+Shift+B opens Report a problem", |app| press(app, 'B', true, true, false), |app| app.report_window.is_some()),
         ("Escape closes Report a problem", App::close_report_window, |app| app.report_window.is_none()),
-        ("Escape in the search box moves to the list or sections", |app| press_code(app, WXK_ESCAPE, false, false, false), |app| matches!(app.focus(), Focus::List | Focus::SectionTabs)),
+        // Comments are a quiet-list tree: Windows' tree view cut each comment at 260 characters.
+        ("a 600-character comment is listed whole", App::show_test_comments, |app| {
+            app.ui.comments.selected_label().is_some_and(|label| label.contains(&"x".repeat(600))) && app.ui.comments.len() == 2
+        }),
+        ("Right opens its replies", |app| app.comment_tree_key(true), |app| app.ui.comments.len() == 4),
+        ("Right again moves into the replies", |app| app.comment_tree_key(true), |app| {
+            app.ui.comments.selected_label().is_some_and(|label| label.contains("reply 1"))
+        }),
+        ("Left goes back up to the comment", |app| app.comment_tree_key(false), |app| app.ui.comments.selected_index() == Some(0)),
+        ("Left on the comment closes its replies", |app| app.comment_tree_key(false), |app| app.ui.comments.len() == 2),
+        ("Escape in the search box moves to the list or sections",|app| press_code(app, WXK_ESCAPE, false, false, false), |app| matches!(app.focus(), Focus::List | Focus::SectionTabs)),
     ]
 }
 

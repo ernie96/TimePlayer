@@ -89,7 +89,7 @@ pub struct Ui {
     pub braille: TextCtrl,
     pub panels: Notebook,
     pub up_next: QuietList<usize>,
-    pub comments: TreeCtrl,
+    pub comments: QuietList<u64>,
     pub comments_status: StaticText,
     pub description: TextCtrl,
     pub queue: QuietList<usize>,
@@ -252,8 +252,8 @@ impl Ui {
         let (up_next_page, up_next) = list_page(&panels, "Up next");
         let comments_page = Panel::builder(&panels).build();
         let comments_status = StaticText::builder(&comments_page).with_label(&t("Open this tab to load comments.")).build();
-        let comments = TreeCtrl::builder(&comments_page).with_style(TreeCtrlStyle::HasButtons | TreeCtrlStyle::HideRoot | TreeCtrlStyle::LinesAtRoot).build();
-        comments.set_name(&t("Comments"));
+        // A quiet-list, not a tree control: Windows' tree view cuts each item's text at 260 characters.
+        let comments = QuietList::new(&comments_page, &t("Comments"));
         let s = BoxSizer::builder(Orientation::Vertical).build();
         s.add(&comments_status, 0, SizerFlag::All, 4);
         s.add(&comments, 1, SizerFlag::Expand, 0);
@@ -461,13 +461,21 @@ impl Ui {
         self.chapters.on_activate(|| with_app(App::play_selected_chapter));
         self.transcript.on_activate(|| with_app(App::play_from_transcript_line));
         self.lyrics.on_activate(|| with_app(App::play_from_lyric_line));
-        self.comments.on_item_expanding(|e| {
-            if let Some(item) = e.get_item() {
-                with_app(|app| app.comment_expanding(&item));
+        self.comments.on_selection_changed(|| with_app(App::comment_selection_changed));
+        self.comments.on_activate(|| with_app(App::toggle_replies));
+        self.comments.on_key_down(|event| {
+            let WindowEventData::Keyboard(key) = event else { return false };
+            if key.control_down() || key.alt_down() || key.shift_down() {
+                return false;
             }
+            let right = match key.get_key_code() {
+                Some(WXK_RIGHT | WXK_NUMPAD_RIGHT) => true,
+                Some(WXK_LEFT | WXK_NUMPAD_LEFT) => false,
+                _ => return false,
+            };
+            with_app(|app| app.comment_tree_key(right));
+            true
         });
-        self.comments.on_selection_changed(|_| with_app(App::comment_selection_changed));
-        self.comments.on_item_activated(|_| with_app(App::toggle_replies));
     }
 
     pub fn set_section_tabs(&self, tabs: &[Section]) {

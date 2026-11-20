@@ -1829,6 +1829,11 @@
   "uk": "Текст пісні: {0}, {1}.",
   "es": "Letra: {0}, de {1}."
  },
+ "Message about TimePlayer": {
+  "ro": "Mesaj despre TimePlayer",
+  "uk": "Повідомлення про TimePlayer",
+  "es": "Mensaje sobre TimePlayer"
+ },
  "More replies - press Enter": {
   "ro": "Mai multe răspunsuri - apăsați Enter",
   "uk": "Більше відповідей — натисніть Enter",
@@ -2179,6 +2184,11 @@
   "uk": "На паузі",
   "es": "En pausa"
  },
+ "Pinned. {0}": {
+  "ro": "Fixat. {0}",
+  "uk": "Закріплено. {0}",
+  "es": "Fijado. {0}"
+ },
  "Play": {
   "ro": "Redă",
   "uk": "Відтворити",
@@ -2348,6 +2358,11 @@
   "ro": "Calitate video preferată",
   "uk": "Бажана якість відео",
   "es": "Calidad de video preferida"
+ },
+ "Press 'Run Diagnostics' to test backend instances and playback components.": {
+  "ro": "Apăsați „Rulează diagnosticarea” pentru a testa instanțele serverelor și componentele de redare.",
+  "uk": "Натисніть «Запустити діагностику», щоб перевірити сервери й компоненти відтворення.",
+  "es": "Pulsa «Ejecutar el diagnóstico» para probar las instancias de servidor y los componentes de reproducción."
  },
  "Press F1 for help.": {
   "ro": "Apăsați F1 pentru ajutor.",
@@ -2559,10 +2574,25 @@
   "uk": "Перейменовано на «{0}».",
   "es": "Nombre cambiado a {0}."
  },
+ "Replies closed.": {
+  "ro": "Răspunsuri închise.",
+  "uk": "Відповіді закрито.",
+  "es": "Respuestas cerradas."
+ },
  "Replies could not be loaded.": {
   "ro": "Răspunsurile nu au putut fi încărcate.",
   "uk": "Не вдалося завантажити відповіді.",
   "es": "No se pudieron cargar las respuestas."
+ },
+ "Replies open.": {
+  "ro": "Răspunsuri deschise.",
+  "uk": "Відповіді відкрито.",
+  "es": "Respuestas abiertas."
+ },
+ "Reply from {0}": {
+  "ro": "Răspuns de la {0}",
+  "uk": "Відповідь від {0}",
+  "es": "Respuesta de {0}"
  },
  "Report a _problem... (Control+Shift+B)": {
   "ro": "Raportați o _problemă... (Control+Shift+B)",
@@ -4783,6 +4813,11 @@
   "ro": "acum {0} an|acum {0} ani|acum {0} de ani",
   "uk": "{0} рік тому|{0} роки тому|{0} років тому",
   "es": "hace {0} año|hace {0} años"
+ },
+ "{0}, channel owner": {
+  "ro": "{0}, proprietarul canalului",
+  "uk": "{0}, власник каналу",
+  "es": "{0}, propietario del canal"
  },
  "{0}, decibels": {
   "ro": "{0}, decibeli",

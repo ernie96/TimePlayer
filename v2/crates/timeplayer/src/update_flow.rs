@@ -51,6 +51,7 @@ impl App {
     /// Every minute: runs the repeated update check when it's due, and offers a version it found earlier
     /// once nothing would be interrupted.
     pub(crate) fn update_tick(&mut self) {
+        self.show_message_when_quiet();
         if self.updating {
             return;
         }
@@ -83,6 +84,40 @@ impl App {
             && self.download_state.active == 0
             && !matches!(self.playing.state, PlaybackState::Opening | PlaybackState::Buffering)
             && speech::app_in_front()
+    }
+
+    /// At startup: fetches the message from TimePlayer's developer (message.txt on the website). A message with a
+    /// higher number than the last one shown is shown once nothing would be interrupted. Errors only go to the log.
+    pub(crate) fn check_message(&mut self) {
+        let http = self.http.clone();
+        self.jobs.run("message check", move || {
+            let found = updates::fetch_message(&http);
+            move |app: &mut App| match found {
+                Ok(Some((number, text))) if number > app.settings.with(|c| c.update.seen_message) => {
+                    app.pending_message = Some((number, text));
+                    app.show_message_when_quiet();
+                }
+                Ok(_) => {}
+                Err(e) => log::warn!("Message check failed: {}", e.message),
+            }
+        });
+    }
+
+    /// Shows the waiting message, unless something would be interrupted (then the next minute's tick tries again).
+    fn show_message_when_quiet(&mut self) {
+        if self.pending_message.is_none() || self.updating || !self.quiet_enough_for_update_offer() {
+            return;
+        }
+        let Some((number, text)) = self.pending_message.take() else { return };
+        log::info!("Showing message {number}.");
+        // Saved first, so a crash or a second TimePlayer doesn't show it again.
+        self.settings.update(|c| c.update.seen_message = number);
+        let focus = self.focus();
+        dialogs::show_document(&self.ui.frame, &t("Message about TimePlayer"), &text);
+        // GTK leaves focus nowhere when a window closes; Windows usually puts it back itself.
+        self.restore_focus(focus);
+        // The dialog held replies up; those that came meanwhile run now.
+        self.read_replies();
     }
 
     /// `manual`: Check for updates in Settings. Otherwise the quiet check after startup.

@@ -64,6 +64,11 @@ impl<K: Clone + Eq + Hash> ListTree<K> {
 		self.focus = ROOT;
 	}
 
+	/// The tree id of the row with `key`, if it's in the tree.
+	pub fn id_of(&self, key: &K) -> Option<u64> {
+		self.ids.get(key).copied()
+	}
+
 	/// The key of the row with tree id `id`, if it's in the tree.
 	pub fn key_of(&self, id: u64) -> Option<&K> {
 		self.ids.iter().find_map(|(key, row)| (*row == id).then_some(key))

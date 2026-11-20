@@ -221,6 +221,7 @@ impl App {
     fn startup_checks(&mut self) {
         self.sync_from_youtube();
         self.check_feed_in_background();
+        self.check_message();
         if self.settings.with(|c| c.update.check_at_startup) {
             self.check_for_app_update(false);
         }

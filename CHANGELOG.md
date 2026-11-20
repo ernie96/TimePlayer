@@ -3,6 +3,13 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.4
+
+- TimePlayer shows a message from its developer once, if there's a new one on TimePlayer's website. It waits until TimePlayer is the window in front and nothing is opening or downloading, and each message is shown only once.
+- Fixed on Windows: long comments were cut off after about 260 characters, both on screen and for screen readers. Comments are now read and shown in full. The comments still work as a tree: Right arrow opens a comment's replies, Left closes them, and screen readers say the level and whether replies are open.
+- Fixed on Windows: Up arrow and Page Up lowered the sound sliders in Settings (equalizer, bass boost, clarity, stereo width). They now raise them, as in TimePlayer 1.
+- "Reply from", "channel owner", "Pinned" and reply counts in comments are now translated.
+
 ## 2.0.3
 
 - Mac: the video now shows inside TimePlayer's window. TimePlayer.app carries its own mpv, so nothing needs installing. It now needs macOS 15 or later. Mac video has so far been checked only on GitHub's build machine, not on a Mac someone uses.

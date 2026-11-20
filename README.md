@@ -303,6 +303,15 @@ a small relay (`report-relay/`, a Cloudflare Worker), which files each as an iss
 ernie96/TimePlayer-reports. Control+Shift+F (Suggest a feature) uses the same form without the log; suggestions are
 labelled "feature request". See `report-relay/README.md` for setup.
 
+## A message for everyone
+
+`https://www.kurnal.tech/timeplayer/message.txt` holds a number on its first line and a message on the lines after
+it. TimePlayer reads it when it starts and shows the message once, in a read-only window titled "Message about
+TimePlayer", when nothing would be interrupted (the same wait as the update offer), if the number is higher than the
+last one it showed (`Update.SeenMessage` in settings.json). Without the file, with the number 0, or with a number and
+no text, nothing is shown. Squire's message publisher (`tools\MessagePublisher.exe` or `tools\publish_message.ps1
+-Apps timeplayer` in the Squire repository) writes and uploads it.
+
 ## Making a release
 
 1. Set `<Version>` in `Directory.Build.props` and add a `## <version>` section to `CHANGELOG.md`. That section becomes the release notes users hear in the update prompt.

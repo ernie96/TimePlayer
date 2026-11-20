@@ -28,7 +28,7 @@ use wxdragon::{
 };
 
 use crate::{
-	Select, Step,
+	Outline, Select, Step,
 	rows::{self, LazyRows},
 	tree::{self, ListTree},
 };
@@ -52,12 +52,103 @@ struct State<K> {
 	labeler: Option<Labeler<K>>,
 	selected: Option<usize>,
 	tree: ListTree<K>,
+	/// Each row's place in a tree, for a list that shows one; empty for a plain list.
+	outlines: HashMap<K, Outline<K>>,
 	name: String,
 	typed: String,
 	typed_at: Option<Instant>,
 }
 
 impl<K: Clone + Eq + Hash> State<K> {
+	/// How deep the row at `index` sits in a tree: 0 for a plain list.
+	fn level(&self, index: usize) -> usize {
+		self.rows.key(index).and_then(|key| self.outlines.get(key)).map_or(0, |outline| outline.level)
+	}
+
+	/// The tree for a list that shows one. Each row sits under its parent's node, so a screen
+	/// reader reads "3 of 20" among the row's siblings and "level 2" for a reply. The rows near
+	/// the selection are in it, as in a plain list, with the rows they sit under.
+	fn outline_update(&mut self, full: bool, has_focus: bool) -> TreeUpdate {
+		let len = self.rows.len();
+		let mut included: Vec<usize> = tree::reach(self.selected, len).collect();
+		let mut ancestors = Vec::new();
+		for &index in &included {
+			let mut key = self.rows.key(index).cloned();
+			while let Some(parent) = key.and_then(|key| self.outlines.get(&key)).and_then(|o| o.parent.clone()) {
+				match self.rows.position(&parent) {
+					Some(at) if !included.contains(&at) && !ancestors.contains(&at) => ancestors.push(at),
+					Some(_) => {}
+					None => break,
+				}
+				key = Some(parent);
+			}
+		}
+		included.extend(ancestors);
+		included.sort_unstable();
+		let mut rows = Vec::with_capacity(included.len());
+		for index in included {
+			let Some(key) = self.rows.key(index).cloned() else { continue };
+			let label = self.label(index);
+			rows.push((key, index, label));
+		}
+		let focus = self.selected_key();
+		// Every row is sent each time: AccessKit passes on only what changed, and a row's own
+		// label doesn't change while it's in a tree, only whether it's expanded, which a screen
+		// reader should say.
+		let update = self.tree.update(rows.clone(), focus.as_ref(), has_focus);
+		let id_of = |tree: &ListTree<K>, key: &K| tree.id_of(key).map(NodeId);
+		let mut top = Vec::new();
+		let mut children: HashMap<K, Vec<NodeId>> = HashMap::new();
+		let mut top_size = 0;
+		let mut child_sizes: HashMap<K, usize> = HashMap::new();
+		for (key, ..) in &rows {
+			let Some(id) = id_of(&self.tree, key) else { continue };
+			match self.outlines.get(key) {
+				Some(Outline { parent: Some(parent), siblings, .. }) => {
+					children.entry(parent.clone()).or_default().push(id);
+					child_sizes.insert(parent.clone(), *siblings);
+				}
+				outline => {
+					top.push(id);
+					top_size = outline.map_or(len, |o| o.siblings);
+				}
+			}
+		}
+		let mut nodes = Vec::with_capacity(rows.len() + 1);
+		for (key, _, label) in rows {
+			let Some(id) = id_of(&self.tree, &key) else { continue };
+			let mut node = Node::new(Role::TreeItem);
+			node.set_label(label);
+			if let Some(outline) = self.outlines.get(&key) {
+				node.set_level(outline.level);
+				node.set_position_in_set(outline.position);
+				if let Some(expanded) = outline.expanded {
+					node.set_expanded(expanded);
+				}
+			}
+			if let Some(children) = children.remove(&key) {
+				node.set_children(children);
+			}
+			if let Some(size) = child_sizes.get(&key) {
+				node.set_size_of_set(*size);
+			}
+			node.add_action(Action::Focus);
+			node.add_action(Action::Click);
+			nodes.push((id, node));
+		}
+		let mut root = Node::new(Role::Tree);
+		root.set_label(self.name.clone());
+		root.set_size_of_set(top_size);
+		root.set_children(top);
+		nodes.push((NodeId(tree::ROOT), root));
+		TreeUpdate {
+			nodes,
+			tree: full.then(|| TreeInfo::new(NodeId(tree::ROOT))),
+			tree_id: TreeId::ROOT,
+			focus: NodeId(update.focus),
+		}
+	}
+
 	fn label(&mut self, index: usize) -> String {
 		let Self { rows, labeler, .. } = self;
 		rows.label(index, |keys| labeler.as_ref().map(|labeler| labeler(keys)).unwrap_or_default())
@@ -72,6 +163,9 @@ impl<K: Clone + Eq + Hash> State<K> {
 	fn tree_update(&mut self, full: bool, has_focus: bool) -> TreeUpdate {
 		if full {
 			self.tree.reset();
+		}
+		if !self.outlines.is_empty() {
+			return self.outline_update(full, has_focus);
 		}
 		let len = self.rows.len();
 		let mut rows = Vec::new();
@@ -406,7 +500,10 @@ impl<K: Clone + Eq + Hash + 'static> Inner<K> {
 				SystemColour::WindowText
 			};
 			dc.set_text_foreground(SystemSettings::get_colour(text));
-			dc.draw_text(visible_part(&label, width, dc.get_char_width()), 2 * PADDING, y + text_top);
+			// Rows in a tree are indented by their depth, as a tree view shows them.
+			let indent = i32::try_from(state.level(index)).unwrap_or(0) * 2 * dc.get_char_width();
+			let left = 2 * PADDING + indent;
+			dc.draw_text(visible_part(&label, width - left, dc.get_char_width()), left, y + text_top);
 		}
 	}
 
@@ -593,6 +690,7 @@ impl<K: Clone + Eq + Hash + 'static> QuietList<K> {
 			labeler,
 			selected: None,
 			tree: ListTree::default(),
+			outlines: HashMap::new(),
 			name: name.to_owned(),
 			typed: String::new(),
 			typed_at: None,
@@ -755,13 +853,30 @@ impl<K: Clone + Eq + Hash + 'static> QuietList<K> {
 	/// Replaces the rows, to be labelled by the labeler as they're shown. A key that's already in
 	/// the list is left out. The selection callback runs if the selected row changed.
 	pub fn update(&self, keys: Vec<K>, select: Select<K>) {
+		self.inner.state.borrow_mut().outlines.clear();
 		self.inner.update(|rows| rows.replace(keys), select);
 	}
 
 	/// Replaces the rows with ones that come with their labels. A key that's already in the list
 	/// is left out. The selection callback runs if the selected row changed.
 	pub fn update_labelled(&self, rows: Vec<(K, String)>, select: Select<K>) {
+		self.inner.state.borrow_mut().outlines.clear();
 		self.inner.update(|current| current.replace_labelled(rows), select);
+	}
+
+	/// Replaces the rows with the open rows of a tree, in order, each with its label and its place
+	/// in the tree. Screen readers read them as a tree: level, expanded or collapsed, and "3 of
+	/// 20" among the rows under the same parent. Opening and closing rows is left to the app
+	/// ([`on_key_down`](Self::on_key_down)), which sends the rows again. Added by TimePlayer.
+	pub fn update_outlined(&self, rows: Vec<(K, String, Outline<K>)>, select: Select<K>) {
+		let mut labelled = Vec::with_capacity(rows.len());
+		let mut outlines = HashMap::with_capacity(rows.len());
+		for (key, label, outline) in rows {
+			outlines.insert(key.clone(), outline);
+			labelled.push((key, label));
+		}
+		self.inner.state.borrow_mut().outlines = outlines;
+		self.inner.update(|current| current.replace_labelled(labelled), select);
 	}
 
 	/// Selects the row with `key`, or nothing if it's `None` or not in the list, without running
@@ -781,7 +896,74 @@ impl<K: Clone + Eq + Hash + 'static> QuietList<K> {
 
 #[cfg(test)]
 mod tests {
-	use super::visible_part;
+	use super::*;
+
+	fn outline(parent: Option<&str>, level: usize, expanded: Option<bool>, position: usize, siblings: usize) -> Outline<String> {
+		Outline { parent: parent.map(str::to_owned), level, expanded, position, siblings }
+	}
+
+	/// Comment "a" (open, two replies), comment "b": what a screen reader is given with the second
+	/// reply selected.
+	fn comment_tree() -> TreeUpdate {
+		let long = "x".repeat(600);
+		let rows = vec![
+			("a".to_owned(), long, outline(None, 0, Some(true), 0, 2)),
+			("a1".to_owned(), "reply 1".to_owned(), outline(Some("a"), 1, None, 0, 2)),
+			("a2".to_owned(), "reply 2".to_owned(), outline(Some("a"), 1, None, 1, 2)),
+			("b".to_owned(), "comment b".to_owned(), outline(None, 0, Some(false), 1, 2)),
+		];
+		let mut state = State {
+			rows: LazyRows::default(),
+			labeler: None,
+			selected: Some(2),
+			tree: ListTree::default(),
+			outlines: rows.iter().map(|(key, _, outline)| (key.clone(), outline.clone())).collect(),
+			name: "Comments".to_owned(),
+			typed: String::new(),
+			typed_at: None,
+		};
+		state.rows.replace_labelled(rows.into_iter().map(|(key, label, _)| (key, label)).collect());
+		state.tree_update(true, true)
+	}
+
+	#[test]
+	fn a_tree_reads_whole_labels_levels_and_places_among_siblings() {
+		let update = comment_tree();
+		let root = &update.nodes.iter().find(|(id, _)| *id == NodeId(tree::ROOT)).unwrap().1;
+		assert_eq!(root.role(), Role::Tree);
+		assert_eq!(root.size_of_set(), Some(2));
+		assert_eq!(root.children().len(), 2, "only the comments sit at the top");
+		let comments = update.nodes.iter().filter(|(_, node)| node.role() == Role::TreeItem).count();
+		assert_eq!(comments, 4);
+		let long = update.nodes.iter().find(|(_, node)| node.label().is_some_and(|label| label.len() == 600));
+		assert!(long.is_some(), "a 600-character comment is passed on whole");
+		let open = &long.unwrap().1;
+		assert_eq!(open.is_expanded(), Some(true));
+		assert_eq!(open.children().len(), 2, "the replies sit under their comment");
+		assert_eq!(open.size_of_set(), Some(2), "a reply reads \"of 2\"");
+		let reply = update.nodes.iter().find(|(_, node)| node.label() == Some("reply 2")).unwrap();
+		assert_eq!(reply.1.level(), Some(1));
+		assert_eq!(reply.1.position_in_set(), Some(1));
+		assert_eq!(update.focus, reply.0);
+	}
+
+	#[test]
+	fn a_plain_list_is_still_a_list() {
+		let mut state = State::<String> {
+			rows: LazyRows::default(),
+			labeler: None,
+			selected: Some(0),
+			tree: ListTree::default(),
+			outlines: HashMap::new(),
+			name: "List".to_owned(),
+			typed: String::new(),
+			typed_at: None,
+		};
+		state.rows.replace_labelled(vec![("a".to_owned(), "A".to_owned())]);
+		let update = state.tree_update(true, true);
+		let root = &update.nodes.iter().find(|(id, _)| *id == NodeId(tree::ROOT)).unwrap().1;
+		assert_eq!(root.role(), Role::ListBox);
+	}
 
 	#[test]
 	fn a_label_that_fits_is_left_whole() {

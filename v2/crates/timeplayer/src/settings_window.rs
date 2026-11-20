@@ -192,7 +192,14 @@ impl Page {
     fn slider(&self, label: &str, name: &str, min: i32, max: i32, value: i32, changed: impl Fn(&mut App, i32) + 'static) -> Slider {
         let row = BoxSizer::builder(Orientation::Horizontal).build();
         let text = StaticText::builder(&self.panel).with_label(&label.replace('&', "&&")).build();
-        let slider = Slider::builder(&self.panel).with_value(value).with_min_value(min).with_max_value(max).with_size(Size::new(260, -1)).build();
+        // Natural keys: Up and Page Up raise the value, as everywhere else; Windows' own trackbar lowers it.
+        let slider = Slider::builder(&self.panel)
+            .with_value(value)
+            .with_min_value(min)
+            .with_max_value(max)
+            .with_size(Size::new(260, -1))
+            .with_natural_keys(true)
+            .build();
         slider.set_name(name);
         slider.on_slider(move |e| {
             let value = e.get_value();

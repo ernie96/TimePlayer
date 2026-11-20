@@ -45,6 +45,23 @@ pub enum Select<K> {
 	Key(K),
 }
 
+/// Where a row sits in a tree, for a list that shows one ([`QuietList::update_outlined`]). Added
+/// by TimePlayer, whose comments are a tree: a native tree view cuts each item's text at 260
+/// characters on Windows, for screen readers too.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Outline<K> {
+	/// The row this one sits under, or `None` at the top. It must come before this row.
+	pub parent: Option<K>,
+	/// How deep the row is: 0 at the top.
+	pub level: usize,
+	/// Whether the rows under it show, or `None` when it has none.
+	pub expanded: Option<bool>,
+	/// Its place among the rows under the same parent, from 0.
+	pub position: usize,
+	/// How many rows are under the same parent.
+	pub siblings: usize,
+}
+
 /// A move through the list, as a navigation key makes it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Step {
