@@ -21,7 +21,9 @@ pub fn start(link: Option<String>) {
     // One TimePlayer at a time: a second start sends its link to the open one (or brings it forward) and ends.
     let single = match instance::start(link.as_deref()) {
         instance::Start::First(guard) => guard,
-        instance::Start::AnotherIsOpen => return,
+        // Ends the process here: returning would leave wxWidgets waiting for a window to close, with none open,
+        // so this copy kept running unseen and held TimePlayer.exe, which stopped updates installing.
+        instance::Start::AnotherIsOpen => std::process::exit(0),
     };
     std::mem::forget(single);
     log::info!(

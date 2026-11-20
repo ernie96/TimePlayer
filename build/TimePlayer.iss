@@ -35,7 +35,9 @@ WizardStyle=modern
 UninstallDisplayName=TimePlayer
 UninstallDisplayIcon={app}\TimePlayer.exe
 InfoBeforeFile={#SourceDir}\README.txt
-CloseApplications=yes
+; force: a TimePlayer with no window (2.0.0 to 2.0.4 left a second start running that way) can't be asked to
+; close, and would keep TimePlayer.exe in use, so a silent update only replaced it at the next restart.
+CloseApplications=force
 ; TimePlayer holds this mutex while running; setup and uninstall ask the user to close it first.
 AppMutex=TimePlayerRunning
 

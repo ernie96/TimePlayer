@@ -3,6 +3,10 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.5
+
+- Fixed: an update could download and then never install, asking again every time. Opening TimePlayer while it was already open left a hidden copy running, which kept the program file in use. That copy now closes right away, and the installer closes any copy left running from before.
+
 ## 2.0.4
 
 - TimePlayer shows a message from its developer once, if there's a new one on TimePlayer's website. It waits until TimePlayer is the window in front and nothing is opening or downloading, and each message is shown only once.
