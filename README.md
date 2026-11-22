@@ -55,7 +55,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   2. **Invidious** public instances, picked by health and latency from the public directory (also used for
      channel pages and as a fallback for related videos, comments and playlists).
   3. **InnerTube**, YouTube's own web API, without signing in (also the main source for Up next, comments and playlists).
-  4. **yt-dlp**, a local copy that TimePlayer downloads, verifies and keeps updated.
+  4. **yt-dlp**, a local copy that TimePlayer downloads, verifies and updates at startup and every 6 hours.
+- **Video details** (title, channel, description and so the chapters) come from InnerTube first, then Invidious,
+  yt-dlp and TubeRepair. TubeRepair's details count only when its search returns the exact video.
 - **Playback** uses **mpv** in its own process, controlled over its JSON IPC pipe and drawn inside TimePlayer's window.
   Playback only counts as started once mpv reports it is playing; otherwise the next source is tried.
 - **Subscription feeds** come from YouTube's public per-channel RSS feeds, as NewPipe's fast mode does.

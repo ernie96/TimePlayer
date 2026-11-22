@@ -609,6 +609,11 @@
   "uk": "Перевірка оновлень TimePlayer...",
   "es": "Buscando actualizaciones de TimePlayer..."
  },
+ "Checking for a yt-dlp update...": {
+  "ro": "Se caută o actualizare pentru yt-dlp...",
+  "uk": "Перевірка оновлення yt-dlp...",
+  "es": "Buscando una actualización de yt-dlp..."
+ },
  "Checking for updates to yt-dlp and mpv...": {
   "ro": "Se verifică actualizările pentru yt-dlp și mpv...",
   "uk": "Перевірка оновлень yt-dlp і mpv...",
@@ -3139,6 +3144,11 @@
   "uk": "Ширина стерео, від 0 до 10",
   "es": "Amplitud estéreo, de 0 a 10"
  },
+ "Still looking for this video's captions...": {
+  "ro": "Încă se caută subtitrările acestui videoclip...",
+  "uk": "Ще шукаємо субтитри цього відео...",
+  "es": "Todavía se están buscando los subtítulos de este video..."
+ },
  "Stop": {
   "ro": "Oprește",
   "uk": "Зупинити",
@@ -3969,6 +3979,11 @@
   "uk": "Ви можете ввійти в YouTube або імпортувати файл Google Takeout чи експорт з іншої програми. Виберіть «Ні», щоб почати з порожньої бібліотеки; Налаштування (F2), «Імпорт», мають це будь-коли.",
   "es": "Puedes iniciar sesión en YouTube o importar un archivo de Google Takeout o una exportación de otra aplicación. Elige No para empezar con la biblioteca vacía; Configuración (F2), Importar, lo tiene en cualquier momento."
  },
+ "You chose your own yt-dlp in Settings, so TimePlayer doesn't update it (version {0}).": {
+  "ro": "Ați ales propriul yt-dlp în Setări, deci TimePlayer nu îl actualizează (versiunea {0}).",
+  "uk": "Ви вибрали власний yt-dlp у налаштуваннях, тому TimePlayer його не оновлює (версія {0}).",
+  "es": "Eligió su propio yt-dlp en Configuración, así que TimePlayer no lo actualiza (versión {0})."
+ },
  "You have no subscriptions yet.\nPress Control+S on any video to subscribe to its channel, or bring them in from Settings (F2), Import.": {
   "ro": "Nu aveți încă abonamente.\nApăsați Control+S pe orice videoclip pentru a vă abona la canalul lui, sau aduceți-le din Setări (F2), Import.",
   "uk": "У вас ще немає підписок.\nНатисніть Control+S на будь-якому відео, щоб підписатися на його канал, або перенесіть їх через Налаштування (F2), «Імпорт».",
@@ -4549,10 +4564,25 @@
   "uk": "учора",
   "es": "ayer"
  },
+ "yt-dlp is up to date (version {0}).": {
+  "ro": "yt-dlp este la zi (versiunea {0}).",
+  "uk": "yt-dlp має останню версію ({0}).",
+  "es": "yt-dlp está al día (versión {0})."
+ },
  "yt-dlp is verified and up to date (version {0}). mpv engine is intact.": {
   "ro": "yt-dlp este verificat și actualizat (versiunea {0}). Motorul mpv este intact.",
   "uk": "yt-dlp перевірено й оновлено (версія {0}). Рушій mpv цілий.",
   "es": "yt-dlp está verificado y actualizado (versión {0}). El reproductor mpv está intacto."
+ },
+ "yt-dlp was updated to version {0}.": {
+  "ro": "yt-dlp a fost actualizat la versiunea {0}.",
+  "uk": "yt-dlp оновлено до версії {0}.",
+  "es": "yt-dlp se actualizó a la versión {0}."
+ },
+ "yt-dlp, which finds the videos, was updated to version {0}.": {
+  "ro": "yt-dlp, care găsește videoclipurile, a fost actualizat la versiunea {0}.",
+  "uk": "yt-dlp, який знаходить відео, оновлено до версії {0}.",
+  "es": "yt-dlp, que encuentra los videos, se actualizó a la versión {0}."
  },
  "{0:0.#} seconds": {
   "ro": "{0:0.#} secunde",

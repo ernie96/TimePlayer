@@ -1215,16 +1215,44 @@ impl App {
         }
         self.begin_loading(&t("Loading..."));
         let inner_tube = self.sources.inner_tube.clone();
+        // One page of the account's list: its videos and the token for the next page.
+        let fetch = move |token: Option<&str>| -> timeplayer_core::Result<(Vec<SearchResult>, Option<String>)> {
+            let browse = |id: &str| inner_tube.account_page(id, token).map(|p| (p.items, p.next_token));
+            let playlist = |id: &str| inner_tube.account_playlist(id, token).map(|p| (p.videos, p.next_token));
+            match page {
+                AccountPage::Home => browse("FEwhat_to_watch"),
+                AccountPage::Subscriptions => browse("FEsubscriptions"),
+                AccountPage::History => browse("FEhistory"),
+                AccountPage::Liked => playlist("LL"),
+                AccountPage::WatchLater => playlist("WL"),
+            }
+        };
+        let fetch = Arc::new(fetch);
+        let first = fetch.clone();
         self.load_section(
-            move || match page {
-                AccountPage::Home => inner_tube.account_page("FEwhat_to_watch"),
-                AccountPage::Subscriptions => inner_tube.account_page("FEsubscriptions"),
-                AccountPage::History => inner_tube.account_page("FEhistory"),
-                AccountPage::Liked => inner_tube.account_playlist("LL").map(|p| p.videos),
-                AccountPage::WatchLater => inner_tube.account_playlist("WL").map(|p| p.videos),
-            },
+            move || first(None),
             move |app, result| match result {
-                Ok(items) => app.show_items(items, move_focus, None, None),
+                Ok((items, next)) => {
+                    // More load as the list is read toward its end, as YouTube's own apps do.
+                    if next.is_some() {
+                        let next = Arc::new(Mutex::new(next));
+                        app.set_load_more(Some(Arc::new(move || {
+                            let token = next.lock().unwrap().clone();
+                            match fetch(token.as_deref()) {
+                                Ok((items, following)) => {
+                                    let more = following.is_some();
+                                    *next.lock().unwrap() = following;
+                                    (items, more)
+                                }
+                                Err(e) => {
+                                    log::warn!("The next page of the YouTube list could not be loaded: {}", e.message);
+                                    (Vec::new(), false)
+                                }
+                            }
+                        })));
+                    }
+                    app.show_items(items, move_focus, None, None)
+                }
                 Err(e) => {
                     app.browse.empty_text = if e.message.trim().is_empty() { t("YouTube could not be reached. Press F5 to try again.") } else { e.message };
                     app.show_items(Vec::new(), move_focus, None, None);

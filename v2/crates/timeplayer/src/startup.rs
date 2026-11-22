@@ -48,17 +48,7 @@ pub fn start(link: Option<String>) {
     let mut app = App::new(&frame, ui, settings);
 
     // yt-dlp is checked and updated in the background, as 1.x did at every start.
-    let ytdlp = app.sources.ytdlp.clone();
-    let update_ytdlp = app.settings.with(|c| c.backend.yt_dlp_auto_update_on_startup);
-    app.jobs.run("yt-dlp", move || {
-        log::info!("Initiating startup check and update for yt-dlp...");
-        if let Err(e) = ytdlp.ensure_ready() {
-            log::warn!("Background yt-dlp check and update encountered an error: {}", e.message);
-        } else if update_ytdlp {
-            ytdlp.update();
-        }
-        |_: &mut App| {}
-    });
+    app.check_ytdlp_update();
 
     bind_frame(&frame);
     app.browse.tabs = app.section_tabs();

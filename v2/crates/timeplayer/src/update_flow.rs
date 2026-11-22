@@ -6,8 +6,14 @@ use timeplayer_core::i18n::{t, tf};
 use timeplayer_core::mpv::PlaybackState;
 use timeplayer_core::periodic::Tick;
 use timeplayer_core::updates::{self, UpdateInfo};
+use timeplayer_core::ytdlp::UpdateOutcome;
+
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::{App, dialogs, speech};
+
+/// One yt-dlp update at a time: two would both replace yt-dlp.exe.
+static YTDLP_CHECKING: AtomicBool = AtomicBool::new(false);
 
 fn version_text(v: &updates::Version) -> String {
     format!("{}.{}.{}", v.0, v.1, v.2)
@@ -62,6 +68,7 @@ impl App {
             Tick::Check => {
                 log::info!("Checking for TimePlayer updates (every 6 hours while open).");
                 self.check_for_app_update(false);
+                self.check_ytdlp_update();
             }
             Tick::Offer(update) => {
                 // Skipped in the meantime (the start-up check's offer, say): stays skipped.
@@ -118,6 +125,31 @@ impl App {
         self.restore_focus(focus);
         // The dialog held replies up; those that came meanwhile run now.
         self.read_replies();
+    }
+
+    /// At startup and every 6 hours: installs yt-dlp if it's missing and, when Settings allow, updates it
+    /// (YouTube changes often break older versions). Says so only when a new version was installed; failures
+    /// go to the log.
+    pub(crate) fn check_ytdlp_update(&mut self) {
+        if YTDLP_CHECKING.swap(true, Ordering::SeqCst) {
+            return;
+        }
+        let ytdlp = self.sources.ytdlp.clone();
+        let update = self.settings.with(|c| c.backend.yt_dlp_auto_update_on_startup);
+        self.jobs.run("yt-dlp update", move || {
+            log::info!("Checking yt-dlp (installed, and its updates when Settings allow).");
+            let outcome = match ytdlp.ensure_ready() {
+                Err(e) => Some(UpdateOutcome::Failed(e.message)),
+                Ok(_) if update => Some(ytdlp.update()),
+                Ok(_) => None,
+            };
+            YTDLP_CHECKING.store(false, Ordering::SeqCst);
+            move |_: &mut App| match outcome {
+                Some(UpdateOutcome::Updated { to, .. }) => speech::say_quietly(&tf("yt-dlp, which finds the videos, was updated to version {0}.", &[&to])),
+                Some(UpdateOutcome::Failed(message)) => log::warn!("yt-dlp could not be checked or updated: {message}"),
+                _ => {}
+            }
+        });
     }
 
     /// `manual`: Check for updates in Settings. Otherwise the quiet check after startup.

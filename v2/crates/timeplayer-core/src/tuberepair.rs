@@ -65,12 +65,10 @@ impl TubeRepair {
         self.feed(&format!("{}feeds/api/videos/{}/related", self.base_url(), escape(video_id)))
     }
 
+    /// Found by searching for the ID; only an exact match counts (another video's title and description
+    /// would be shown under this one).
     pub fn details(&self, video_id: &str) -> Result<VideoDetails> {
-        let found = self.search(video_id, None).ok().and_then(|p| {
-            let exact = p.items.iter().find(|i| i.id == video_id).cloned();
-            exact.or_else(|| p.items.into_iter().next())
-        });
-        let found = found.or_else(|| self.related(video_id).ok().and_then(|r| r.into_iter().next()));
+        let found = self.search(video_id, None).ok().and_then(|p| exact_match(p.items, video_id));
         let Some(m) = found else {
             return Err(AppError::new("VIDEO_DETAILS_UNAVAILABLE", format!("Video details not found on TubeRepair for {video_id}.")));
         };
@@ -126,6 +124,10 @@ impl TubeRepair {
             })
             .collect())
     }
+}
+
+fn exact_match(items: Vec<SearchResult>, video_id: &str) -> Option<SearchResult> {
+    items.into_iter().find(|i| i.id == video_id)
 }
 
 fn absolute(base: &str, location: &str) -> String {
@@ -259,6 +261,13 @@ mod tests {
         assert_eq!(items[0].duration, Some(Duration::from_secs(213)));
         assert_eq!(items[0].view_count, Some(42));
         assert_eq!(items[0].channel_id.as_deref(), Some("UCuAXFkgsw1L7xaCfnd5JJOw"));
+    }
+
+    #[test]
+    fn details_take_only_the_exact_video() {
+        let items = vec![SearchResult::video("aaaaaaaaaaa", "Other video", "Someone"), SearchResult::video("bbbbbbbbbbb", "This video", "Me")];
+        assert_eq!(exact_match(items.clone(), "bbbbbbbbbbb").map(|v| v.title), Some("This video".to_owned()));
+        assert!(exact_match(items, "ccccccccccc").is_none());
     }
 
     #[test]

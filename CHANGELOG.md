@@ -3,6 +3,14 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.6
+
+- Fixed: the title bar and Now playing could show another video's title. When TubeRepair's search didn't find the exact video, TimePlayer took the first result, or even a related video, as this one's details. Details that arrive after you've moved on to another video are now ignored too.
+- Fixed: chapters often didn't appear. The description used for them was often only its first lines (from TubeRepair), or the last video's length cut them off. TimePlayer now takes the full description from YouTube and recounts the chapters once the real length is known.
+- Fixed: captions from YouTube's own player didn't show or read aloud, because they came in a format mpv can't read. Age-restricted videos now find their captions with your YouTube sign-in. Opening the Transcript tab before the captions were found no longer says the video has none.
+- The YouTube Home, Subscriptions, History, Liked and Watch later lists load more videos as you arrow toward the end, as YouTube's own apps do. Before, they stopped after the first page, often 16 videos or fewer.
+- yt-dlp is now checked every 6 hours while TimePlayer is open, as well as at startup, and TimePlayer says when it installed a new version. "Update the YouTube downloader" in Settings now says whether it updated or was already up to date. mpv comes with TimePlayer and is updated with it.
+
 ## 2.0.5
 
 - Fixed: an update could download and then never install, asking again every time. Opening TimePlayer while it was already open left a hidden copy running, which kept the program file in use. That copy now closes right away, and the installer closes any copy left running from before.

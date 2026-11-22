@@ -153,9 +153,23 @@ pub fn caption_news(previous: Option<&str>, current: &str) -> Option<String> {
     (!news.is_empty()).then_some(news)
 }
 
+/// Whether `offered` should replace the description shown: some sources have only its first lines.
+pub fn is_fuller_description(shown: &str, offered: &str) -> bool {
+    let offered = offered.trim();
+    !offered.is_empty() && offered.chars().count() > shown.trim().chars().count()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_longer_description_replaces_a_shortened_one() {
+        assert!(is_fuller_description("", "Whole text"));
+        assert!(is_fuller_description("Intro...", "Intro and more\n0:00 Start\n1:00 Middle\n2:00 End"));
+        assert!(!is_fuller_description("Intro and more\n0:00 Start", "Intro..."));
+        assert!(!is_fuller_description("Shown", "   "));
+    }
 
     #[test]
     fn rolling_captions_read_only_what_is_new() {

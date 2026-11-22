@@ -309,19 +309,22 @@ impl InnerTube {
 
     // ----- The signed-in account -----
 
-    /// "FEwhat_to_watch" (Home), "FEsubscriptions" or "FEhistory".
-    pub fn account_page(&self, browse_id: &str) -> Result<Vec<SearchResult>> {
-        let root = self.post("browse", json!({ "browseId": browse_id }), None, true, false)?;
+    /// One page of "FEwhat_to_watch" (Home), "FEsubscriptions" or "FEhistory"; the first when `continuation` is
+    /// None. YouTube sends about 16 to 30 videos a page, and more as the list is read further.
+    pub fn account_page(&self, browse_id: &str, continuation: Option<&str>) -> Result<Page<SearchResult>> {
+        let root = self.post("browse", page_body(json!({ "browseId": browse_id }), continuation), None, true, false)?;
         if signed_out(&root) {
             return Err(signed_out_error());
         }
         let mut seen = std::collections::HashSet::new();
-        Ok(parse_account_videos(&root).into_iter().filter(|v| seen.insert(v.id.clone())).collect())
+        let items: Vec<SearchResult> = parse_account_videos(&root).into_iter().filter(|v| seen.insert(v.id.clone())).collect();
+        let next_token = if items.is_empty() { None } else { list_continuation_token(&root) };
+        Ok(Page { items, next_token })
     }
 
-    /// "LL" (liked videos) or "WL" (Watch later).
-    pub fn account_playlist(&self, playlist_id: &str) -> Result<PlaylistPage> {
-        let root = self.post("browse", json!({ "browseId": format!("VL{playlist_id}") }), None, true, false)?;
+    /// One page of "LL" (liked videos) or "WL" (Watch later); the first when `continuation` is None.
+    pub fn account_playlist(&self, playlist_id: &str, continuation: Option<&str>) -> Result<PlaylistPage> {
+        let root = self.post("browse", page_body(json!({ "browseId": format!("VL{playlist_id}") }), continuation), None, true, false)?;
         if signed_out(&root) {
             return Err(signed_out_error());
         }
@@ -517,8 +520,28 @@ impl InnerTube {
     }
 }
 
+/// The first page's request, or the next page's when there's a continuation token.
+fn page_body(first: Value, continuation: Option<&str>) -> Value {
+    match continuation.filter(|c| !c.is_empty()) {
+        Some(c) => json!({ "continuation": c }),
+        None => first,
+    }
+}
+
 fn signed_out_error() -> AppError {
     AppError::new("SIGNED_OUT", t!("YouTube says you are signed out. Sign in again in Settings, YouTube account."))
+}
+
+/// YouTube sends its own XML timed text unless asked for WebVTT, which is what mpv can show.
+fn as_webvtt(url: &str) -> String {
+    let has_format = url.split(['?', '&']).skip(1).any(|p| p.starts_with("fmt="));
+    if has_format {
+        url.to_owned()
+    } else if url.contains('?') {
+        format!("{url}&fmt=vtt")
+    } else {
+        format!("{url}?fmt=vtt")
+    }
 }
 
 fn captions(root: &Value) -> Vec<CaptionTrack> {
@@ -531,7 +554,7 @@ fn captions(root: &Value) -> Vec<CaptionTrack> {
                     let url = str_at(t, &["baseUrl"]).filter(|u| !u.trim().is_empty())?;
                     let code = str_at(t, &["languageCode"]).filter(|c| !c.trim().is_empty())?;
                     Some(CaptionTrack {
-                        url: url.into(),
+                        url: as_webvtt(url),
                         language_code: code.into(),
                         display_name: text(path(t, &["name"])).unwrap_or_else(|| code.into()),
                         format: "vtt".into(),
@@ -547,6 +570,13 @@ fn captions(root: &Value) -> Vec<CaptionTrack> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn caption_addresses_ask_for_webvtt() {
+        assert_eq!(as_webvtt("https://www.youtube.com/api/timedtext?v=x&lang=en"), "https://www.youtube.com/api/timedtext?v=x&lang=en&fmt=vtt");
+        assert_eq!(as_webvtt("https://www.youtube.com/api/timedtext?v=x&fmt=srv3"), "https://www.youtube.com/api/timedtext?v=x&fmt=srv3");
+        assert_eq!(as_webvtt("https://example.com/c"), "https://example.com/c?fmt=vtt");
+    }
 
     #[test]
     fn playback_stats_address_gets_version_and_nonce() {
@@ -635,6 +665,36 @@ mod tests {
         let steps = steps.into_inner().unwrap();
         assert_eq!(steps.iter().filter(|s| s.new_step).map(|s| s.step).collect::<Vec<_>>(), [1, 2, 3, 4, 5]);
         assert!(steps.iter().any(|s| s.text.contains("2 channels")));
+    }
+
+    #[test]
+    fn home_loads_following_pages() {
+        let answer = |body: &str| -> String {
+            if body.contains("\"continuation\":\"HOME2\"") {
+                format!(r#"{{"items":[{}]}}"#, video("bbbbbbbbbbb", "Second page"))
+            } else if body.contains("FEwhat_to_watch") {
+                format!(
+                    r#"{{"items":[{}],"continuationItemRenderer":{{"continuationEndpoint":{{"continuationCommand":{{"token":"HOME2"}}}}}}}}"#,
+                    video("aaaaaaaaaaa", "First page")
+                )
+            } else {
+                "{}".into()
+            }
+        };
+        let mut config = AppConfig::default();
+        config.account.use_ = crate::config::AccountUse::Full;
+        let settings = Settings::in_memory(config);
+        let store = std::env::temp_dir().join(format!("tp2-it-{}.dat", uuid::Uuid::new_v4().simple()));
+        let account = Account::open_at(settings.clone(), store);
+        account.accept(crate::account::parse(".youtube.com\tTRUE\t/\tTRUE\t0\tSAPISID\ta\n.youtube.com\tTRUE\t/\tTRUE\t0\tSID\tb\n")).unwrap();
+        let http = Http::with_transport(move |r: Request| Ok(Response { status: 200, body: answer(&r.body_text()).into_bytes(), ..Default::default() }));
+        let it = InnerTube::new(http, settings, Some(account));
+        let first = it.account_page("FEwhat_to_watch", None).unwrap();
+        assert_eq!(first.items[0].title, "First page");
+        assert_eq!(first.next_token.as_deref(), Some("HOME2"));
+        let second = it.account_page("FEwhat_to_watch", first.next_token.as_deref()).unwrap();
+        assert_eq!(second.items[0].title, "Second page");
+        assert!(second.next_token.is_none());
     }
 
     #[test]

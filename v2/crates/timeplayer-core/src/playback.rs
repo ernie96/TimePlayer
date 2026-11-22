@@ -402,6 +402,11 @@ impl Coordinator {
             s.playing_video_id = Some(video_id.to_owned());
             s.audio_description = AudioDescriptionState::None;
             s.current_video = None;
+            // The last video's captions aren't this one's; a lookup still running for it no longer counts.
+            s.captions.clear();
+            s.selected_caption = None;
+            s.captions_lookup_in_progress = false;
+            s.captions_looked_up_for = None;
         }
         let quality = self.settings.with(|c| c.playback.preferred_quality);
         let want_description = self.settings.with(|c| c.playback.audio_description);
@@ -626,12 +631,12 @@ impl Coordinator {
         std::thread::spawn(move || {
             let Some(c) = me.upgrade() else { return };
             let s = &c.sources;
-            let details = s
-                .tube_repair
-                .details(&id)
-                .or_else(|_| s.invidious.details(&id))
-                .or_else(|_| s.inner_tube.details(&id))
-                .or_else(|_| s.ytdlp.details(&id, None));
+            // YouTube's own watch page first: it has the whole description (and so the chapters). TubeRepair
+            // only has a short piece of it, so it comes last.
+            let details = named(s.inner_tube.details(&id))
+                .or_else(|_| named(s.invidious.details(&id)))
+                .or_else(|_| named(s.ytdlp.details(&id, None)))
+                .or_else(|_| named(s.tube_repair.details(&id)));
             match details {
                 // The user may have moved on while details loaded.
                 Ok(d) if c.playing_video_id().as_deref() == Some(&id) => {
@@ -666,16 +671,32 @@ impl Coordinator {
         let id = video_id.to_owned();
         std::thread::spawn(move || {
             let Some(c) = me.upgrade() else { return };
-            let found = c.sources.ytdlp.details(&id, None).map(|d| useful_captions(&d.captions)).unwrap_or_default();
-            if c.playing_video_id().as_deref() != Some(&id) {
-                return;
+            let ytdlp = &c.sources.ytdlp;
+            let mut found = ytdlp.details(&id, None).map(|d| useful_captions(&d.captions));
+            // Age-restricted and members-only videos show their captions only with the sign-in.
+            if found.as_ref().is_err()
+                && let Some(account) = c.sources.account.as_ref().filter(|a| a.for_restricted_videos())
+            {
+                let cookies = account.write_temporary_cookies_file();
+                found = ytdlp.details(&id, cookies.as_deref()).map(|d| useful_captions(&d.captions));
+                if let Some(file) = &cookies {
+                    let _ = std::fs::remove_file(file);
+                }
+            }
+            let found = found.unwrap_or_default();
+            {
+                let mut s = c.state.lock().unwrap();
+                // Another video started meanwhile: these aren't its captions, and its own lookup owns the flag.
+                if s.playing_video_id.as_deref() != Some(&id) || s.captions_looked_up_for.as_deref() != Some(&id) {
+                    return;
+                }
+                s.captions = found.clone();
+                s.captions_lookup_in_progress = false;
             }
             log::info!("Found {} caption tracks for {id} via yt-dlp.", found.len());
-            c.state.lock().unwrap().captions = found.clone();
             if !found.is_empty() {
                 c.load_default_caption(&found);
             }
-            c.state.lock().unwrap().captions_lookup_in_progress = false;
             c.emit(Event::CaptionsChanged);
         });
     }
@@ -832,6 +853,17 @@ impl Coordinator {
             EngineEvent::SubtitleText(text) => self.emit(Event::SubtitleText(text)),
         }
     }
+}
+
+/// Details without a real title (a page that didn't parse) don't count, so the next source is tried.
+fn named(details: Result<VideoDetails>) -> Result<VideoDetails> {
+    details.and_then(|d| {
+        if d.title.trim().is_empty() || d.title == "Untitled Video" {
+            Err(AppError::new("VIDEO_DETAILS_UNAVAILABLE", format!("No title found for {}.", d.id)))
+        } else {
+            Ok(d)
+        }
+    })
 }
 
 trait FilterUrl {

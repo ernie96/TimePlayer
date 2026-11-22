@@ -253,6 +253,9 @@ impl App {
         }
         self.playing.resume_handled_for = None;
         self.playing.segments.rewind();
+        // The last video's length would cut this one's chapters short until mpv reports the new one.
+        self.playing.duration = 0.0;
+        self.playing.position = 0.0;
     }
 
     fn open_player_session(&mut self) {
@@ -381,12 +384,15 @@ impl App {
             Event::Position { position, duration } => self.on_position(position, duration),
             Event::SubtitleText(text) => self.on_subtitle(&text),
             Event::CurrentVideo(video) => {
+                // Details found for a video the person has since moved on from.
+                if self.playing.current_id().as_deref() != Some(video.id.as_str()) {
+                    log::info!("Ignored details that came for {} after it stopped playing.", video.id);
+                    return;
+                }
                 self.playing.title = video.title.clone();
                 self.playing.channel = video.channel.name.clone();
-                if self.playing.description.trim().is_empty()
-                    && let Some(d) = video.description.as_ref().filter(|d| !d.trim().is_empty())
-                {
-                    self.set_description(d.clone());
+                if let Some(d) = video.description.as_ref() {
+                    self.offer_description(d);
                 }
                 let as_item = video.to_search_result();
                 self.playing.details = Some(video);
@@ -414,7 +420,11 @@ impl App {
             }
             Event::CaptionsChanged => {
                 self.populate_caption_choices();
-                if self.settings.with(|c| c.accessibility.speak_captions) && self.playing.session_open && self.coordinator.captions().is_empty() {
+                // The Transcript tab was opened while the captions were still being looked up; it says itself
+                // when there are none.
+                if self.selected_panel() == Some(PlayerPanel::Transcript) {
+                    self.load_transcript();
+                } else if self.settings.with(|c| c.accessibility.speak_captions) && self.playing.session_open && self.coordinator.captions().is_empty() {
                     speech::say_quietly(&t("This video has no captions."));
                 }
             }
@@ -463,11 +473,12 @@ impl App {
     fn on_position(&mut self, position: f64, duration: f64) {
         self.playing.position = position;
         if duration > 0.0 {
-            if (duration - self.playing.duration).abs() > 0.5 && !self.playing.chapters.is_empty() {
-                self.playing.duration = duration;
+            // A new length can add chapters (ones past a wrong length were left out) as well as remove them.
+            let changed = (duration - self.playing.duration).abs() > 0.5;
+            self.playing.duration = duration;
+            if changed && !self.playing.description.trim().is_empty() {
                 self.refresh_chapters();
             }
-            self.playing.duration = duration;
         }
         self.update_position_slider();
         self.update_braille();
@@ -1024,10 +1035,8 @@ impl App {
                     let related: Vec<SearchResult> = next.related.into_iter().filter(|v| v.id != id).collect();
                     app.playing.up_next = related.into_iter().map(|v| app.decorate(v, None)).collect();
                     app.show_up_next();
-                    if let Some(d) = next.description.filter(|d| !d.trim().is_empty())
-                        && app.playing.description.trim().is_empty()
-                    {
-                        app.set_description(d);
+                    if let Some(d) = next.description {
+                        app.offer_description(&d);
                     }
                 }
             }
@@ -1071,6 +1080,14 @@ impl App {
     pub(crate) fn play_selected_up_next(&mut self) {
         if let Some(item) = self.selected_up_next() {
             self.play_item(item, false);
+        }
+    }
+
+    /// A description from one of the sources: kept when it's longer than the one shown. Some sources (TubeRepair,
+    /// search results) have only the start of it, without the chapter timestamps further down.
+    fn offer_description(&mut self, description: &str) {
+        if text::is_fuller_description(&self.playing.description, description) {
+            self.set_description(description.to_owned());
         }
     }
 
@@ -1590,12 +1607,22 @@ impl App {
     }
 
     fn load_transcript(&mut self) {
-        let Some(video_id) = self.playing.details.as_ref().map(|d| d.id.clone()) else { return };
+        let Some(video_id) = self.playing.current_id() else { return };
         if self.playing.transcript_for.as_deref() == Some(&video_id) {
             return;
         }
+        let track = self.choose_transcript_track();
+        if track.is_none() && self.playing.session_open {
+            // In Music, captions aren't looked up until something asks for them.
+            self.coordinator.look_up_captions_now();
+            if self.coordinator.captions_lookup_in_progress() {
+                // CaptionsChanged loads it once the lookup is done.
+                self.ui.transcript_status.set_label(&t("Still looking for this video's captions..."));
+                return;
+            }
+        }
         self.playing.transcript_for = Some(video_id.clone());
-        let Some(track) = self.choose_transcript_track() else {
+        let Some(track) = track else {
             let status = t("This video has no captions, so there is no transcript.");
             self.ui.transcript_status.set_label(&status);
             speech::say_quietly(&status);
@@ -1606,7 +1633,7 @@ impl App {
         self.jobs.run("transcript", move || {
             let result = community::load_transcript(&http, &track.url);
             move |app: &mut App| {
-                if app.playing.details.as_ref().map(|d| &d.id) != Some(&video_id) {
+                if app.playing.current_id().as_ref() != Some(&video_id) {
                     return;
                 }
                 match result {

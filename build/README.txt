@@ -254,8 +254,11 @@ what happened or what you would like; a report can include TimePlayer's log, wit
 Windows user name taken out. It goes privately to TimePlayer's developer, and no account
 is needed.
 
-TimePlayer updates its YouTube downloader (yt-dlp) by itself at startup; if videos stop
-playing, "Update the YouTube downloader" in Settings, Updates and help, usually helps.
+TimePlayer updates its YouTube downloader (yt-dlp) by itself at startup and every 6 hours
+while it stays open, and says so when a new version was installed. If videos stop playing,
+"Update the YouTube downloader" in Settings, Updates and help, checks right away and says
+which version you have. mpv comes with TimePlayer and is updated with TimePlayer's own
+updates.
 
 
 Uninstalling

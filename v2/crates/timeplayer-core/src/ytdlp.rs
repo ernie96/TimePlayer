@@ -62,6 +62,21 @@ struct VersionFile {
     sha256: Option<String>,
 }
 
+/// What checking for a yt-dlp update did.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UpdateOutcome {
+    UpToDate(String),
+    Updated { from: Option<String>, to: String },
+    Failed(String),
+    /// The person chose their own yt-dlp in Settings; TimePlayer doesn't change it.
+    NotManaged,
+}
+
+/// Compares the versions before and after `yt-dlp --update`.
+pub fn update_outcome(before: Option<String>, after: String) -> UpdateOutcome {
+    if before.as_deref() == Some(after.as_str()) { UpdateOutcome::UpToDate(after) } else { UpdateOutcome::Updated { from: before, to: after } }
+}
+
 /// Where yt-dlp is and keeping it current.
 #[derive(Clone)]
 pub struct YtDlp {
@@ -110,13 +125,12 @@ impl YtDlp {
         self.runner.run(&self.executable(), &args, &options, on_line, cancel)
     }
 
-    /// Installs yt-dlp if it's missing, updates it if Settings allow, and sets up its config file.
+    /// Installs yt-dlp if it's missing and sets up its config file. Updating is `update`'s job, so a start
+    /// doesn't run yt-dlp's update twice.
     pub fn ensure_ready(&self) -> Result<String> {
         if !self.is_installed() {
             log::info!("yt-dlp is not installed; downloading a checked copy.");
             self.download_and_verify()?;
-        } else if self.settings.with(|c| c.backend.yt_dlp_auto_update_on_startup) {
-            self.update();
         }
         // A yt-dlp of the person's own choosing keeps its own settings.
         let own = self.own_copy();
@@ -148,22 +162,36 @@ impl YtDlp {
         }
     }
 
-    /// "yt-dlp --update", falling back to a fresh checked download if that fails.
-    pub fn update(&self) -> bool {
-        match self.run(vec!["--update".into()], Duration::from_secs(120), None, &Cancel::new()) {
-            Ok(out) => {
+    /// "yt-dlp --update", falling back to a fresh checked download if that fails. A yt-dlp of the person's own
+    /// choosing is left alone.
+    pub fn update(&self) -> UpdateOutcome {
+        if self.own_copy() {
+            return UpdateOutcome::NotManaged;
+        }
+        let before = self.version().ok();
+        let failed_how = match self.run(vec!["--update".into()], Duration::from_secs(120), None, &Cancel::new()) {
+            Ok(out) if out.success() => {
                 log::info!("yt-dlp update response: {}", out.stdout.trim());
-                let updated = out.stdout.contains("Updating to version") || out.stdout.contains("Updated yt-dlp");
-                if let Ok(v) = self.version() {
-                    self.save_version(&v, None);
-                }
-                updated
+                None
             }
-            Err(e) => {
-                log::warn!("yt-dlp self-update failed ({e}); downloading it again.");
-                self.download_and_verify().is_ok()
+            Ok(out) => Some(format!("exit code {:?}: {}", out.exit_code, out.stderr.trim())),
+            Err(e) => Some(e.to_string()),
+        };
+        if let Some(how) = failed_how {
+            log::warn!("yt-dlp self-update failed ({how}); downloading it again.");
+            if let Err(e) = self.download_and_verify() {
+                log::warn!("yt-dlp could not be downloaded again: {e}");
+                return UpdateOutcome::Failed(e.message);
             }
         }
+        let after = match self.version() {
+            Ok(v) => v,
+            Err(e) => return UpdateOutcome::Failed(e.message),
+        };
+        self.save_version(&after, None);
+        let outcome = update_outcome(before, after);
+        log::info!("yt-dlp update check: {outcome:?}");
+        outcome
     }
 
     /// Downloads the release for this platform and checks it against SHA2-256SUMS.
@@ -726,6 +754,16 @@ pub fn classify(exit_code: i32, stderr: &str, stdout: &str, video_id: &str) -> A
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn update_outcome_compares_versions() {
+        assert_eq!(update_outcome(Some("2026.10.26".into()), "2026.10.26".into()), UpdateOutcome::UpToDate("2026.10.26".into()));
+        assert_eq!(
+            update_outcome(Some("2026.10.26".into()), "2026.11.20".into()),
+            UpdateOutcome::Updated { from: Some("2026.10.26".into()), to: "2026.11.20".into() }
+        );
+        assert_eq!(update_outcome(None, "2026.11.20".into()), UpdateOutcome::Updated { from: None, to: "2026.11.20".into() });
+    }
 
     #[test]
     fn described_tracks_come_first_when_asked() {

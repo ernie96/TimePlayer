@@ -518,16 +518,20 @@ impl App {
 
     /// Update the YouTube downloader.
     fn update_downloader(&mut self) {
-        let status = t("Checking for updates to yt-dlp and mpv...");
+        let status = t("Checking for a yt-dlp update...");
         self.show_dependency_status(&status);
         speech::say_quietly(&status);
         let ytdlp = self.sources.ytdlp.clone();
         self.jobs.run("update yt-dlp", move || {
-            let result = ytdlp.ensure_ready().map(|_| ytdlp.update()).and_then(|_| ytdlp.version());
+            let result = ytdlp.ensure_ready().map(|_| ytdlp.update());
+            let version = ytdlp.version().unwrap_or_default();
             move |app: &mut App| {
+                use timeplayer_core::ytdlp::UpdateOutcome;
                 let status = match result {
-                    Ok(version) => tf("yt-dlp is verified and up to date (version {0}). mpv engine is intact.", &[&version]),
-                    Err(e) => tf("Update check: {0}", &[&e.message]),
+                    Ok(UpdateOutcome::Updated { to, .. }) => tf("yt-dlp was updated to version {0}.", &[&to]),
+                    Ok(UpdateOutcome::UpToDate(v)) => tf("yt-dlp is up to date (version {0}).", &[&v]),
+                    Ok(UpdateOutcome::NotManaged) => tf("You chose your own yt-dlp in Settings, so TimePlayer doesn't update it (version {0}).", &[&version]),
+                    Ok(UpdateOutcome::Failed(message)) | Err(timeplayer_core::AppError { message, .. }) => tf("Update check: {0}", &[&message]),
                 };
                 app.show_dependency_status(&status);
                 speech::say(&status);
@@ -601,6 +605,8 @@ impl App {
             self.set_player_visible(true);
         }
         self.update_now_playing();
+        // The title bar kept the last video's title.
+        self.update_title();
         speech::say(&t("Loading test pattern..."));
         if self.player_visible {
             self.ui.play.set_focus();
