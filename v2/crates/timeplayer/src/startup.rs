@@ -281,7 +281,7 @@ impl App {
             return;
         }
         if !self.open_link(link) {
-            log::info!("Ignored a link from another app that isn't a YouTube video or playlist.");
+            log::info!("Ignored a link from another app that isn't a YouTube video, playlist or channel.");
         }
     }
 

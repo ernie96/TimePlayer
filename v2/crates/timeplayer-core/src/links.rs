@@ -121,7 +121,7 @@ pub fn looks_like_link(text: &str) -> bool {
         return false;
     }
     if trimmed.contains(['/', '.', '?']) {
-        return is_playlist_link(trimmed) || YouTubeUrl::parse(trimmed).is_some();
+        return is_playlist_link(trimmed) || YouTubeUrl::parse(trimmed).is_some() || channel_link(trimmed).is_some();
     }
     is_video_id(trimmed)
         && trimmed.chars().any(|c| c.is_uppercase())
@@ -154,7 +154,69 @@ pub fn normalize_incoming(argument: &str) -> Option<String> {
         && let Some(list) = playlist_id(&text) {
             return Some(format!("{site}/playlist?list={list}"));
         }
-    YouTubeUrl::parse(&text).map(|url| format!("{site}{}", &url.normalized()["https://www.youtube.com".len()..]))
+    if let Some(video) = YouTubeUrl::parse(&text) {
+        return Some(format!("{site}{}", &video.normalized()["https://www.youtube.com".len()..]));
+    }
+    channel_link(&text).map(|c| c.url())
+}
+
+/// A mix ("RD…"), made by YouTube for one viewer: it can't be browsed like other playlists. "RDCLAK"
+/// lists are albums, which can.
+pub fn is_mix_id(playlist_id: &str) -> bool {
+    playlist_id.starts_with("RD") && !playlist_id.starts_with("RDCLAK")
+}
+
+/// The video a mix starts from, when its ID names one ("RD" or "RDAMVM" and a video ID).
+pub fn mix_seed_video(mix_id: &str) -> Option<String> {
+    ["RDAMVM", "RD"].iter().find_map(|prefix| mix_id.strip_prefix(prefix).filter(|rest| is_video_id(rest)).map(str::to_owned))
+}
+
+/// A link to a channel: its ID when the link has it, otherwise the link YouTube has to look up.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ChannelLink {
+    /// "UC…", from a /channel/ link.
+    Id(String),
+    /// A clean @handle, /c/ or /user/ link.
+    Url(String),
+}
+
+impl ChannelLink {
+    pub fn url(&self) -> String {
+        match self {
+            Self::Id(id) => format!("https://www.youtube.com/channel/{id}"),
+            Self::Url(url) => url.clone(),
+        }
+    }
+}
+
+/// youtube.com/channel/UC…, /@handle, /c/name and /user/name links (any page of the channel), rebuilt
+/// from the name alone. Not a video or playlist link.
+pub fn channel_link(input: &str) -> Option<ChannelLink> {
+    let trimmed = input.trim();
+    if !re!(r"(?i)^(?:https?://)?(?:www\.|m\.|music\.)?youtube\.com/").is_match(trimmed) || playlist_id(trimmed).is_some() || YouTubeUrl::parse(trimmed).is_some() {
+        return None;
+    }
+    if let Some(c) = re!(r"(?i)youtube\.com/channel/(UC[A-Za-z0-9_-]{22})(?:[/?#]|$)").captures(trimmed) {
+        return Some(ChannelLink::Id(c[1].to_owned()));
+    }
+    if let Some(c) = re!(r"(?i)youtube\.com/@([A-Za-z0-9._%-]{1,100})(?:[/?#]|$)").captures(trimmed) {
+        return Some(ChannelLink::Url(format!("https://www.youtube.com/@{}", &c[1])));
+    }
+    re!(r"(?i)youtube\.com/(c|user)/([A-Za-z0-9._%-]{1,100})(?:[/?#]|$)")
+        .captures(trimmed)
+        .map(|c| ChannelLink::Url(format!("https://www.youtube.com/{}/{}", c[1].to_lowercase(), &c[2])))
+}
+
+/// Every YouTube link in pasted text (video, playlist, mix or channel), in order, each once.
+pub fn links_in(text: &str) -> Vec<String> {
+    let mut found: Vec<String> = Vec::new();
+    for word in text.split(|c: char| c.is_whitespace() || c == ',' || c == ';') {
+        let word = word.trim_matches(|c: char| matches!(c, '<' | '>' | '(' | ')' | '"' | '\''));
+        if !word.is_empty() && (looks_like_link(word) || channel_link(word).is_some()) && !found.iter().any(|f| f == word) {
+            found.push(word.to_owned());
+        }
+    }
+    found
 }
 
 /// A music.youtube.com link: TimePlayer opens it in Music.
@@ -215,6 +277,42 @@ mod tests {
         assert!(!looks_like_link("minecraft12"));
         assert!(looks_like_link("dQw4w9WgXcQ"));
         assert!(looks_like_link("https://www.youtube.com/playlist?list=PL1234567890ab"));
+    }
+
+    #[test]
+    fn channel_links_are_recognised_and_rebuilt() {
+        let id = "UCuAXFkgsw1L7xaCfnd5JJOw";
+        for (link, expected) in [
+            (format!("https://www.youtube.com/channel/{id}"), ChannelLink::Id(id.into())),
+            (format!("youtube.com/channel/{id}/videos"), ChannelLink::Id(id.into())),
+            ("https://m.youtube.com/@SomeOne.Music?si=x".into(), ChannelLink::Url("https://www.youtube.com/@SomeOne.Music".into())),
+            ("https://www.youtube.com/@name/videos".into(), ChannelLink::Url("https://www.youtube.com/@name".into())),
+            ("https://www.youtube.com/c/Name".into(), ChannelLink::Url("https://www.youtube.com/c/Name".into())),
+            ("https://www.youtube.com/User/Name/about".into(), ChannelLink::Url("https://www.youtube.com/user/Name".into())),
+        ] {
+            assert_eq!(channel_link(&link), Some(expected), "{link}");
+        }
+        assert_eq!(channel_link("https://www.youtube.com/watch?v=dQw4w9WgXcQ"), None);
+        assert_eq!(channel_link("https://example.com/@name"), None);
+        assert_eq!(channel_link("https://www.youtube.com/playlist?list=PL1234567890ab"), None);
+        assert!(looks_like_link("https://www.youtube.com/@name"));
+        assert_eq!(normalize_incoming("https://www.youtube.com/@name/featured").as_deref(), Some("https://www.youtube.com/@name"));
+    }
+
+    #[test]
+    fn mixes_and_their_first_video() {
+        assert!(is_mix_id("RDdQw4w9WgXcQ") && is_mix_id("RDAMVMdQw4w9WgXcQ") && is_mix_id("RDEMabcdefghijklmnopqrstuv"));
+        assert!(!is_mix_id("RDCLAK5uy_abc") && !is_mix_id("PL1234567890ab"));
+        assert_eq!(mix_seed_video("RDdQw4w9WgXcQ").as_deref(), Some("dQw4w9WgXcQ"));
+        assert_eq!(mix_seed_video("RDAMVMdQw4w9WgXcQ").as_deref(), Some("dQw4w9WgXcQ"));
+        assert_eq!(mix_seed_video("RDEMabcdefghijklmnopqrstuv"), None);
+    }
+
+    #[test]
+    fn several_links_pasted_together() {
+        let text = "https://youtu.be/dQw4w9WgXcQ https://www.youtube.com/playlist?list=PL1234567890ab,\nhttps://www.youtube.com/@name and words https://youtu.be/dQw4w9WgXcQ";
+        assert_eq!(links_in(text), ["https://youtu.be/dQw4w9WgXcQ", "https://www.youtube.com/playlist?list=PL1234567890ab", "https://www.youtube.com/@name"]);
+        assert!(links_in("just some words").is_empty());
     }
 
     #[test]

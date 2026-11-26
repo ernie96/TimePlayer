@@ -4,6 +4,7 @@
 //! No API key; the sign-in is only added when the user has chosen to use it.
 
 pub mod json;
+pub mod player;
 
 use serde_json::{Value, json};
 use std::collections::HashMap;
@@ -15,10 +16,11 @@ use crate::config::Settings;
 use crate::error::{AppError, Result};
 use crate::http::{BROWSER_USER_AGENT, Cancel, Http, Request};
 use crate::library::ChannelSubscription;
-use crate::models::{CaptionTrack, CommentPage, Page, PlaylistPage, ResolvedStream, SearchResult, SourceKind, VideoDetails, WatchNext, is_descriptive_track_name};
+use crate::models::{CaptionTrack, CommentPage, Page, PlaylistPage, ResolvedStream, SearchResult, VideoDetails, WatchNext};
 use crate::{plural_t, t};
 
 use json::*;
+pub use player::{PlayerInfo, StreamChoice};
 
 /// YouTube's own search filters (the "params" its web page sends).
 pub const SHORTS_FILTER: &str = "EgIQCQ==";
@@ -59,6 +61,7 @@ pub struct InnerTube {
     settings: Settings,
     account: Option<Account>,
     channel_tabs: Arc<Mutex<HashMap<String, HashMap<String, String>>>>,
+    app_player: Arc<player::AppPlayerState>,
 }
 
 fn web_context(region: Option<&str>) -> Value {
@@ -88,7 +91,7 @@ fn signed_out(root: &Value) -> bool {
 
 impl InnerTube {
     pub fn new(http: Http, settings: Settings, account: Option<Account>) -> Self {
-        Self { http, settings, account, channel_tabs: Arc::default() }
+        Self { http, settings, account, channel_tabs: Arc::default(), app_player: Arc::default() }
     }
 
     fn base_url(&self) -> String {
@@ -271,6 +274,10 @@ impl InnerTube {
 
     /// One page of a YouTube playlist (the first when `continuation` is None).
     pub fn playlist(&self, playlist_id: &str, continuation: Option<&str>) -> Result<PlaylistPage> {
+        if crate::links::is_mix_id(playlist_id) {
+            // A mix is one page; there's nothing after it.
+            return if continuation.is_some_and(|c| !c.is_empty()) { Ok(PlaylistPage { playlist_id: playlist_id.into(), ..Default::default() }) } else { self.mix(playlist_id) };
+        }
         let body = match continuation.filter(|c| !c.is_empty()) {
             Some(c) => json!({ "continuation": c }),
             None => json!({ "browseId": format!("VL{playlist_id}") }),
@@ -280,6 +287,39 @@ impl InnerTube {
             return Err(AppError::new("PLAYLIST_EMPTY", "This playlist is private, empty or no longer exists."));
         }
         Ok(page)
+    }
+
+    /// A mix ("RD…"), which YouTube only shows beside a video in Up next: asked for with the video it
+    /// starts from when the ID names one.
+    pub fn mix(&self, mix_id: &str) -> Result<PlaylistPage> {
+        let mut body = json!({ "playlistId": mix_id });
+        if let Some(seed) = crate::links::mix_seed_video(mix_id) {
+            body["videoId"] = Value::String(seed);
+        }
+        let root = self.post("next", body, None, false, false)?;
+        let mut seen = std::collections::HashSet::new();
+        let videos: Vec<SearchResult> = find_all(&root, "playlistPanelVideoRenderer").into_iter().filter_map(parse_video_renderer).filter(|v| seen.insert(v.id.clone())).collect();
+        if videos.is_empty() {
+            return Err(AppError::new("PLAYLIST_EMPTY", "This mix is empty or no longer exists."));
+        }
+        let panel = path(&root, &["contents", "twoColumnWatchNextResults", "playlist", "playlist"]);
+        let title = panel.and_then(|p| str_at(p, &["title"]).map(str::to_owned).or_else(|| text(p.get("title")))).unwrap_or_default();
+        let owner = panel.and_then(|p| text(p.get("ownerName")));
+        Ok(PlaylistPage { playlist_id: mix_id.into(), title, owner, videos, next_token: None })
+    }
+
+    /// The channel ID ("UC…") for a channel link: read from /channel/ links, asked of YouTube for @handle,
+    /// /c/ and /user/ links.
+    pub fn resolve_channel(&self, link: &crate::links::ChannelLink) -> Result<String> {
+        let url = match link {
+            crate::links::ChannelLink::Id(id) => return Ok(id.clone()),
+            crate::links::ChannelLink::Url(url) => url,
+        };
+        let root = self.post("navigation/resolve_url", json!({ "url": url }), None, false, false)?;
+        find_all(&root, "browseEndpoint")
+            .into_iter()
+            .find_map(|e| str_at(e, &["browseId"]).filter(|id| id.starts_with("UC")).map(str::to_owned))
+            .ok_or_else(|| AppError::new("CHANNEL_NOT_FOUND", t!("YouTube has no channel at this link.")))
     }
 
     /// The tabs YouTube shows for a channel, by their English names ("Videos", "Shorts", "Live", "Playlists").
@@ -474,49 +514,31 @@ impl InnerTube {
 
     // ----- Streams -----
 
-    /// Whether the video has an audio-described track: one quick request with YouTube's iPhone client (the
-    /// web client's player answers "Video unavailable" without a proof-of-origin token). None when unknown.
+    /// Whether the video has an audio-described track, from YouTube's apps' answer (which playing the video
+    /// then reuses). None when unknown.
     pub fn has_audio_description(&self, video_id: &str) -> Option<bool> {
-        let body = json!({
-            "videoId": video_id,
-            "context": { "client": {
-                "clientName": "IOS", "clientVersion": "20.10.4", "hl": "en", "gl": "US",
-                "deviceMake": "Apple", "deviceModel": "iPhone16,2", "osName": "iPhone", "osVersion": "18.3.2.22D82"
-            } }
-        });
-        let request = Request::post_json(format!("{}player?prettyPrint=false", self.base_url()), &body)
-            .timeout(Duration::from_secs(3))
-            .header("User-Agent", "com.google.ios.youtube/20.10.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)");
-        let response = self.http.send(request).ok().filter(|r| r.ok())?;
-        let root = response.json().ok()?;
-        let formats = path(&root, &["streamingData", "adaptiveFormats"])?.as_array()?;
-        if formats.is_empty() {
-            return None;
-        }
-        Some(formats.iter().any(|f| is_descriptive_track_name(str_at(f, &["audioTrack", "displayName"]))))
+        self.player_info(video_id).ok().map(|info| info.has_audio_description())
     }
 
-    /// A progressive (sound and picture in one) stream from the web player, when YouTube gives one.
-    pub fn resolve(&self, video_id: &str) -> Result<ResolvedStream> {
-        let root = self.post("player", json!({ "videoId": video_id }), None, false, false)?;
-        let status = str_at(&root, &["playabilityStatus", "status"]).unwrap_or("");
-        if !status.eq_ignore_ascii_case("OK") {
-            let reason = str_at(&root, &["playabilityStatus", "reason"]).unwrap_or(if status.is_empty() { "Playability check not OK" } else { status });
-            log::warn!("InnerTube player playability status '{status}' for {video_id}: {reason}");
-            return Err(AppError::stream_unavailable(video_id, Some(reason)));
-        }
-        let formats = path(&root, &["streamingData", "formats"]).and_then(Value::as_array).cloned().unwrap_or_default();
-        let progressive = formats.iter().find(|f| str_at(f, &["url"]).is_some_and(|u| !u.is_empty()) && str_at(f, &["mimeType"]).is_some_and(|m| m.contains("mp4")));
-        let Some(progressive) = progressive else {
-            return Err(AppError::stream_unavailable(video_id, Some("No direct progressive media URLs returned by InnerTube.")));
-        };
-        Ok(ResolvedStream {
-            video_id: video_id.into(),
-            url: str_at(progressive, &["url"]).unwrap_or_default().into(),
-            captions: captions(&root),
-            source: SourceKind::InnerTube,
-            ..Default::default()
-        })
+    /// What YouTube's apps say about a video: details, every stream and its sound tracks. Cached while the
+    /// addresses are good.
+    pub fn player_info(&self, video_id: &str) -> Result<Arc<PlayerInfo>> {
+        player::player_info(&self.http, &self.app_player, video_id)
+    }
+
+    /// The last answer for a video, without asking YouTube (for the Audio track menu).
+    pub fn cached_player_info(&self, video_id: &str) -> Option<Arc<PlayerInfo>> {
+        player::cached(&self.app_player, video_id)
+    }
+
+    /// Drops a video's addresses, so the next lookup gets fresh ones (after googlevideo refused them).
+    pub fn forget_player_info(&self, video_id: &str) {
+        player::forget(&self.app_player, video_id);
+    }
+
+    /// The streams to play, with plain addresses from YouTube's apps.
+    pub fn resolve(&self, video_id: &str, choice: &StreamChoice) -> Result<ResolvedStream> {
+        player::choose_streams(self.player_info(video_id)?.as_ref(), choice)
     }
 }
 
@@ -570,6 +592,19 @@ fn captions(root: &Value) -> Vec<CaptionTrack> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Against YouTube itself: `cargo test -p timeplayer-core live_ -- --ignored`.
+    #[test]
+    #[ignore]
+    fn live_mix_and_channel_link() {
+        let it = InnerTube::new(Http::new(), Settings::in_memory(AppConfig::default()), None);
+        let mix = it.playlist("RDdQw4w9WgXcQ", None).unwrap();
+        assert!(mix.videos.len() > 5, "{} videos", mix.videos.len());
+        assert!(mix.title.starts_with("Mix"), "title: {}", mix.title);
+        println!("Mix '{}': {} videos", mix.title, mix.videos.len());
+        let id = it.resolve_channel(&crate::links::channel_link("https://www.youtube.com/@YouTube").unwrap()).unwrap();
+        assert!(id.starts_with("UC") && id.len() == 24, "{id}");
+    }
 
     #[test]
     fn caption_addresses_ask_for_webvtt() {

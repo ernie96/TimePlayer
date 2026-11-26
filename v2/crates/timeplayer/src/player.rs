@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use timeplayer_core::chapters::{self, Chapter};
 use timeplayer_core::community::{self, LyricLine, SegmentEvent, SegmentKind, SegmentTracker, TranscriptLine, Votes};
 use timeplayer_core::i18n::{plural, t, tf};
+use timeplayer_core::http::Cancel;
 use timeplayer_core::links;
 use timeplayer_core::models::{CaptionTrack, Comment, CommentPage, ItemKind, SearchResult, VideoDetails};
 use timeplayer_core::mpv::PlaybackState;
@@ -21,6 +22,9 @@ use crate::sections::Section;
 use crate::speech;
 use crate::window::PlayerPanel;
 use crate::{App, LastAction};
+
+/// The most videos pasted links add to the queue.
+const MAX_LINK_VIDEOS: usize = 5000;
 
 /// What the player shows and knows about the video playing.
 #[derive(Default)]
@@ -211,6 +215,16 @@ impl App {
 
     /// A link typed in the search box, pasted, or sent from a browser: true when it was one.
     pub(crate) fn open_link(&mut self, text: &str) -> bool {
+        let found = links::links_in(text);
+        if found.len() > 1 {
+            self.open_several_links(found);
+            return true;
+        }
+        if let Some(channel) = found.first().and_then(|l| links::channel_link(l)) {
+            self.ui.search_box.set_value(text.trim());
+            self.open_channel_link(channel);
+            return true;
+        }
         if !links::looks_like_link(text) {
             return false;
         }
@@ -231,6 +245,76 @@ impl App {
             return true;
         }
         false
+    }
+
+    /// A channel link: the channel's page, once YouTube says which channel a @handle is.
+    fn open_channel_link(&mut self, link: links::ChannelLink) {
+        if let links::ChannelLink::Id(id) = &link {
+            self.open_channel(&SearchResult { kind: ItemKind::Channel, id: id.clone(), ..Default::default() });
+            return;
+        }
+        speech::say(&t("Opening the channel..."));
+        let inner_tube = self.sources.inner_tube.clone();
+        self.jobs.run("channel link", move || {
+            let found = inner_tube.resolve_channel(&link);
+            move |app: &mut App| match found {
+                Ok(id) => app.open_channel(&SearchResult { kind: ItemKind::Channel, id, ..Default::default() }),
+                Err(e) => speech::say(&tf("Could not open the channel. {0}", &[&e.message])),
+            }
+        });
+    }
+
+    /// Several links pasted at once: their videos in order, playlists, mixes and channels' latest uploads
+    /// included, as a new queue.
+    fn open_several_links(&mut self, found: Vec<String>) {
+        speech::say(&tf("Opening {0}...", &[&plural(found.len() as i64, "{0} link", "{0} links")]));
+        let (playlists, inner_tube, discovery) = (self.playlists.clone(), self.sources.inner_tube.clone(), self.discovery.clone());
+        self.jobs.run("several links", move || {
+            let mut videos: Vec<SearchResult> = Vec::new();
+            let mut failed = 0;
+            for link in &found {
+                let more = if links::is_playlist_link(link) {
+                    links::playlist_id(link).ok_or(()).and_then(|id| playlists.all(&id, MAX_LINK_VIDEOS, &Cancel::new()).map(|p| p.videos).map_err(|_| ()))
+                } else if let Some(video) = links::YouTubeUrl::parse(link) {
+                    Ok(vec![SearchResult::video(&video.video_id, "", "")])
+                } else if let Some(channel) = links::channel_link(link) {
+                    inner_tube.resolve_channel(&channel).and_then(|id| discovery.channel_uploads(&id)).map(|u| u.videos).map_err(|_| ())
+                } else {
+                    Err(())
+                };
+                match more {
+                    Ok(list) => videos.extend(list.into_iter().filter(|v| v.is_video())),
+                    Err(()) => failed += 1,
+                }
+            }
+            let mut seen = HashSet::new();
+            videos.retain(|v| seen.insert(v.id.clone()));
+            videos.truncate(MAX_LINK_VIDEOS);
+            // Bare video links have no title yet; the queue reads better with them.
+            let untitled: Vec<String> = videos.iter().filter(|v| v.title.trim().is_empty()).map(|v| v.id.clone()).collect();
+            if !untitled.is_empty() {
+                let described: HashMap<String, SearchResult> = playlists.describe(&untitled, &|_| {}).into_iter().map(|v| (v.id.clone(), v)).collect();
+                for v in videos.iter_mut().filter(|v| v.title.trim().is_empty()) {
+                    if let Some(d) = described.get(&v.id) {
+                        *v = d.clone();
+                    }
+                }
+            }
+            move |app: &mut App| {
+                let Some(first) = videos.first().cloned() else {
+                    speech::say(&t("None of these links could be opened."));
+                    return;
+                };
+                let mut message = tf("Playing {0}.", &[&plural(videos.len() as i64, "{0} video", "{0} videos")]);
+                if failed > 0 {
+                    message.push(' ');
+                    message.push_str(&plural(failed, "{0} link couldn't be opened.", "{0} links couldn't be opened."));
+                }
+                speech::say_quietly(&message);
+                app.coordinator.replace_queue(&videos);
+                app.play_item(first, false);
+            }
+        });
     }
 
     /// Control+Shift+V.
@@ -892,6 +976,8 @@ impl App {
             return;
         }
         self.playing.description_announced_for = self.playing.details.as_ref().map(|d| d.id.clone());
+        // D goes back to the settings' track, described or not, over one picked from the menu.
+        self.coordinator.clear_audio_track_choice();
         let coordinator = self.coordinator.clone();
         let at = self.playing.position;
         self.jobs.run("audio description", move || {
@@ -899,6 +985,38 @@ impl App {
             move |app: &mut App| {
                 if let Err(e) = result {
                     log::warn!("Switching audio description failed: {}", e.message);
+                    app.show_problem(&t("Could not play this video"), Some(&e.message), true);
+                }
+            }
+        });
+    }
+
+    // ----- Audio tracks -----
+
+    /// What the Audio track menu offers: each of the video's sound tracks, the playing one checked.
+    pub(crate) fn audio_track_choices(&self) -> Vec<(String, String, bool)> {
+        let playing = self.coordinator.audio_track();
+        self.coordinator.audio_tracks().into_iter().map(|track| {
+            let chosen = playing.as_ref().is_some_and(|p| p.key == track.key);
+            (track.key.clone(), track.label(), chosen)
+        }).collect()
+    }
+
+    /// Plays the video again from here with another sound track, for this video only.
+    pub(crate) fn select_audio_track(&mut self, key: &str, label: &str) {
+        if self.coordinator.audio_track().is_some_and(|t| t.key == key) {
+            return;
+        }
+        speech::say(&tf("Audio track: {0}", &[&label]));
+        self.playing.description_announced_for = self.playing.details.as_ref().map(|d| d.id.clone());
+        let coordinator = self.coordinator.clone();
+        let at = self.playing.position;
+        let key = key.to_owned();
+        self.jobs.run("audio track", move || {
+            let result = coordinator.choose_audio_track(&key, at);
+            move |app: &mut App| {
+                if let Err(e) = result {
+                    log::warn!("Switching the audio track failed: {}", e.message);
                     app.show_problem(&t("Could not play this video"), Some(&e.message), true);
                 }
             }

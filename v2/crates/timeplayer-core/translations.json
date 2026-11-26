@@ -169,10 +169,20 @@
   "uk": "< _Назад",
   "es": "< _Atrás"
  },
+ "A YouTube player for Windows, Mac and Linux, made by ernie96.": {
+  "ro": "Un player YouTube pentru Windows, Mac și Linux, făcut de ernie96.",
+  "uk": "Програвач YouTube для Windows, Mac і Linux від ernie96.",
+  "es": "Un reproductor de YouTube para Windows, Mac y Linux, hecho por ernie96."
+ },
  "A YouTube playlist link opens the playlist.": {
   "ro": "Un link către o listă de redare YouTube deschide lista.",
   "uk": "Посилання на плейлист YouTube відкриває плейлист.",
   "es": "Un enlace a una lista de reproducción de YouTube abre la lista."
+ },
+ "A YouTube playlist or mix link opens the playlist, and a channel link opens the channel. Several links pasted together play one after another.": {
+  "ro": "Un link către o listă de redare sau un mix YouTube deschide lista, iar un link către un canal deschide canalul. Mai multe linkuri lipite împreună sunt redate unul după altul.",
+  "uk": "Посилання на плейлист або мікс YouTube відкриває плейлист, а посилання на канал відкриває канал. Кілька посилань, вставлених разом, відтворюються одне за одним.",
+  "es": "Un enlace a una lista o un mix de YouTube abre la lista, y un enlace a un canal abre el canal. Varios enlaces pegados juntos se reproducen uno tras otro."
  },
  "A channel's videos, newest first. Older videos load as you reach the end.\n": {
   "ro": "Videoclipurile unui canal, cele mai noi primele. Cele mai vechi se încarcă atunci când ajungeți la sfârșit.\n",
@@ -188,6 +198,16 @@
   "ro": "A pornește sau oprește redarea automată. C pornește sau oprește citirea cu voce a subtitrărilor.\n",
   "uk": "A вмикає або вимикає автовідтворення. C вмикає або вимикає читання субтитрів уголос.\n",
   "es": "A activa o desactiva la reproducción automática. C activa o desactiva la lectura en voz alta de los subtítulos.\n"
+ },
+ "A_udio track": {
+  "ro": "Pis_tă audio",
+  "uk": "Звукова _доріжка",
+  "es": "Pista de a_udio"
+ },
+ "About TimePlayer": {
+  "ro": "Despre TimePlayer",
+  "uk": "Про TimePlayer",
+  "es": "Acerca de TimePlayer"
  },
  "About si_gning in:": {
   "ro": "Despre co_nectare:",
@@ -329,6 +349,11 @@
   "uk": "Під час запуску переносити нове з мого облікового запису YouTube: підписки, історію, вподобання, «Переглянути пізніше» та списки відтворення",
   "es": "Al iniciar, traer lo nuevo de mi cuenta de YouTube: suscripciones, historial, me gusta, Ver más tarde y listas de reproducción"
  },
+ "Audio _track when a video has several:": {
+  "ro": "Pis_tă audio când un videoclip are mai multe:",
+  "uk": "Звукова _доріжка, коли у відео їх кілька:",
+  "es": "Pis_ta de audio cuando un video tiene varias:"
+ },
  "Audio d_escription": {
   "ro": "Audiodes_criere",
   "uk": "Т_ифлокоментар",
@@ -363,6 +388,16 @@
   "ro": "Doar audio",
   "uk": "Лише аудіо",
   "es": "Solo audio"
+ },
+ "Audio track when a video has several": {
+  "ro": "Pistă audio când un videoclip are mai multe",
+  "uk": "Звукова доріжка, коли у відео їх кілька",
+  "es": "Pista de audio cuando un video tiene varias"
+ },
+ "Audio track: {0}": {
+  "ro": "Pistă audio: {0}",
+  "uk": "Звукова доріжка: {0}",
+  "es": "Pista de audio: {0}"
  },
  "Audio unmuted.": {
   "ro": "Sunet pornit.",
@@ -904,6 +939,11 @@
   "uk": "Не вдалося відкрити браузер. Перейдіть на takeout.google.com самостійно.",
   "es": "No se pudo abrir el navegador. Ve tú mismo a takeout.google.com."
  },
+ "Could not open the channel. {0}": {
+  "ro": "Canalul nu a putut fi deschis. {0}",
+  "uk": "Не вдалося відкрити канал. {0}",
+  "es": "No se pudo abrir el canal. {0}"
+ },
  "Could not open the log: {0}": {
   "ro": "Jurnalul nu s-a putut deschide: {0}",
   "uk": "Не вдалося відкрити журнал: {0}",
@@ -981,7 +1021,7 @@
  },
  "D_onate with PayPal": {
   "ro": "D_onează prin PayPal",
-  "uk": "П_ожертвувати через PayPal",
+  "uk": "Пожертвувати через _PayPal",
   "es": "D_onar con PayPal"
  },
  "Delete playlist": {
@@ -2034,6 +2074,11 @@
   "uk": "Жодне з джерел TimePlayer не змогло відтворити це відео. Воно може бути приватним, обмеженим за віком чи заблокованим, або джерела мають проблеми; спробуйте пізніше.",
   "es": "Ninguna de las fuentes de TimePlayer pudo reproducir este video. Puede ser privado, tener restricción de edad o estar bloqueado, o las fuentes pueden tener problemas; inténtalo más tarde."
  },
+ "None of these links could be opened.": {
+  "ro": "Niciunul dintre aceste linkuri nu a putut fi deschis.",
+  "uk": "Жодне з цих посилань не вдалося відкрити.",
+  "es": "No se pudo abrir ninguno de estos enlaces."
+ },
  "Not interested. It won't be recommended again.": {
   "ro": "Nu mă interesează. Nu va mai fi recomandat.",
   "uk": "Не цікавить. Більше не рекомендуватиметься.",
@@ -2168,6 +2213,21 @@
   "ro": "Se deschide un link din altă aplicație.",
   "uk": "Відкривається посилання з іншої програми.",
   "es": "Abriendo un enlace de otra aplicación."
+ },
+ "Opening the channel...": {
+  "ro": "Se deschide canalul...",
+  "uk": "Відкриваю канал...",
+  "es": "Abriendo el canal..."
+ },
+ "Opening {0}...": {
+  "ro": "Se deschid: {0}...",
+  "uk": "Відкриваю {0}...",
+  "es": "Abriendo {0}..."
+ },
+ "Original sound": {
+  "ro": "Sunet original",
+  "uk": "Оригінальний звук",
+  "es": "Sonido original"
  },
  "Output: {0}": {
   "ro": "Ieșire: {0}",
@@ -3169,6 +3229,11 @@
   "uk": "Зупинка...",
   "es": "Deteniendo..."
  },
+ "Stream links from YouTube's apps, the choice of sound track, mixes and channel links use code ported from lib_YTPYP by Aman Kumar Gupta, under the MIT License: https://github.com/amanKG777/lib_YTPYP": {
+  "ro": "Linkurile de redare de la aplicațiile YouTube, alegerea pistei audio, mixurile și linkurile către canale folosesc cod preluat din lib_YTPYP de Aman Kumar Gupta, sub licența MIT: https://github.com/amanKG777/lib_YTPYP",
+  "uk": "Посилання на потоки від застосунків YouTube, вибір звукової доріжки, мікси та посилання на канали використовують код, перенесений з lib_YTPYP від Aman Kumar Gupta, за ліцензією MIT: https://github.com/amanKG777/lib_YTPYP",
+  "es": "Los enlaces de reproducción de las aplicaciones de YouTube, la elección de pista de audio, los mixes y los enlaces a canales usan código adaptado de lib_YTPYP de Aman Kumar Gupta, bajo la licencia MIT: https://github.com/amanKG777/lib_YTPYP"
+ },
  "Subscribe": {
   "ro": "Abonează-te",
   "uk": "Підписатися",
@@ -3343,6 +3408,11 @@
   "ro": "Serviciul de versuri nu a putut fi contactat.",
   "uk": "Не вдалося зв’язатися зі службою текстів пісень.",
   "es": "No se pudo conectar con el servicio de letras."
+ },
+ "The original sound": {
+  "ro": "Sunetul original",
+  "uk": "Оригінальний звук",
+  "es": "El sonido original"
  },
  "The queue is empty. Control+Q on any video adds it.": {
   "ro": "Coada este goală. Control+Q pe orice videoclip îl adaugă.",
@@ -3629,6 +3699,11 @@
   "uk": "_Вебсайт TimePlayer",
   "es": "Sitio _web de TimePlayer"
  },
+ "TimePlayer's language, when YouTube has it dubbed": {
+  "ro": "Limba TimePlayer, când YouTube are dublaj în ea",
+  "uk": "Мова TimePlayer, коли YouTube має нею дубляж",
+  "es": "El idioma de TimePlayer, cuando YouTube tiene doblaje en él"
+ },
  "To bring in your subscriptions, history, likes and playlists, use the Import page.": {
   "ro": "Pentru a aduce abonamentele, istoricul, aprecierile și listele de redare, folosiți pagina Import.",
   "uk": "Щоб перенести підписки, історію, вподобання та списки відтворення, скористайтеся сторінкою «Імпорт».",
@@ -3764,6 +3839,11 @@
   "uk": "Використовувати SponsorBlock",
   "es": "Usar SponsorBlock"
  },
+ "Use YouTube's stable volume version of the sound when there is one": {
+  "ro": "Folosește versiunea YouTube cu volum stabil a sunetului, când există",
+  "uk": "Використовувати версію звуку YouTube зі стабільною гучністю, коли вона є",
+  "es": "Usar la versión del sonido con volumen estable de YouTube cuando la haya"
+ },
  "Use hardware video decoding (takes effect after restart)": {
   "ro": "Folosește decodarea video hardware (se aplică după repornire)",
   "uk": "Використовувати апаратне декодування відео (діє після перезапуску)",
@@ -3828,6 +3908,11 @@
   "ro": "Videoclipuri alese pentru dvs. pe baza a ceea ce vizionați, apreciați și urmăriți. Nimic nu părăsește acest computer.\n",
   "uk": "Відео, дібрані для вас на основі того, що ви дивитеся, вподобуєте й на що підписані. Нічого не залишає цей комп’ютер.\n",
   "es": "Videos elegidos para ti a partir de lo que ves, lo que te gusta y tus suscripciones. Nada sale de este equipo.\n"
+ },
+ "Videos play in mpv. yt-dlp is used when YouTube's other routes fail, and for downloads.": {
+  "ro": "Videoclipurile sunt redate în mpv. yt-dlp este folosit când celelalte căi către YouTube eșuează și pentru descărcări.",
+  "uk": "Відео відтворюються в mpv. yt-dlp використовується, коли інші способи отримати відео з YouTube не спрацьовують, і для завантажень.",
+  "es": "Los videos se reproducen en mpv. yt-dlp se usa cuando fallan las otras vías hacia YouTube, y para las descargas."
  },
  "Videos play in this order. Enter plays one now, Delete removes it. The Applications key also offers Clear queue.": {
   "ro": "Videoclipurile se redau în această ordine. Enter redă unul acum, Delete îl elimină. Tasta Aplicații oferă și Golește coada.",
@@ -3899,6 +3984,11 @@
   "uk": "Переглянуто",
   "es": "Visto"
  },
+ "Website: {0}": {
+  "ro": "Site: {0}",
+  "uk": "Вебсайт: {0}",
+  "es": "Sitio web: {0}"
+ },
  "Welcome to TimePlayer": {
   "ro": "Bun venit în TimePlayer",
   "uk": "Ласкаво просимо до TimePlayer",
@@ -3928,6 +4018,11 @@
   "ro": "Noutăți:\n{0}\n\n",
   "uk": "Що нового:\n{0}\n\n",
   "es": "Novedades:\n{0}\n\n"
+ },
+ "When a video has more than one sound track (dubs in other languages, audio description, YouTube's stable volume), Actions has Audio track to switch for this video. Settings, Playback chooses the track videos start with.\n": {
+  "ro": "Când un videoclip are mai multe piste audio (dublaje în alte limbi, audiodescriere, volumul stabil YouTube), Acțiuni are Pistă audio, care schimbă pista pentru acest videoclip. Setări, Redare alege pista cu care încep videoclipurile.\n",
+  "uk": "Коли у відео більше однієї звукової доріжки (дубляж іншими мовами, тифлокоментар, стабільна гучність YouTube), у Діях є Звукова доріжка, щоб перемкнути її для цього відео. Налаштування, Відтворення вибирає доріжку, з якою починаються відео.\n",
+  "es": "Cuando un video tiene más de una pista de sonido (doblajes a otros idiomas, audiodescripción, el volumen estable de YouTube), Acciones tiene Pista de audio para cambiarla en este video. Configuración, Reproducción elige la pista con la que empiezan los videos.\n"
  },
  "While something plays: Control+Space plays or pauses, Control+Shift+N and Control+Shift+P go to the next and previous, and the keyboard's media keys work. ": {
   "ro": "Cât timp se redă ceva: Control+Spațiu redă sau pune pauză, Control+Shift+N și Control+Shift+P trec la următorul și la anteriorul, iar tastele media ale tastaturii funcționează. ",
@@ -4014,6 +4109,11 @@
   "uk": "Не вдалося зв’язатися з YouTube. Натисніть F5, щоб спробувати ще раз.",
   "es": "No se pudo conectar con YouTube. Pulsa F5 para intentarlo de nuevo."
  },
+ "YouTube has no channel at this link.": {
+  "ro": "YouTube nu are niciun canal la acest link.",
+  "uk": "На YouTube немає каналу за цим посиланням.",
+  "es": "YouTube no tiene ningún canal en este enlace."
+ },
  "YouTube has no radio for this song.": {
   "ro": "YouTube nu are radio pentru această melodie.",
   "uk": "YouTube не має радіо для цієї пісні.",
@@ -4098,6 +4198,11 @@
   "ro": "Sugestia nu a putut fi trimisă.",
   "uk": "Не вдалося надіслати пропозицію.",
   "es": "No se pudo enviar tu sugerencia."
+ },
+ "_About TimePlayer": {
+  "ro": "D_espre TimePlayer",
+  "uk": "_Інформація про TimePlayer",
+  "es": "Ac_erca de TimePlayer"
  },
  "_Actions...": {
   "ro": "_Acțiuni...",
@@ -4704,6 +4809,16 @@
   "uk": "{0} рядок|{0} рядки|{0} рядків",
   "es": "{0} línea|{0} líneas"
  },
+ "{0} link couldn't be opened.|{0} links couldn't be opened.": {
+  "ro": "{0} link nu a putut fi deschis.|{0} linkuri nu au putut fi deschise.|{0} de linkuri nu au putut fi deschise.",
+  "uk": "{0} посилання не вдалося відкрити.|{0} посилання не вдалося відкрити.|{0} посилань не вдалося відкрити.",
+  "es": "{0} enlace no se pudo abrir.|{0} enlaces no se pudieron abrir."
+ },
+ "{0} link|{0} links": {
+  "ro": "{0} link|{0} linkuri|{0} de linkuri",
+  "uk": "{0} посилання|{0} посилання|{0} посилань",
+  "es": "{0} enlace|{0} enlaces"
+ },
  "{0} loaded.": {
   "ro": "{0} încărcate.",
   "uk": "Завантажено {0}.",
@@ -4853,6 +4968,11 @@
   "ro": "{0}, decibeli",
   "uk": "{0}, децибели",
   "es": "{0}, decibelios"
+ },
+ "{0}, stable volume": {
+  "ro": "{0}, volum stabil",
+  "uk": "{0}, стабільна гучність",
+  "es": "{0}, volumen estable"
  },
  "{0}, {1}. S skips it.": {
   "ro": "{0}, {1}. S îl sare.",

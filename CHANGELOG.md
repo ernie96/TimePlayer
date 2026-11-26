@@ -3,6 +3,17 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.7
+
+- Videos now start from YouTube's own servers first, the way YouTube's iPhone and Vision Pro apps get them, before TubeRepair, Invidious and yt-dlp are tried. This is usually faster and gets every quality, up to the one set in Settings.
+- Audio track: when a video has more than one sound track (dubs in other languages, audio description, or YouTube's stable volume version), Alt+A, Audio track in the player switches it for that video. Videos start with the original sound, not a dub YouTube picked. Settings, Playback can choose a dub in TimePlayer's language instead, or the stable volume version.
+- If a video stops with an error partway, for example after a long pause when YouTube's link has expired, TimePlayer gets a fresh link and carries on from the same place instead of showing an error.
+- Channel links (youtube.com/@name, /channel/, /c/ and /user/) open the channel, from Control+Shift+V, the search box, the bookmark and timeplayer:// links. The browser extension still passes on only video and playlist links.
+- Mix links (playlists starting with RD) now open their list instead of saying the playlist couldn't be loaded.
+- Several links copied or pasted at once play one after another: videos, the videos of playlists and mixes, and channels' latest uploads, in the order pasted.
+- Settings, Updates and help has About TimePlayer.
+- The stream links from YouTube's apps, the choice of sound track, mixes and channel links use code ported from lib_YTPYP by Aman Kumar Gupta (MIT License), the core of the foo_ytpyp component for foobar2000.
+
 ## 2.0.6
 
 - Fixed: the title bar and Now playing could show another video's title. When TubeRepair's search didn't find the exact video, TimePlayer took the first result, or even a related video, as this one's details. Details that arrive after you've moved on to another video are now ignored too.

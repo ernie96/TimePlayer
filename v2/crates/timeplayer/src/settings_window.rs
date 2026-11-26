@@ -4,7 +4,7 @@
 
 use timeplayer_core::audio::{self, BAND_FREQUENCIES, MAX_BAND_GAIN};
 use timeplayer_core::community::SegmentCategory;
-use timeplayer_core::config::{AccountUse, QualityPreference, SegmentAction};
+use timeplayer_core::config::{AccountUse, AudioTrackPreference, QualityPreference, SegmentAction};
 use timeplayer_core::i18n::{LANGUAGES, plural, t, tf};
 use wxdragon::prelude::*;
 
@@ -71,6 +71,34 @@ fn quality_label(q: QualityPreference) -> String {
         QualityPreference::P480 => "480p".into(),
         QualityPreference::P360 => t("360p, saves data"),
         QualityPreference::AudioOnly => t("Audio only"),
+    }
+}
+
+/// What About TimePlayer says, ending with the credit for lib_YTPYP and its license notice.
+fn about_text() -> String {
+    use crate::contact;
+    let mut text = tf("TimePlayer {0}", &[&timeplayer_core::paths::version()]);
+    text += "\n\n";
+    text += &t("A YouTube player for Windows, Mac and Linux, made by ernie96.");
+    text += "\n\n";
+    text += &tf("Website: {0}", &[&contact::WEBSITE]);
+    text += "\n";
+    text += &tf("Contact: {0}, or on Mastodon at {1}.", &[&contact::EMAIL, &contact::MASTODON]);
+    text += "\n\n";
+    text += &t("Videos play in mpv. yt-dlp is used when YouTube's other routes fail, and for downloads.");
+    text += "\n\n";
+    text += &t("Stream links from YouTube's apps, the choice of sound track, mixes and channel links use code ported from lib_YTPYP by Aman Kumar Gupta, under the MIT License: https://github.com/amanKG777/lib_YTPYP");
+    text += "\n\n";
+    text += timeplayer_core::innertube::player::LIB_YTPYP_LICENSE.trim_end();
+    text
+}
+
+const AUDIO_TRACKS: [AudioTrackPreference; 2] = [AudioTrackPreference::Original, AudioTrackPreference::MyLanguage];
+
+fn audio_track_label(p: AudioTrackPreference) -> String {
+    match p {
+        AudioTrackPreference::Original => t("The original sound"),
+        AudioTrackPreference::MyLanguage => t("TimePlayer's language, when YouTube has it dubbed"),
     }
 }
 
@@ -496,6 +524,16 @@ impl App {
         self.export_subscriptions_to_file();
     }
 
+    /// About TimePlayer, on top of Settings. The credit for lib_YTPYP stays the last thing in it.
+    fn show_about(&mut self) {
+        let title = t("About TimePlayer");
+        let text = about_text();
+        match self.settings_window.as_ref() {
+            Some(window) => dialogs::show_document(&window.dialog, &title, &text),
+            None => dialogs::show_document(&self.ui.frame, &title, &text),
+        }
+    }
+
     fn settings_check_updates(&mut self) {
         self.close_settings();
         self.check_for_app_update(true);
@@ -642,6 +680,14 @@ impl SettingsWindow {
         let p = Page::new(&pages);
         p.check("Continue videos where I left off", c.library.resume_playback, |app, on| app.settings.update(|c| c.library.resume_playback = on));
         p.check("Play audio description when a video has it (D in the player)", c.playback.audio_description, |app, on| app.settings.update(|c| c.playback.audio_description = on));
+        p.choice(
+            "Audio _track when a video has several:",
+            "Audio track when a video has several",
+            AUDIO_TRACKS.iter().map(|p| audio_track_label(*p)).collect(),
+            AUDIO_TRACKS.iter().position(|p| *p == c.playback.audio_track).unwrap_or(0),
+            |app, i| app.settings.update(|c| c.playback.audio_track = AUDIO_TRACKS[i]),
+        );
+        p.check("Use YouTube's stable volume version of the sound when there is one", c.playback.stable_volume, |app, on| app.settings.update(|c| c.playback.stable_volume = on));
         p.check("Autoplay a related video when the queue ends (A in the player)", c.library.autoplay, |app, on| app.settings.update(|c| c.library.autoplay = on));
         p.check("Use hardware video decoding (takes effect after restart)", c.playback.hardware_decoding, |app, on| app.settings.update(|c| c.playback.hardware_decoding = on));
         p.choice(
@@ -913,6 +959,7 @@ impl SettingsWindow {
         p.text(&t("TimePlayer is free. If it's useful to you, you can support its development with a donation."));
         p.button("D_onate with PayPal", |_| crate::platform::open_url(crate::contact::PAYPAL));
         p.button("Donate on _Ko-fi", |_| crate::platform::open_url(crate::contact::KOFI));
+        p.button("_About TimePlayer", App::show_about);
         p.button("TimePlayer's _website", |_| crate::platform::open_url(crate::contact::WEBSITE));
         p.button("Telegram _channel for announcements", |_| crate::platform::open_url(crate::contact::TELEGRAM));
         p.text(&tf("Contact: {0}, or on Mastodon at {1}.", &[&crate::contact::EMAIL, &crate::contact::MASTODON]));

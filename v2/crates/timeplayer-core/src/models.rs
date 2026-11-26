@@ -274,6 +274,54 @@ pub struct StreamCandidate {
     /// The audio track's name when a video has several (dubbed languages, audio description).
     pub audio_track_name: Option<String>,
     pub audio_description: bool,
+    /// YouTube's ID for the audio track ("en.4"), when a video has several.
+    pub audio_track_id: Option<String>,
+    /// The track YouTube marks as its default.
+    pub audio_is_default: bool,
+    /// YouTube's "stable volume" version, with the loud and quiet parts evened out (DRC).
+    pub stable_volume: bool,
+}
+
+impl StreamCandidate {
+    /// Which audio track this stream belongs to, as an [`AudioTrack`].
+    pub fn audio_track(&self) -> AudioTrack {
+        let name = self.audio_track_name.clone().filter(|n| !n.trim().is_empty());
+        let language = self.audio_track_id.as_deref().and_then(|id| id.split(['.', '-']).next()).filter(|l| !l.is_empty()).map(str::to_lowercase);
+        AudioTrack {
+            key: format!("{}|{}", self.audio_track_id.as_deref().unwrap_or(""), if self.stable_volume { "drc" } else { "" }),
+            original: name.as_deref().is_none_or(|n| n.to_lowercase().contains("original")),
+            name,
+            language,
+            youtube_default: self.audio_is_default,
+            stable_volume: self.stable_volume,
+            audio_description: self.audio_description,
+        }
+    }
+}
+
+/// One of a video's sound tracks: the original, a dub in another language, audio description, and
+/// YouTube's stable-volume version of each.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct AudioTrack {
+    /// Tells tracks apart: YouTube's track ID and whether it's the stable-volume version.
+    pub key: String,
+    /// YouTube's name for it ("English (United States) original", "Spanish"), when it has several.
+    pub name: Option<String>,
+    /// The language code from YouTube's track ID ("en").
+    pub language: Option<String>,
+    /// The video's own soundtrack rather than a dub.
+    pub original: bool,
+    pub youtube_default: bool,
+    pub stable_volume: bool,
+    pub audio_description: bool,
+}
+
+impl AudioTrack {
+    /// What the Audio track menu says.
+    pub fn label(&self) -> String {
+        let name = self.name.clone().unwrap_or_else(|| crate::t!("Original sound"));
+        if self.stable_volume { crate::t!("{0}, stable volume", name) } else { name }
+    }
 }
 
 /// YouTube names its audio-described tracks "... descriptive".
@@ -314,6 +362,8 @@ pub struct ResolvedStream {
     pub has_audio_description: bool,
     pub uses_audio_description: bool,
     pub alternatives: Vec<StreamCandidate>,
+    /// The sound track chosen, when the source says which (YouTube's app clients do).
+    pub audio_track: Option<AudioTrack>,
 }
 
 /// Everything about a video.

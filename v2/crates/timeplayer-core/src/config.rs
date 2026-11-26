@@ -31,6 +31,16 @@ impl QualityPreference {
     }
 }
 
+/// Which sound track plays when a video has several (YouTube's dubs in other languages).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+pub enum AudioTrackPreference {
+    /// The video's own soundtrack (the default).
+    #[default]
+    Original,
+    /// A dub in TimePlayer's language when YouTube has one, otherwise the original.
+    MyLanguage,
+}
+
 /// How TimePlayer uses a YouTube sign-in, if there is one.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum AccountUse {
@@ -77,6 +87,10 @@ section!(PlaybackConfig {
     volume_boost: bool = false,
     /// Play a video's audio-described track when it has one.
     audio_description: bool = true,
+    /// Which sound track plays when a video has several; the Audio track menu changes it for one video.
+    audio_track: AudioTrackPreference = AudioTrackPreference::Original,
+    /// Take YouTube's stable-volume version of a track when there is one.
+    stable_volume: bool = false,
     default_volume_percent: f64 = 80.0,
     volume_step_percent: f64 = 5.0,
     small_seek_seconds: f64 = 5.0,

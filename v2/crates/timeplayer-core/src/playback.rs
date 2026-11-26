@@ -13,9 +13,9 @@ use std::time::{Duration, Instant};
 use crate::account::Account;
 use crate::config::{QualityPreference, Settings};
 use crate::error::{AppError, Result};
-use crate::innertube::InnerTube;
+use crate::innertube::{InnerTube, StreamChoice};
 use crate::invidious::Invidious;
-use crate::models::{CaptionTrack, Page, ResolvedStream, SearchResult, SourceKind, VideoDetails};
+use crate::models::{AudioTrack, CaptionTrack, Page, ResolvedStream, SearchResult, SourceKind, VideoDetails};
 use crate::mpv::{Engine, EngineEvent, PlaybackState};
 use crate::tuberepair::TubeRepair;
 use crate::ytdlp::YtDlp;
@@ -24,6 +24,8 @@ use crate::t;
 /// After this many unplayable videos in a row, the queue stops instead of skipping on.
 pub const MAX_CONSECUTIVE_SKIPS: usize = 3;
 const PREFETCH_LIFETIME: Duration = Duration::from_secs(300);
+/// A stream that stops with an error partway is found again and resumed, at most this often per video.
+const RECOVERY_INTERVAL: Duration = Duration::from_secs(60);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AudioDescriptionState {
@@ -97,6 +99,14 @@ struct State {
     prefetched: HashMap<String, (Instant, ResolvedStream)>,
     captions_lookup_in_progress: bool,
     captions_looked_up_for: Option<String>,
+    /// The sound track playing, when the source says (YouTube's apps do).
+    audio_track: Option<AudioTrack>,
+    /// A track picked from the Audio track menu: the video and the track's key.
+    track_choice: Option<(String, String)>,
+    /// Where mpv last said it was, for resuming after a stream stops with an error.
+    last_position: f64,
+    /// When a stream was last found again after an error, and for which video.
+    recovered: Option<(String, Instant)>,
 }
 
 pub struct Coordinator {
@@ -380,6 +390,35 @@ impl Coordinator {
         self.play_video(&id, None, true)
     }
 
+    /// How to choose among a video's streams, from the settings.
+    fn stream_choice(&self, audio_description: bool, track_key: Option<String>) -> StreamChoice {
+        let (quality, track_preference, stable_volume) = self.settings.with(|c| (c.playback.preferred_quality, c.playback.audio_track, c.playback.stable_volume));
+        StreamChoice { quality, audio_only: false, audio_description, track_preference, stable_volume, language: crate::i18n::current().to_owned(), track_key }
+    }
+
+    /// The playing video's sound tracks, as YouTube's apps listed them (empty when not known yet).
+    pub fn audio_tracks(&self) -> Vec<AudioTrack> {
+        let Some(id) = self.playing_video_id() else { return Vec::new() };
+        self.sources.inner_tube.cached_player_info(&id).map(|info| info.audio_tracks()).unwrap_or_default()
+    }
+
+    /// The sound track playing, when known.
+    pub fn audio_track(&self) -> Option<AudioTrack> {
+        self.state.lock().unwrap().audio_track.clone()
+    }
+
+    /// Plays the current video again from `at` with another sound track (the Audio track menu).
+    pub fn choose_audio_track(&self, key: &str, at: f64) -> Result<()> {
+        let id = self.playing_video_id().ok_or_else(|| AppError::new("NOTHING_PLAYING", "Nothing is playing."))?;
+        self.state.lock().unwrap().track_choice = Some((id, key.to_owned()));
+        self.replay_current(at)
+    }
+
+    /// Goes back to the settings' choice of track (audio description switched with D).
+    pub fn clear_audio_track_choice(&self) {
+        self.state.lock().unwrap().track_choice = None;
+    }
+
     /// Plays the current video again from `at` (after audio description is switched).
     pub fn replay_current(&self, at: f64) -> Result<()> {
         let id = self.playing_video_id().ok_or_else(|| AppError::new("NOTHING_PLAYING", "Nothing is playing."))?;
@@ -407,8 +446,14 @@ impl Coordinator {
             s.selected_caption = None;
             s.captions_lookup_in_progress = false;
             s.captions_looked_up_for = None;
+            s.audio_track = None;
+            s.last_position = start.unwrap_or(0.0);
+            if s.track_choice.as_ref().is_some_and(|(id, _)| id != video_id) {
+                s.track_choice = None;
+            }
         }
         let quality = self.settings.with(|c| c.playback.preferred_quality);
+        let chosen_track = self.state.lock().unwrap().track_choice.clone().map(|(_, key)| key);
         let want_description = self.settings.with(|c| c.playback.audio_description);
         let mut unavailable: Option<String> = None;
 
@@ -430,11 +475,20 @@ impl Coordinator {
                 return Ok(());
             }
 
-        // Audio description: only yt-dlp reaches the described track, so it goes first when wanted and there.
+        // Audio description: YouTube's apps, then yt-dlp, reach the described track, so it goes first when
+        // wanted and there. A track picked from the Audio track menu is played as picked.
         let has_description = if want_description { check_rx.recv_timeout(Duration::from_secs(4)).ok().flatten() } else { None };
         if want_description && has_description == Some(true) {
             self.state.lock().unwrap().audio_description = AudioDescriptionState::Available;
+        }
+        if want_description && has_description == Some(true) && chosen_track.is_none() {
             self.status("Loading the audio-described version...");
+            if let Ok(stream) = self.sources.inner_tube.resolve(video_id, &self.stream_choice(true, None))
+                && stream.uses_audio_description
+                && self.attempt(&stream, video_id, start, Duration::from_secs(10), generation)
+            {
+                return Ok(());
+            }
             match self.sources.ytdlp.resolve(video_id, quality, false, true, None) {
                 Ok(stream) if stream.uses_audio_description => {
                     if self.attempt(&stream, video_id, start, Duration::from_secs(10), generation) {
@@ -453,8 +507,11 @@ impl Coordinator {
             return Err(AppError::canceled());
         }
 
+        // YouTube's own apps first: plain addresses straight from YouTube, every quality and sound track.
         let tiers: [(&str, SourceKind, u64); 3] =
-            [("TubeRepair", SourceKind::TubeRepair, 7), ("Invidious", SourceKind::Invidious, 7), ("InnerTube", SourceKind::InnerTube, 7)];
+            [("InnerTube", SourceKind::InnerTube, 10), ("TubeRepair", SourceKind::TubeRepair, 7), ("Invidious", SourceKind::Invidious, 7)];
+        // When the described version was tried above and didn't start, the original plays.
+        let choice = self.stream_choice(want_description && has_description != Some(true), chosen_track);
         for (name, kind, timeout) in tiers {
             if self.superseded(generation) {
                 return Err(AppError::canceled());
@@ -463,7 +520,7 @@ impl Coordinator {
             let resolved = match kind {
                 SourceKind::TubeRepair => self.sources.tube_repair.resolve(video_id),
                 SourceKind::Invidious => self.sources.invidious.resolve(video_id, quality, false),
-                _ => self.sources.inner_tube.resolve(video_id),
+                _ => self.sources.inner_tube.resolve(video_id, &choice),
             };
             match resolved {
                 Ok(stream) if !stream.url.trim().is_empty() => {
@@ -474,9 +531,7 @@ impl Coordinator {
                 }
                 Ok(_) => {}
                 Err(e) => {
-                    if kind == SourceKind::InnerTube && e.message.to_lowercase().contains("unavailable")
-                        || e.details.as_deref().is_some_and(|d| d.to_lowercase().contains("unavailable") && kind == SourceKind::InnerTube)
-                    {
+                    if kind == SourceKind::InnerTube && e.code == "VIDEO_UNAVAILABLE" {
                         unavailable = Some(e.message.clone());
                     }
                     log::warn!("{name} could not resolve {video_id}: {e}");
@@ -611,6 +666,10 @@ impl Coordinator {
         {
             let mut s = self.state.lock().unwrap();
             s.active_source = stream.source;
+            s.audio_track = stream.audio_track.clone();
+            if stream.uses_audio_description {
+                s.audio_description = AudioDescriptionState::Playing;
+            }
             s.captions = captions.clone();
             s.selected_caption = None;
         }
@@ -731,7 +790,12 @@ impl Coordinator {
             return;
         }
         let quality = self.settings.with(|c| c.playback.preferred_quality);
-        let stream = self.sources.tube_repair.resolve(video_id).or_else(|_| self.sources.ytdlp.resolve(video_id, quality, false, false, None));
+        let stream = self
+            .sources
+            .inner_tube
+            .resolve(video_id, &self.stream_choice(self.settings.with(|c| c.playback.audio_description), None))
+            .or_else(|_| self.sources.tube_repair.resolve(video_id))
+            .or_else(|_| self.sources.ytdlp.resolve(video_id, quality, false, false, None));
         if let Ok(stream) = stream.filter_url() {
             let mut s = self.state.lock().unwrap();
             s.prefetched.retain(|_, (at, _)| at.elapsed() < PREFETCH_LIFETIME);
@@ -847,11 +911,62 @@ impl Coordinator {
                     }
                     return;
                 }
-                self.emit(Event::Error(message));
+                if !self.recover_stream(&message) {
+                    self.emit(Event::Error(message));
+                }
             }
-            EngineEvent::Position { position, duration } => self.emit(Event::Position { position, duration }),
+            EngineEvent::Position { position, duration } => {
+                if position > 0.0 && !self.attempting.load(Ordering::SeqCst) {
+                    self.state.lock().unwrap().last_position = position;
+                }
+                self.emit(Event::Position { position, duration })
+            }
             EngineEvent::SubtitleText(text) => self.emit(Event::SubtitleText(text)),
         }
+    }
+}
+
+impl Coordinator {
+    /// A stream that stopped with an error partway (most often an address that expired during a long pause,
+    /// or a dropped connection): finds fresh addresses and carries on from the same place. True when it's
+    /// trying; the error is only shown if that fails. Once a minute per video at most.
+    fn recover_stream(&self, message: &str) -> bool {
+        let (id, at) = {
+            let mut s = self.state.lock().unwrap();
+            let Some(id) = s.playing_video_id.clone() else { return false };
+            if s.last_position < 1.0 || s.recovered.as_ref().is_some_and(|(r, when)| *r == id && when.elapsed() < RECOVERY_INTERVAL) {
+                return false;
+            }
+            s.recovered = Some((id.clone(), Instant::now()));
+            (id, s.last_position)
+        };
+        log::warn!("The stream for {id} stopped at {at:.0} seconds ({message}); finding it again.");
+        let Some(me) = self.weak_self() else { return false };
+        let generation = self.generation.load(Ordering::SeqCst);
+        let message = message.to_owned();
+        std::thread::spawn(move || {
+            let Some(c) = me.upgrade() else { return };
+            c.sources.inner_tube.forget_player_info(&id);
+            let (track, described) = {
+                let s = c.state.lock().unwrap();
+                (s.track_choice.clone().map(|(_, key)| key), s.audio_description == AudioDescriptionState::Playing)
+            };
+            let quality = c.settings.with(|c| c.playback.preferred_quality);
+            let stream = c.sources.inner_tube.resolve(&id, &c.stream_choice(described, track)).or_else(|_| c.sources.ytdlp.resolve(&id, quality, false, described, None));
+            let resumed = match stream {
+                Ok(stream) => c.attempt(&stream, &id, Some(at), Duration::from_secs(15), generation),
+                Err(e) => {
+                    log::warn!("Could not find {id} again: {e}");
+                    false
+                }
+            };
+            if resumed {
+                log::info!("Resumed {id} at {at:.0} seconds with fresh addresses.");
+            } else if !c.superseded(generation) {
+                c.emit(Event::Error(message));
+            }
+        });
+        true
     }
 }
 

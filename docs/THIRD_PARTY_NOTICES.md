@@ -287,3 +287,40 @@ repository's unofficial translations, under the same license.
 * **License**: BSD-style license from Microsoft, included with the package
 * **Used for**: the window that shows Google's sign-in page for "Import by signing in to YouTube". It uses the
   WebView2 Runtime installed with Windows.
+
+---
+
+## 15. lib_YTPYP
+
+* **Project**: lib_YTPYP (`ytpipe_core`), by Aman Kumar Gupta, the Rust core of the foo_ytpyp foobar2000 component
+* **URL**: https://github.com/amanKG777/lib_YTPYP
+* **License**: MIT
+* **Used for**: TimePlayer 2 has code ported from it: getting stream links from YouTube's own apps (Apple Vision
+  Pro, iPhone, Android VR) with an anonymous visitor session and playback nonce, ranking sound tracks (the original
+  over dubs, normal volume over stable volume), caching links until shortly before they expire, opening mixes and
+  turning @handle, /c/ and /user/ links into channels. The code is in
+  `v2/crates/timeplayer-core/src/innertube/player.rs`, with the license beside it in `LICENSE-lib_YTPYP.txt`.
+
+```
+MIT License
+
+Copyright (c) 2026 Aman Kumar Gupta
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```

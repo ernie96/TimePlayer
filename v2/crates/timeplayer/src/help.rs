@@ -98,7 +98,7 @@ pub mod full {
         t("Type words or paste a YouTube link, then press Enter. Results open as their own page; Alt+Left goes back.\n")
             + &t("Escape clears the box, and Escape again returns to the list. Tab moves to Search for (Videos, Playlists, Shorts, Live, Newest first or Most viewed) and Settings.\n")
             + &t("From anywhere, slash, Control+F or Control+E come back here. Control+Shift+V plays a YouTube link from the clipboard. Control+Shift+B reports a problem to TimePlayer's developer, and Control+Shift+F suggests a feature.\n")
-            + &t("A YouTube playlist link opens the playlist.")
+            + &t("A YouTube playlist or mix link opens the playlist, and a channel link opens the channel. Several links pasted together play one after another.")
     }
 
     pub fn sections() -> String {
@@ -215,6 +215,7 @@ Open Google Takeout now?")
             + &t("Control+K likes, Control+P adds to a playlist, Control+S subscribes, Control+L Watch Later, Control+G goes to the channel.\n")
             + &t("Control+C copies a share link that starts where you are; Control+Shift+C copies one from the beginning. Control+D downloads audio or video.\n")
             + &t("Alt+A or the Applications key opens Actions: like, subscribe, Watch Later, playlist, share, download, captions, speed, sound and more.\n")
+            + &t("When a video has more than one sound track (dubs in other languages, audio description, YouTube's stable volume), Actions has Audio track to switch for this video. Settings, Playback chooses the track videos start with.\n")
             + &t("Slash leaves the player and goes to search. Escape leaves the player: a video stops, music keeps playing.\n")
             + &t("Control+M switches between Video and Music.")
     }

@@ -89,7 +89,7 @@ fn deliver(sender: &ReplySender, message: String) {
         }
         match timeplayer_core::links::normalize_incoming(&message) {
             Some(link) => app.open_link_from_other_app(&link),
-            None => log::info!("Ignored a link from another app that isn't a YouTube video or playlist."),
+            None => log::info!("Ignored a link from another app that isn't a YouTube video, playlist or channel."),
         }
     });
 }

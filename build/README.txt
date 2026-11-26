@@ -95,6 +95,12 @@ Some videos have a second soundtrack where a narrator describes what is on scree
 TimePlayer plays it when there is one and says "With audio description"; D switches it, and
 Settings (F2), Playback, can turn it off.
 
+Some videos have more than one sound track: dubs in other languages, audio description, and
+YouTube's "stable volume" version with the loud and quiet parts evened out. In the player,
+Alt+A, Audio track lists them and switches for that video. Videos start with the original
+sound; Settings (F2), Playback, can choose a dub in TimePlayer's language instead, or the
+stable volume version.
+
 Chapters come from the timestamps in a video's description. On a braille display, dots 7
 and 8 mark where chapters start; a routing key on one goes to that chapter.
 
@@ -146,6 +152,8 @@ Opening links from your browser and other apps
 ----------------------------------------------
 
 Copy a YouTube link anywhere and press Control+Shift+V in TimePlayer to play it.
+Playlist and mix links open the list, and channel links open the channel. Copy several
+links at once and they play one after another.
 
 The "Play in TimePlayer" browser extension (Chrome, Edge, Brave) adds a "Play in TimePlayer"
 link after YouTube links on other websites, and Alt+Shift+P plays the YouTube page you are

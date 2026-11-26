@@ -374,6 +374,14 @@ impl App {
             sub.separator();
             sub.check("_Read captions aloud", "C", speak_captions, App::toggle_speak_captions);
         });
+        let tracks = self.audio_track_choices();
+        if tracks.len() > 1 {
+            menu.submenu("A_udio track", |sub| {
+                for (key, label, chosen) in tracks {
+                    sub.plain_check(&label.clone(), chosen, move |app| app.select_audio_track(&key, &label));
+                }
+            });
+        }
         let speed = self.playing.speed;
         menu.submenu(&tf("_Speed, {0:0.##}x", &[&speed]), |sub| {
             sub.item("_Faster", "Shift+Period", |app| app.change_speed(1));

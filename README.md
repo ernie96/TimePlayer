@@ -25,6 +25,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 - **Player**: Up next with autoplay, comments with threaded replies, description, captions, speed, share links that
   start at the current time, and audio or video downloads.
 - **Audio description**: when a video has a described soundtrack, TimePlayer plays it (`D` switches it).
+- **Audio tracks**: when a video has several (dubs in other languages, audio description, YouTube's stable volume),
+  Actions, Audio track switches for that video. Videos start with the original sound unless Settings, Playback says
+  to take a dub in TimePlayer's language or the stable volume version.
 - **Chapters and transcript**: chapters from the description (`Shift+Left` / `Shift+Right`, `Alt+H`), marked on the braille
   display with dots 7 and 8; the captions as a readable transcript (`Alt+T`) where Enter plays from a line.
 - **Sound output and boost**: choose the device TimePlayer plays through, apart from the screen reader; Up can go to 200%.
@@ -51,10 +54,14 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 
 - **Finding videos and streams** tries several sources in order and moves on when one fails, so a single outage
   doesn't stop playback:
-  1. **TubeRepair** (`tuberepair.uptimetrackers.com`), a YouTube-compatible API: search, details and streams.
-  2. **Invidious** public instances, picked by health and latency from the public directory (also used for
+  1. **InnerTube**, YouTube's own API, without signing in. For streams, TimePlayer 2 asks the way YouTube's Apple
+     Vision Pro, iPhone and Android VR apps do, which get plain links to the audio and video, so nothing has to be
+     unscrambled. Links are kept until shortly before they expire; if one stops working partway (after a long
+     pause, say), TimePlayer gets a fresh one and carries on from the same place. InnerTube is also the main source
+     for Up next, comments, playlists and mixes.
+  2. **TubeRepair** (`tuberepair.uptimetrackers.com`), a YouTube-compatible API: search, details and streams.
+  3. **Invidious** public instances, picked by health and latency from the public directory (also used for
      channel pages and as a fallback for related videos, comments and playlists).
-  3. **InnerTube**, YouTube's own web API, without signing in (also the main source for Up next, comments and playlists).
   4. **yt-dlp**, a local copy that TimePlayer downloads, verifies and updates at startup and every 6 hours.
 - **Video details** (title, channel, description and so the chapters) come from InnerTube first, then Invidious,
   yt-dlp and TubeRepair. TubeRepair's details count only when its search returns the exact video.
@@ -261,7 +268,9 @@ TimePlayer can play YouTube links that come from your browser, email, chat or an
 
 - **Sharing:** Control+C and Control+Shift+C ask whether to copy a YouTube link (opens anywhere) or a TimePlayer link (opens straight in TimePlayer for people who have it). "Control+C shares" in Settings, Links and browser, can always use one instead.
 
-YouTube Music links (music.youtube.com) open in Music. Only YouTube videos and playlists are accepted; anything else in a link is ignored. "Let browsers and other apps open YouTube links in TimePlayer" in Settings turns the `timeplayer://` links off.
+Playlist and mix links open the list, and channel links (`/channel/`, `@handle`, `/c/`, `/user/`) open the channel. Several links pasted at once (Control+Shift+V, or into the search box) play one after another: videos, the videos of playlists and mixes, and channels' latest uploads, in the order pasted.
+
+YouTube Music links (music.youtube.com) open in Music. Only YouTube videos, playlists and channels are accepted; anything else in a link is ignored. "Let browsers and other apps open YouTube links in TimePlayer" in Settings turns the `timeplayer://` links off.
 
 Windows doesn't let desktop apps take over ordinary youtube.com links, so a YouTube link clicked in an email still opens the browser. The extension or Control+Shift+V cover that.
 
@@ -331,6 +340,10 @@ To build locally instead, `pwsh build/package.ps1` writes the same files to `rel
 TimePlayer is released under the [BSD Zero Clause License (0BSD)](LICENSE): use, change and share it for any purpose.
 The programs and libraries it uses keep their own licenses; see the
 [Third-Party Notices](docs/THIRD_PARTY_NOTICES.md) for the components used in this program.
+
+TimePlayer 2's stream links from YouTube's apps, its choice of sound track, mixes and channel links use code ported
+from [lib_YTPYP](https://github.com/amanKG777/lib_YTPYP) by Aman Kumar Gupta (MIT License), the core of the
+foo_ytpyp component for foobar2000.
 
 TimePlayer, like all my apps, is dedicated to Jenni and Diana. The full dedication is at the top of the
 [Third-Party Notices](docs/THIRD_PARTY_NOTICES.md).
