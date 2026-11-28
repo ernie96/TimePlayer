@@ -18,6 +18,7 @@ pub mod invidious;
 pub mod library;
 pub mod links;
 pub mod logging;
+pub mod members_only;
 pub mod models;
 pub mod mpv;
 pub mod paths;

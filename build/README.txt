@@ -125,6 +125,10 @@ only for videos YouTube won't play without signing in (age-restricted, members-o
 also to show your YouTube home, subscriptions, history and likes (Control+9) and to send
 your likes and subscriptions to YouTube.
 
+Videos for a channel's paying members say "Members only" in lists. They play only when
+you're signed in with an account that is a member of that channel; otherwise TimePlayer
+says so right away.
+
 There are three ways to sign in, all on that page: "Sign in to YouTube" opens Google's own
 sign-in page in a TimePlayer window, which closes by itself once you're signed in; "Import
 a sign-in file" reads the file the Play in TimePlayer browser extension's "Export my YouTube

@@ -41,6 +41,16 @@ impl AppError {
             .fatal()
     }
 
+    /// For the channel's paying members only (YouTube: "Join this channel to get access to members-only content").
+    pub fn members_only(video_id: &str, signed_in: bool) -> Self {
+        let message = if signed_in {
+            crate::t!("This video is only for the channel's members, and YouTube didn't let your sign-in play it. If you are a member, check that TimePlayer is signed in with that account: Settings, YouTube account.")
+        } else {
+            crate::t!("This video is only for the channel's members. Members can play it in TimePlayer after signing in: Settings, YouTube account.")
+        };
+        Self::new("MEMBERS_ONLY", message).with_details(format!("Members-only video: {video_id}")).fatal()
+    }
+
     pub fn stream_unavailable(video_id: &str, reason: Option<&str>) -> Self {
         Self::new("STREAM_UNAVAILABLE", "Unable to extract a playable media stream for this video.")
             .with_details(reason.map(str::to_owned).unwrap_or_else(|| format!("Video ID: {video_id}")))

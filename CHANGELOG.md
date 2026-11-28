@@ -3,6 +3,11 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.9
+
+- Members-only videos are now marked "Members only" in lists, read after the channel's name. TimePlayer takes this from YouTube's badge, and remembers each video YouTube refused as members-only, so What's New and channel pages, which have no badge, say it too.
+- Playing a members-only video no longer runs through every source for about 18 seconds and then fails with "unrecognized file format". TimePlayer now knows within a second. If you're signed in (Settings, YouTube account, used for restricted videos), it tries your sign-in, which works when your account is a member. Otherwise it says the video is only for the channel's members. In the queue, it's skipped with that reason, and autoplay doesn't pick members-only videos.
+
 ## 2.0.8
 
 - Fixed: since 2.0.7, seeking with the arrow keys or the number keys could hang for several seconds. YouTube sends these links slowly when the player asks for everything from one point on, but quickly when asked in pieces of a few megabytes, so TimePlayer now fetches them in pieces. In a test, starting a 1080p video in its middle took about 1 second instead of about 5.

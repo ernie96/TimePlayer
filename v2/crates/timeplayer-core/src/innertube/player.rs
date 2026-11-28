@@ -151,7 +151,7 @@ pub(crate) fn player_info(http: &Http, state: &AppPlayerState, video_id: &str) -
         }
     }
     // A video YouTube calls unavailable says so to every app; keep that reason for the message.
-    let unavailable = reasons.iter().find(|e| e.code == "VIDEO_UNAVAILABLE").cloned();
+    let unavailable = reasons.iter().find(|e| e.code == "MEMBERS_ONLY").or_else(|| reasons.iter().find(|e| e.code == "VIDEO_UNAVAILABLE")).cloned();
     Err(unavailable.unwrap_or_else(|| {
         let detail = reasons.iter().map(|e| e.details.clone().unwrap_or_else(|| e.message.clone())).collect::<Vec<_>>().join("; ");
         AppError::stream_unavailable(video_id, Some(&detail))
@@ -264,7 +264,9 @@ fn parse_player(video_id: &str, client: Client, nonce: Option<&str>, root: &Valu
         let detail = format!("{}: {status} ({reason})", client.name());
         // "Sign in to confirm you're not a bot" is about this app, not the video; the next app may get it.
         let mut e = AppError::stream_unavailable(video_id, Some(&detail));
-        if status == "ERROR" || status == "UNPLAYABLE" && !reason.to_lowercase().contains("bot") {
+        if crate::members_only::is_members_only_reason(reason) {
+            e.code = "MEMBERS_ONLY".into();
+        } else if status == "ERROR" || status == "UNPLAYABLE" && !reason.to_lowercase().contains("bot") {
             e.code = "VIDEO_UNAVAILABLE".into();
         }
         return Err(e);
@@ -591,6 +593,8 @@ mod tests {
     fn refusals_say_whether_the_video_itself_is_unavailable() {
         let bot = serde_json::json!({ "playabilityStatus": { "status": "LOGIN_REQUIRED", "reason": "Sign in to confirm you're not a bot" } });
         assert_ne!(parse_player("dQw4w9WgXcQ", Client::AndroidVr, None, &bot).unwrap_err().code, "VIDEO_UNAVAILABLE");
+        let members = serde_json::json!({ "playabilityStatus": { "status": "UNPLAYABLE", "reason": "Join this channel to get access to members-only content like this video, and other exclusive perks." } });
+        assert_eq!(parse_player("dQw4w9WgXcQ", Client::Ios, None, &members).unwrap_err().code, "MEMBERS_ONLY");
         let gone = serde_json::json!({ "playabilityStatus": { "status": "ERROR", "reason": "Video unavailable" } });
         assert_eq!(parse_player("dQw4w9WgXcQ", Client::Ios, None, &gone).unwrap_err().code, "VIDEO_UNAVAILABLE");
         let other = serde_json::json!({ "playabilityStatus": { "status": "OK" }, "videoDetails": { "videoId": "aaaaaaaaaaa" } });
@@ -616,6 +620,8 @@ mod tests {
             }
             println!("{id}: {} via {}, {} tracks, video {:?}", info.title, info.client, info.audio_tracks().len(), stream.audio_url.is_some());
         }
+        // A members-only video from the log of 2026-11-28.
+        assert_eq!(player_info(&http, &state, "Hh3aKvis02o").unwrap_err().code, "MEMBERS_ONLY");
     }
 
     #[test]

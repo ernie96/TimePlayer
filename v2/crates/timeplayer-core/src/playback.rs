@@ -60,7 +60,7 @@ pub enum Event {
     /// A video ended with nothing after it in the queue (the moment for autoplay).
     QueueEnded,
     /// A queued video couldn't be played; `will_continue` says whether the next one is being tried.
-    Skipped { title: String, reason: String, will_continue: bool, unavailable: bool },
+    Skipped { title: String, reason: String, will_continue: bool, unavailable: bool, members_only: bool },
     AudioDescriptionAvailable,
     CaptionsChanged,
 }
@@ -345,6 +345,7 @@ impl Coordinator {
                 reason: error.message.clone(),
                 will_continue,
                 unavailable: error.code == "VIDEO_UNAVAILABLE",
+                members_only: error.code == "MEMBERS_ONLY",
             });
             if !will_continue {
                 break;
@@ -535,6 +536,11 @@ impl Coordinator {
                 }
                 Ok(_) => {}
                 Err(e) => {
+                    if kind == SourceKind::InnerTube && e.code == "MEMBERS_ONLY" {
+                        // No other source can play it without a member's sign-in; trying them only wastes time.
+                        crate::members_only::remember(video_id);
+                        return self.play_members_only(video_id, start, raise_errors, generation);
+                    }
                     if kind == SourceKind::InnerTube && e.code == "VIDEO_UNAVAILABLE" {
                         unavailable = Some(e.message.clone());
                     }
@@ -598,13 +604,42 @@ impl Coordinator {
         self.fail(&message, raise_errors, "PLAYBACK_ENGINE_ERROR")
     }
 
+    /// A members-only video: only the person's own YouTube sign-in can play it, and only if they're a member.
+    fn play_members_only(&self, video_id: &str, start: Option<f64>, raise_errors: bool, generation: u64) -> Result<()> {
+        log::info!("{video_id} is for the channel's members only.");
+        let Some(account) = self.sources.account.as_ref().filter(|a| a.for_restricted_videos()) else {
+            return self.fail(&AppError::members_only(video_id, false).message, raise_errors, "MEMBERS_ONLY");
+        };
+        self.status("Members-only video; trying with your YouTube sign-in...");
+        let quality = self.settings.with(|c| c.playback.preferred_quality);
+        let want_description = self.settings.with(|c| c.playback.audio_description);
+        let cookies = account.write_temporary_cookies_file();
+        let result = self.sources.ytdlp.resolve(video_id, quality, false, want_description, cookies.as_deref());
+        if let Some(file) = &cookies {
+            let _ = std::fs::remove_file(file);
+        }
+        match result {
+            Ok(stream) if self.attempt(&stream, video_id, start, Duration::from_secs(15), generation) => {
+                if stream.uses_audio_description {
+                    self.state.lock().unwrap().audio_description = AudioDescriptionState::Playing;
+                }
+                Ok(())
+            }
+            Ok(_) => self.fail(&AppError::members_only(video_id, true).message, raise_errors, "MEMBERS_ONLY"),
+            Err(e) => {
+                log::warn!("The sign-in could not play members-only {video_id}: {e}");
+                self.fail(&AppError::members_only(video_id, true).message, raise_errors, "MEMBERS_ONLY")
+            }
+        }
+    }
+
     fn fail(&self, message: &str, raise: bool, code: &str) -> Result<()> {
         if raise {
             self.emit(Event::Error(message.to_owned()));
         }
         self.emit(Event::Status("Playback failed.".into()));
         let mut e = AppError::new(code, message);
-        e.recoverable = code != "VIDEO_UNAVAILABLE";
+        e.recoverable = code != "VIDEO_UNAVAILABLE" && code != "MEMBERS_ONLY";
         Err(e)
     }
 

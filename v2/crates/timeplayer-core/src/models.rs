@@ -148,6 +148,8 @@ pub struct SearchResult {
     pub upload_date_text: Option<String>,
     pub thumbnail_url: Option<String>,
     pub description_snippet: Option<String>,
+    /// For the channel's paying members only (YouTube's badge, or YouTube refused it as such).
+    pub members_only: bool,
 }
 
 impl SearchResult {
@@ -181,6 +183,9 @@ impl SearchResult {
                 }
                 parts.push(self.title.clone());
                 parts.push(t!("by {0}", self.channel_title));
+                if self.members_only {
+                    parts.push(t!("Members only"));
+                }
                 if self.is_live {
                     parts.push(t!("Live now"));
                 } else if self.is_short {

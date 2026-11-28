@@ -490,11 +490,17 @@ impl App {
         }
     }
 
-    /// "New", "Watched" or "Resume at ..." said before a video's title.
+    /// "New", "Watched" or "Resume at ..." said before a video's title, and "Members only" after its channel.
     pub(crate) fn decorate(&self, mut item: SearchResult, new_since: Option<chrono::DateTime<Utc>>) -> SearchResult {
         if item.kind != ItemKind::Video {
             item.status_prefix = None;
             return item;
+        }
+        // YouTube's badge is remembered, so the channel feeds (which have no badge) can say it too.
+        if item.members_only {
+            timeplayer_core::members_only::remember(&item.id);
+        } else {
+            item.members_only = timeplayer_core::members_only::is_members_only(&item.id);
         }
         let record = self.settings.with(|c| c.library.record_history);
         item.status_prefix = if new_since.is_some_and(|since| since.timestamp() > 0 && item.published_at.is_some_and(|p| p > since)) {

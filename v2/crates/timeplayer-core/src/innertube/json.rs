@@ -180,10 +180,13 @@ pub fn parse_video_renderer(vr: &Value) -> Option<SearchResult> {
         .and_then(Value::as_array)
         .and_then(|s| s.first())
         .and_then(|s| text(path(s, &["snippetText"])));
+    // The "Members only" badge (metadataBadgeRenderer, style BADGE_STYLE_TYPE_MEMBERS_ONLY).
+    let members_only = find_all(vr, "style").into_iter().any(|s| s.as_str() == Some("BADGE_STYLE_TYPE_MEMBERS_ONLY"));
     Some(SearchResult {
         duration: if is_live { None } else { parse_clock(length.as_deref()) },
         view_count: if is_live { None } else { parse_count(views.as_deref()) },
         is_live,
+        members_only,
         upload_date_text: expand_age(text(path(vr, &["publishedTimeText"]))),
         thumbnail_url: Some(thumb),
         description_snippet: snippet,
@@ -225,7 +228,12 @@ pub fn parse_lockup(lockup: &Value) -> Option<SearchResult> {
     let stats = rows.get(1).cloned().unwrap_or_default();
     let badge = badge_text(lockup);
     let is_live = badge.as_deref().is_some_and(|b| b.eq_ignore_ascii_case("LIVE")) || stats.iter().any(|s| s.to_lowercase().contains("watching"));
+    // The "Members only" badge in the metadata rows (badgeViewModel, style BADGE_MEMBERS_ONLY).
+    let members_only = find_all(meta, "badgeStyle").into_iter().any(|s| s.as_str() == Some("BADGE_MEMBERS_ONLY"));
+    // A members-only video's second row starts with the badge, not the views.
+    let stats: Vec<String> = stats.into_iter().filter(|s| !s.eq_ignore_ascii_case("Members only")).collect();
     Some(SearchResult {
+        members_only,
         duration: if is_live { None } else { parse_clock(badge.as_deref()) },
         view_count: if is_live { None } else { parse_count(stats.first().map(String::as_str)) },
         is_live,
@@ -455,5 +463,31 @@ mod tests {
         assert_eq!(r.channel_id.as_deref(), Some("UCuAXFkgsw1L7xaCfnd5JJOw"));
         assert_eq!(r.duration, Some(Duration::from_secs(213)));
         assert_eq!(r.upload_date_text.as_deref(), Some("1 year ago"));
+    }
+}
+
+#[cfg(test)]
+mod members_only_tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn both_list_formats_carry_the_members_only_badge() {
+        let lockup = json!({ "contentType": "LOCKUP_CONTENT_TYPE_VIDEO", "contentId": "Hh3aKvis02o", "metadata": { "lockupMetadataViewModel": {
+            "title": { "content": "Song" },
+            "metadata": { "contentMetadataViewModel": { "metadataRows": [
+                { "metadataParts": [ { "text": { "content": "Singer" } } ] },
+                { "badges": [ { "badgeViewModel": { "badgeText": "Members only", "badgeStyle": "BADGE_MEMBERS_ONLY" } } ], "metadataParts": [ { "text": { "content": "1.2K views" } }, { "text": { "content": "3 days ago" } } ] }
+            ] } }
+        } } });
+        let item = parse_lockup(&lockup).unwrap();
+        assert!(item.members_only);
+        assert_eq!(item.view_count, Some(1200));
+
+        let renderer = json!({ "videoId": "Hh3aKvis02o", "title": { "runs": [ { "text": "Song" } ] },
+            "badges": [ { "metadataBadgeRenderer": { "style": "BADGE_STYLE_TYPE_MEMBERS_ONLY", "label": "Members only" } } ] });
+        assert!(parse_video_renderer(&renderer).unwrap().members_only);
+        let plain = json!({ "videoId": "dQw4w9WgXcQ", "title": { "runs": [ { "text": "Song" } ] } });
+        assert!(!parse_video_renderer(&plain).unwrap().members_only);
     }
 }

@@ -1874,6 +1874,11 @@
   "uk": "Текст пісні: {0}, {1}.",
   "es": "Letra: {0}, de {1}."
  },
+ "Members only": {
+  "ro": "Doar pentru membri",
+  "uk": "Лише для учасників",
+  "es": "Solo para miembros"
+ },
  "Message about TimePlayer": {
   "ro": "Mesaj despre TimePlayer",
   "uk": "Повідомлення про TimePlayer",
@@ -3589,6 +3594,16 @@
   "uk": "Це відео не має головного моменту.",
   "es": "Este video no tiene momento destacado."
  },
+ "This video is only for the channel's members, and YouTube didn't let your sign-in play it. If you are a member, check that TimePlayer is signed in with that account: Settings, YouTube account.": {
+  "ro": "Acest videoclip este doar pentru membrii canalului, iar YouTube nu a permis redarea lui cu contul dumneavoastră. Dacă sunteți membru, verificați dacă TimePlayer este conectat cu acel cont: Setări, Cont YouTube.",
+  "uk": "Це відео лише для учасників каналу, і YouTube не дозволив відтворити його з вашим обліковим записом. Якщо ви учасник, перевірте, що TimePlayer увійшов саме з цим обліковим записом: «Налаштування», «Обліковий запис YouTube».",
+  "es": "Este video es solo para los miembros del canal, y YouTube no permitió reproducirlo con tu cuenta. Si eres miembro, comprueba que TimePlayer haya iniciado sesión con esa cuenta: Configuración, Cuenta de YouTube."
+ },
+ "This video is only for the channel's members. Members can play it in TimePlayer after signing in: Settings, YouTube account.": {
+  "ro": "Acest videoclip este doar pentru membrii canalului. Membrii îl pot reda în TimePlayer după ce se conectează: Setări, Cont YouTube.",
+  "uk": "Це відео лише для учасників каналу. Учасники можуть відтворити його в TimePlayer, увійшовши в обліковий запис: «Налаштування», «Обліковий запис YouTube».",
+  "es": "Este video es solo para los miembros del canal. Los miembros pueden reproducirlo en TimePlayer después de iniciar sesión: Configuración, Cuenta de YouTube."
+ },
  "This whole video is labeled {0}.": {
   "ro": "Întregul videoclip este etichetat: {0}.",
   "uk": "Усе відео позначено як: {0}.",
@@ -4583,6 +4598,11 @@
   "ro": "nu a putut fi redat",
   "uk": "його не вдалося відтворити",
   "es": "no se pudo reproducir"
+ },
+ "it's for the channel's members only": {
+  "ro": "este doar pentru membrii canalului",
+  "uk": "воно лише для учасників каналу",
+  "es": "es solo para miembros del canal"
  },
  "just now": {
   "ro": "chiar acum",

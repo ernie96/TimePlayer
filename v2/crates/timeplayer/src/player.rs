@@ -489,9 +489,15 @@ impl App {
             Event::Status(status) => log::info!("{status}"),
             Event::QueueChanged => self.on_queue_changed(),
             Event::QueueEnded => self.on_queue_ended(),
-            Event::Skipped { title, reason: _, will_continue, unavailable } => {
+            Event::Skipped { title, reason: _, will_continue, unavailable, members_only } => {
                 if will_continue {
-                    let why = if unavailable { t("it isn't available") } else { t("it wouldn't play") };
+                    let why = if members_only {
+                        t("it's for the channel's members only")
+                    } else if unavailable {
+                        t("it isn't available")
+                    } else {
+                        t("it wouldn't play")
+                    };
                     speech::say_quietly(&tf("Skipped {0}: {1}.", &[&title, &why]));
                 }
             }
@@ -623,7 +629,14 @@ impl App {
         self.playing
             .up_next
             .iter()
-            .find(|v| v.kind == ItemKind::Video && !v.is_live && Some(&v.id) != current.as_ref() && !self.library.get_history(&v.id).is_some_and(|h| h.is_finished()))
+            .find(|v| {
+                v.kind == ItemKind::Video
+                    && !v.is_live
+                    && !v.members_only
+                    && !timeplayer_core::members_only::is_members_only(&v.id)
+                    && Some(&v.id) != current.as_ref()
+                    && !self.library.get_history(&v.id).is_some_and(|h| h.is_finished())
+            })
             .cloned()
     }
 

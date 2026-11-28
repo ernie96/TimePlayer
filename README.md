@@ -25,6 +25,8 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
 - **Player**: Up next with autoplay, comments with threaded replies, description, captions, speed, share links that
   start at the current time, and audio or video downloads.
 - **Audio description**: when a video has a described soundtrack, TimePlayer plays it (`D` switches it).
+- **Members-only videos** are marked in lists. They play only with a YouTube sign-in whose account is a member
+  of the channel; otherwise TimePlayer says so at once instead of trying every source.
 - **Audio tracks**: when a video has several (dubs in other languages, audio description, YouTube's stable volume),
   Actions, Audio track switches for that video. Videos start with the original sound unless Settings, Playback says
   to take a dub in TimePlayer's language or the stable volume version.
