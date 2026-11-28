@@ -93,6 +93,10 @@ pub struct Discovery {
     invidious: Invidious,
 }
 
+/// The RSS feed is asked up to this many times when YouTube answers 429 or 5xx, waiting a little longer each time.
+const FEED_TRIES: usize = 3;
+const FEED_RETRY_DELAY: Duration = Duration::from_millis(400);
+
 /// A channel's newest uploads from its RSS feed.
 #[derive(Debug, Clone)]
 pub struct ChannelUploads {
@@ -192,16 +196,66 @@ impl Discovery {
         Ok(Page::single(mixed))
     }
 
-    /// A channel's 15 newest uploads, from its public RSS feed.
+    /// A channel's newest uploads: its public RSS feed (15, with dates), or when the feed keeps failing,
+    /// the channel's uploads list from YouTube itself.
     pub fn channel_uploads(&self, channel_id: &str) -> Result<ChannelUploads> {
-        let url = format!("https://www.youtube.com/feeds/videos.xml?channel_id={}", escape(channel_id));
-        let response = self
-            .http
-            .send(Request::get(&url).timeout(Duration::from_secs(15)).header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) TimePlayer"))?;
-        if !response.ok() {
-            return Err(AppError::new("CHANNEL_FEED", format!("Channel feed returned HTTP {}.", response.status)));
+        match self.channel_feed(channel_id) {
+            Ok(uploads) => Ok(uploads),
+            Err(feed_error) => {
+                log::info!("The RSS feed for {channel_id} failed ({}); reading its uploads from YouTube.", feed_error.message);
+                self.channel_uploads_from_youtube(channel_id).map_err(|e| {
+                    log::warn!("YouTube's uploads list for {channel_id} failed too: {e}");
+                    feed_error
+                })
+            }
         }
-        parse_channel_feed(&response.text(), channel_id).ok_or_else(|| AppError::new("CHANNEL_FEED", "Could not read the channel feed."))
+    }
+
+    /// The RSS feed, asked again when YouTube answers that it's busy (it often answers 503 and then 200).
+    fn channel_feed(&self, channel_id: &str) -> Result<ChannelUploads> {
+        let url = format!("https://www.youtube.com/feeds/videos.xml?channel_id={}", escape(channel_id));
+        let mut status = 0;
+        for attempt in 0..FEED_TRIES {
+            if attempt > 0 {
+                std::thread::sleep(FEED_RETRY_DELAY * attempt as u32);
+            }
+            let response = self
+                .http
+                .send(Request::get(&url).timeout(Duration::from_secs(15)).header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) TimePlayer"))?;
+            status = response.status;
+            if response.ok() {
+                return parse_channel_feed(&response.text(), channel_id).ok_or_else(|| AppError::new("CHANNEL_FEED", "Could not read the channel feed."));
+            }
+            if status != 429 && status < 500 {
+                break;
+            }
+        }
+        Err(AppError::new("CHANNEL_FEED", format!("Channel feed returned HTTP {status}.")))
+    }
+
+    /// The channel's uploads playlist ("UU" and the rest of its ID), newest first.
+    fn channel_uploads_from_youtube(&self, channel_id: &str) -> Result<ChannelUploads> {
+        let rest = channel_id.strip_prefix("UC").ok_or_else(|| AppError::new("CHANNEL_FEED", "Not a channel ID."))?;
+        let page = self.inner_tube.playlist(&format!("UU{rest}"), None)?;
+        let channel_name = page
+            .owner
+            .clone()
+            .filter(|o| !o.trim().is_empty())
+            .or_else(|| Some(page.title.trim_start_matches("Uploads from ").trim().to_owned()).filter(|t| !t.is_empty()))
+            .unwrap_or_else(|| channel_id.to_owned());
+        let videos = page
+            .videos
+            .into_iter()
+            .filter(SearchResult::is_video)
+            .map(|mut v| {
+                if v.channel_title.trim().is_empty() || v.channel_title.eq_ignore_ascii_case("Unknown channel") {
+                    v.channel_title = channel_name.clone();
+                }
+                v.channel_id.get_or_insert_with(|| channel_id.to_owned());
+                v
+            })
+            .collect();
+        Ok(ChannelUploads { channel_id: channel_id.to_owned(), channel_name, videos })
     }
 
     /// Older uploads beyond the feed's 15, a page at a time (Invidious).
@@ -649,6 +703,41 @@ pub fn diversify(ranked: Vec<SearchResult>) -> Vec<SearchResult> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Against YouTube itself: `cargo test -p timeplayer-core live_ -- --ignored`.
+    #[test]
+    #[ignore]
+    fn live_channel_uploads_without_the_feed() {
+        let http = Http::new();
+        let settings = crate::config::Settings::in_memory(crate::config::AppConfig::default());
+        let discovery = Discovery::new(http.clone(), InnerTube::new(http.clone(), settings.clone(), None), Invidious::new(http, settings));
+        let uploads = discovery.channel_uploads_from_youtube("UCuAXFkgsw1L7xaCfnd5JJOw").unwrap();
+        println!("{}: {} videos, first {:?}", uploads.channel_name, uploads.videos.len(), uploads.videos.first().map(|v| &v.title));
+        assert!(uploads.videos.len() > 10);
+        assert!(!uploads.channel_name.starts_with("UC"));
+    }
+
+    #[test]
+    fn a_busy_feed_is_asked_again_then_youtube_is_read() {
+        let feed_calls = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let calls = feed_calls.clone();
+        let http = Http::with_transport(move |r: Request| {
+            if r.url.contains("/feeds/videos.xml") {
+                calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                return Ok(crate::http::Response { status: 503, ..Default::default() });
+            }
+            assert!(r.body_text().contains("VLUUabc"), "the uploads playlist");
+            let body = r#"{"contents":[{"playlistVideoRenderer":{"videoId":"dQw4w9WgXcQ","title":{"runs":[{"text":"Song"}]}}}],"metadata":{"playlistMetadataRenderer":{"title":"Uploads from Singer"}}}"#;
+            Ok(crate::http::Response { status: 200, body: body.as_bytes().to_vec(), ..Default::default() })
+        });
+        let settings = crate::config::Settings::in_memory(crate::config::AppConfig::default());
+        let discovery = Discovery::new(http.clone(), InnerTube::new(http.clone(), settings.clone(), None), Invidious::new(http, settings));
+        let uploads = discovery.channel_uploads("UCabc").unwrap();
+        assert_eq!(feed_calls.load(std::sync::atomic::Ordering::SeqCst), FEED_TRIES);
+        assert_eq!(uploads.channel_name, "Singer");
+        assert_eq!(uploads.videos[0].channel_title, "Singer");
+        assert_eq!(uploads.videos[0].channel_id.as_deref(), Some("UCabc"));
+    }
 
     #[test]
     fn reads_a_channel_feed() {

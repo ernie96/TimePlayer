@@ -3,6 +3,11 @@
 The release workflow publishes the section for each version as its release notes, and
 TimePlayer reads them out when it offers that update. Keep each entry short and plain.
 
+## 2.0.8
+
+- Fixed: since 2.0.7, seeking with the arrow keys or the number keys could hang for several seconds. YouTube sends these links slowly when the player asks for everything from one point on, but quickly when asked in pieces of a few megabytes, so TimePlayer now fetches them in pieces. In a test, starting a 1080p video in its middle took about 1 second instead of about 5.
+- Fixed: channels often said "Could not load the channel. Channel feed returned HTTP 503." YouTube's channel feed often answers that and then works a moment later. TimePlayer now asks up to three times, and if the feed still fails, it reads the channel's uploads from YouTube instead. This also helps What's New and For You.
+
 ## 2.0.7
 
 - Videos now start from YouTube's own servers first, the way YouTube's iPhone and Vision Pro apps get them, before TubeRepair, Invidious and yt-dlp are tried. This is usually faster and gets every quality, up to the one set in Settings.

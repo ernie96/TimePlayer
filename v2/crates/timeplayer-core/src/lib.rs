@@ -24,6 +24,7 @@ pub mod paths;
 pub mod periodic;
 pub mod playback;
 pub mod process;
+pub mod stream_relay;
 pub mod text;
 pub mod tuberepair;
 pub mod updates;

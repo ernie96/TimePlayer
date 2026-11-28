@@ -56,7 +56,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   doesn't stop playback:
   1. **InnerTube**, YouTube's own API, without signing in. For streams, TimePlayer 2 asks the way YouTube's Apple
      Vision Pro, iPhone and Android VR apps do, which get plain links to the audio and video, so nothing has to be
-     unscrambled. Links are kept until shortly before they expire; if one stops working partway (after a long
+     unscrambled. YouTube sends these links slowly when asked for everything from one point on, so mpv reads them
+     through a small relay on 127.0.0.1 that fetches them in pieces of a few megabytes. Links are kept until shortly
+     before they expire; if one stops working partway (after a long
      pause, say), TimePlayer gets a fresh one and carries on from the same place. InnerTube is also the main source
      for Up next, comments, playlists and mixes.
   2. **TubeRepair** (`tuberepair.uptimetrackers.com`), a YouTube-compatible API: search, details and streams.
@@ -67,7 +69,9 @@ The plain-text user guide is [build/README.txt](build/README.txt), and [CHANGELO
   yt-dlp and TubeRepair. TubeRepair's details count only when its search returns the exact video.
 - **Playback** uses **mpv** in its own process, controlled over its JSON IPC pipe and drawn inside TimePlayer's window.
   Playback only counts as started once mpv reports it is playing; otherwise the next source is tried.
-- **Subscription feeds** come from YouTube's public per-channel RSS feeds, as NewPipe's fast mode does.
+- **Subscription feeds** come from YouTube's public per-channel RSS feeds, as NewPipe's fast mode does. The feeds
+  often answer 503 for a moment, so each is asked up to three times; if it still fails, the channel's uploads list
+  is read from InnerTube instead.
 - **Speech**: announcements go through a UI Automation live region; captions use the NVDA Controller Client when NVDA
   runs, so a new caption interrupts an old one instead of queueing behind it.
 

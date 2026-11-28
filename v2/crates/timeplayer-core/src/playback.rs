@@ -112,6 +112,8 @@ struct State {
 pub struct Coordinator {
     sources: Sources,
     settings: Settings,
+    /// For the stream relay (app-client addresses).
+    http: crate::http::Http,
     engine: Arc<Engine>,
     state: Mutex<State>,
     on_event: Arc<dyn Fn(Event) + Send + Sync>,
@@ -131,6 +133,7 @@ impl Coordinator {
         Arc::new_cyclic(|weak: &Weak<Coordinator>| {
             let me = weak.clone();
             let weak = weak.clone();
+            let relay_http = http.clone();
             let engine = Engine::new(http, settings.clone(), Arc::new(move |e| {
                 if let Some(c) = weak.upgrade() {
                     c.on_engine_event(e);
@@ -139,6 +142,7 @@ impl Coordinator {
             Coordinator {
                 sources,
                 settings,
+                http: relay_http,
                 engine,
                 state: Mutex::new(State::default()),
                 on_event,
@@ -632,7 +636,8 @@ impl Coordinator {
         let (tx, rx) = channel();
         *self.startup_waiter.lock().unwrap() = Some(tx);
         self.attempting.store(true, Ordering::SeqCst);
-        let loaded = self.engine.load(&stream.url, stream.audio_url.as_deref(), start);
+        let playing = self.through_relay(stream);
+        let loaded = self.engine.load(&playing.url, playing.audio_url.as_deref(), start);
         let started = loaded.is_ok() && {
             let deadline = Instant::now() + timeout;
             let mut result = false;
@@ -682,6 +687,18 @@ impl Coordinator {
         self.status(&format!("Playing via {}.", stream.source.name()));
         self.fetch_details_later(video_id);
         true
+    }
+
+    /// YouTube's apps' addresses go through the stream relay: googlevideo sends them slowly when mpv asks for
+    /// everything from a point on, which made seeking hang; the relay asks in pieces instead.
+    fn through_relay(&self, stream: &ResolvedStream) -> ResolvedStream {
+        if stream.source != SourceKind::InnerTube || stream.is_live {
+            return stream.clone();
+        }
+        let relayed = |url: &str| {
+            if url.contains(".googlevideo.com/") { crate::stream_relay::local_url(&self.http, url).unwrap_or_else(|| url.to_owned()) } else { url.to_owned() }
+        };
+        ResolvedStream { url: relayed(&stream.url), audio_url: stream.audio_url.as_deref().map(relayed), ..stream.clone() }
     }
 
     fn fetch_details_later(&self, video_id: &str) {
